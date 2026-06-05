@@ -17,6 +17,7 @@
   let now = $state(new Date())
 
   onMount(() => {
+    applyTheme(theme)
     requestPermission()
     scheduleAll()
     const id = setInterval(() => now = new Date(), 30000)
@@ -51,6 +52,14 @@
     })
   )
 
+  let dayStr = $derived(
+    new Date().toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric'
+    })
+  )
+
   function handleSubmit() {
     if (!title.trim() || !startTime || !endTime) return
     addTask(title.trim(), startTime, endTime)
@@ -68,14 +77,6 @@
     return `${h12}:${String(m).padStart(2, '0')}${ampm}`
   }
 
-  let dayStr = $derived(
-    new Date().toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric'
-    })
-  )
-
   function setDefaultTimes() {
     const h = now.getHours()
     const m = now.getMinutes()
@@ -92,101 +93,355 @@
     showForm = true
     setDefaultTimes()
   }
+
+  // --- Theme ---
+  let theme = $state(localStorage.getItem('focus-theme') || 'system')
+
+  const THEME_ICONS = {
+    system: `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="6.5" stroke="currentColor" stroke-width="1.5"/><circle cx="9" cy="9" r="2.5" fill="currentColor"/></svg>`,
+    light: `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="4" stroke="currentColor" stroke-width="1.5"/><path d="M9 1v2M9 15v2M1 9h2M15 9h2M3.3 3.3l1.4 1.4M13.3 13.3l1.4 1.4M3.3 14.7l1.4-1.4M13.3 4.7l1.4-1.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+    dark: `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M15 11.2A7 7 0 016.8 3 7 7 0 1015 11.2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>`
+  }
+
+  function cycleTheme() {
+    const next = theme === 'system' ? 'light' : theme === 'light' ? 'dark' : 'system'
+    setTheme(next)
+  }
+
+  function setTheme(t) {
+    theme = t
+    localStorage.setItem('focus-theme', t)
+    applyTheme(t)
+  }
+
+  function applyTheme(t) {
+    const root = document.documentElement
+    if (t === 'dark') root.setAttribute('data-theme', 'dark')
+    else if (t === 'light') root.setAttribute('data-theme', 'light')
+    else root.removeAttribute('data-theme')
+  }
+
+  // --- Timer ---
+  let activeTab = $state('tasks')
+
+  const PRESETS = [5, 15, 25, 45]
+  let timerMinutes = $state(25)
+  let timerRemaining = $state(25 * 60)
+  let timerRunning = $state(false)
+  let timerStart = $state(0)
+  let timerPaused = $state(false)
+  let timerPauseRemaining = $state(0)
+  let tickInterval = $state(null)
+
+  let timerDisplay = $derived.by(() => {
+    const m = Math.floor(timerRemaining / 60)
+    const s = Math.floor(timerRemaining % 60)
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+  })
+
+  let timerProgress = $derived.by(() => {
+    if (timerMinutes <= 0) return 0
+    const total = timerMinutes * 60
+    return 1 - (timerRemaining / total)
+  })
+
+  const CIRCUMFERENCE = 326.73
+
+  let ringOffset = $derived(timerProgress * CIRCUMFERENCE)
+
+  let timerStatus = $derived.by(() => {
+    if (!timerRunning && timerRemaining === timerMinutes * 60) return 'ready'
+    if (timerRunning) return 'running'
+    if (timerPaused) return 'paused'
+    if (timerRemaining <= 0) return 'done'
+    return 'ready'
+  })
+
+  let ringColor = $derived.by(() => {
+    const pct = timerRemaining / (timerMinutes * 60)
+    if (pct > 0.5) return 'var(--accent)'
+    if (pct > 0.25) return 'var(--text-secondary)'
+    return '#b06060'
+  })
+
+  function setPreset(mins) {
+    if (timerRunning || timerPaused) return
+    timerMinutes = mins
+    timerRemaining = mins * 60
+  }
+
+  function startTimer() {
+    if (timerRemaining <= 0) return
+    timerRunning = true
+    timerPaused = false
+    timerStart = Date.now()
+    timerPauseRemaining = timerRemaining
+
+    tickInterval = setInterval(() => {
+      if (!timerRunning) return
+      const elapsed = (Date.now() - timerStart) / 1000
+      const remaining = Math.max(0, timerPauseRemaining - elapsed)
+      timerRemaining = remaining
+
+      if (remaining <= 0) {
+        clearInterval(tickInterval)
+        tickInterval = null
+        timerRunning = false
+        onTimerComplete()
+      }
+    }, 50)
+  }
+
+  function pauseTimer() {
+    if (!timerRunning) return
+    timerRunning = false
+    timerPaused = true
+    clearInterval(tickInterval)
+    tickInterval = null
+  }
+
+  function resumeTimer() {
+    if (!timerPaused) return
+    timerRunning = true
+    timerPaused = false
+    timerStart = Date.now()
+    timerPauseRemaining = timerRemaining
+
+    tickInterval = setInterval(() => {
+      if (!timerRunning) return
+      const elapsed = (Date.now() - timerStart) / 1000
+      const remaining = Math.max(0, timerPauseRemaining - elapsed)
+      timerRemaining = remaining
+
+      if (remaining <= 0) {
+        clearInterval(tickInterval)
+        tickInterval = null
+        timerRunning = false
+        onTimerComplete()
+      }
+    }, 50)
+  }
+
+  function resetTimer() {
+    timerRunning = false
+    timerPaused = false
+    clearInterval(tickInterval)
+    tickInterval = null
+    timerRemaining = timerMinutes * 60
+  }
+
+  function onTimerComplete() {
+    timerRemaining = 0
+    notify('Focus session complete!')
+    if (navigator.vibrate) {
+      navigator.vibrate([200, 100, 200, 100, 400])
+    }
+  }
+
+  $effect(() => {
+    return () => {
+      if (tickInterval) clearInterval(tickInterval)
+    }
+  })
+
+  function notify(msg) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('Focus', { body: msg })
+    }
+  }
 </script>
 
 <div class="app">
   <header class="header">
     <h1 class="logo">focus</h1>
-    <span class="date">{dayStr}</span>
+    <div class="header-actions">
+      <span class="date">{dayStr}</span>
+      <button class="theme-btn" onclick={cycleTheme} aria-label="Toggle theme" title={theme}>
+        {@html THEME_ICONS[theme]}
+      </button>
+    </div>
   </header>
 
-  <div class="status">
-    {#if currentTask}
-      <span class="status-dot live"></span>
-      <span>Now: <strong>{currentTask.title}</strong> &middot; ends {timeDisplay(currentTask.endTime)}</span>
-    {:else if nextTask}
-      <span class="status-dot"></span>
-      <span>Next: <strong>{nextTask.title}</strong> at {timeDisplay(nextTask.startTime)}</span>
-    {:else if todayTasks.length > 0}
-      <span class="status-dot done"></span>
-      <span>All done for today</span>
-    {:else}
-      <span class="status-dot"></span>
-      <span>No tasks yet</span>
-    {/if}
-  </div>
-
-  {#if showForm}
-    <form class="form" transition:slide={{ duration: 200 }} onsubmit={handleSubmit}>
-      <input
-        type="text"
-        class="input title-input"
-        placeholder="What do you want to do?"
-        bind:value={title}
-      />
-      <div class="time-row">
-        <div class="time-field">
-          <label class="time-label" for="start-time">Start</label>
-          <input id="start-time" type="time" class="input" bind:value={startTime} />
-        </div>
-        <span class="time-arrow">&rarr;</span>
-        <div class="time-field">
-          <label class="time-label" for="end-time">End</label>
-          <input id="end-time" type="time" class="input" bind:value={endTime} />
-        </div>
-      </div>
-      <div class="form-actions">
-        <button type="button" class="btn btn-cancel" onclick={() => showForm = false}>Cancel</button>
-        <button type="submit" class="btn btn-save" disabled={!title.trim() || !startTime || !endTime}>Save</button>
-      </div>
-    </form>
-  {:else}
-    <button class="add-trigger" onclick={openForm}>
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-        <path d="M9 3v12M3 9h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+  <nav class="tabs">
+    <button
+      class="tab"
+      class:active={activeTab === 'tasks'}
+      onclick={() => activeTab = 'tasks'}
+    >
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M5 8l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
-      Add task
+      Tasks
     </button>
-  {/if}
+    <button
+      class="tab"
+      class:active={activeTab === 'focus'}
+      onclick={() => activeTab = 'focus'}
+    >
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/>
+        <circle cx="8" cy="8" r="2" fill="currentColor"/>
+      </svg>
+      Focus
+    </button>
+  </nav>
 
-  <main class="task-list">
-    {#each todayTasks as task (task.id)}
-      <div
-        class="task-card"
-        class:completed={task.completed}
-        transition:fly={{ y: 8, duration: 200, opacity: 0 }}
-      >
-        <button
-          class="check"
-          class:checked={task.completed}
-          onclick={() => toggleTask(task.id)}
-          aria-label={task.completed ? 'Mark incomplete' : 'Mark complete'}
-        >
-          {#if task.completed}
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M3 7l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-          {/if}
-        </button>
-        <div class="card-body">
-          <span class="card-title">{task.title}</span>
-          <span class="card-time">{timeDisplay(task.startTime)} &rarr; {timeDisplay(task.endTime)}</span>
+  {#if activeTab === 'tasks'}
+    <div class="status">
+      {#if currentTask}
+        <span class="status-dot live"></span>
+        <span>Now: <strong>{currentTask.title}</strong> &middot; ends {timeDisplay(currentTask.endTime)}</span>
+      {:else if nextTask}
+        <span class="status-dot"></span>
+        <span>Next: <strong>{nextTask.title}</strong> at {timeDisplay(nextTask.startTime)}</span>
+      {:else if todayTasks.length > 0}
+        <span class="status-dot done"></span>
+        <span>All done for today</span>
+      {:else}
+        <span class="status-dot"></span>
+        <span>No tasks yet</span>
+      {/if}
+    </div>
+
+    {#if showForm}
+      <form class="form" transition:slide={{ duration: 200 }} onsubmit={handleSubmit}>
+        <input
+          type="text"
+          class="input title-input"
+          placeholder="What do you want to do?"
+          bind:value={title}
+        />
+        <div class="time-row">
+          <div class="time-field">
+            <label class="time-label" for="start-time">Start</label>
+            <input id="start-time" type="time" class="input" bind:value={startTime} />
+          </div>
+          <span class="time-arrow">&rarr;</span>
+          <div class="time-field">
+            <label class="time-label" for="end-time">End</label>
+            <input id="end-time" type="time" class="input" bind:value={endTime} />
+          </div>
         </div>
-        <button class="delete" onclick={() => removeTask(task.id)} aria-label="Delete task">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-          </svg>
-        </button>
-      </div>
-    {/each}
-
-    {#if todayTasks.length === 0}
-      <div class="empty">
-        <p>Nothing planned today</p>
-        <p class="empty-sub">Tap "Add task" to get started</p>
-      </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-cancel" onclick={() => showForm = false}>Cancel</button>
+          <button type="submit" class="btn btn-save" disabled={!title.trim() || !startTime || !endTime}>Save</button>
+        </div>
+      </form>
+    {:else}
+      <button class="add-trigger" onclick={openForm}>
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <path d="M9 3v12M3 9h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
+        Add task
+      </button>
     {/if}
-  </main>
+
+    <main class="task-list">
+      {#each todayTasks as task (task.id)}
+        <div
+          class="task-card"
+          class:completed={task.completed}
+          transition:fly={{ y: 8, duration: 200, opacity: 0 }}
+        >
+          <button
+            class="check"
+            class:checked={task.completed}
+            onclick={() => toggleTask(task.id)}
+            aria-label={task.completed ? 'Mark incomplete' : 'Mark complete'}
+          >
+            {#if task.completed}
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M3 7l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            {/if}
+          </button>
+          <div class="card-body">
+            <span class="card-title">{task.title}</span>
+            <span class="card-time">{timeDisplay(task.startTime)} &rarr; {timeDisplay(task.endTime)}</span>
+          </div>
+          <button class="delete" onclick={() => removeTask(task.id)} aria-label="Delete task">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+          </button>
+        </div>
+      {/each}
+
+      {#if todayTasks.length === 0}
+        <div class="empty">
+          <p>Nothing planned today</p>
+          <p class="empty-sub">Tap "Add task" to get started</p>
+        </div>
+      {/if}
+    </main>
+  {:else}
+    <main class="focus-view">
+      <div class="timer-ring-container">
+        <svg viewBox="0 0 120 120" class="timer-ring">
+          <circle cx="60" cy="60" r="52" fill="none" stroke="var(--border)" stroke-width="5" />
+          <circle
+            cx="60" cy="60" r="52"
+            fill="none"
+            stroke={ringColor}
+            stroke-width="5"
+            stroke-linecap="round"
+            stroke-dasharray={CIRCUMFERENCE}
+            stroke-dashoffset={ringOffset}
+            transform="rotate(-90 60 60)"
+            class="timer-ring-fill"
+          />
+          <text x="60" y="50" text-anchor="middle" class="timer-digits">{timerDisplay}</text>
+          <text x="60" y="70" text-anchor="middle" class="timer-label">remaining</text>
+        </svg>
+      </div>
+
+      <div class="timer-status-text">
+        {#if timerStatus === 'ready'}
+          <span>Ready to focus</span>
+        {:else if timerStatus === 'running'}
+          <span>Focusing...</span>
+        {:else if timerStatus === 'paused'}
+          <span>Paused</span>
+        {:else if timerStatus === 'done'}
+          <span>Session complete!</span>
+        {/if}
+      </div>
+
+      <div class="presets">
+        {#each PRESETS as m}
+          <button
+            class="preset-btn"
+            class:active={timerMinutes === m && timerStatus === 'ready'}
+            onclick={() => setPreset(m)}
+            disabled={timerRunning || timerPaused}
+          >{m}m</button>
+        {/each}
+      </div>
+
+      <div class="timer-controls">
+        {#if timerStatus === 'ready'}
+          <button class="timer-btn primary" onclick={startTimer} disabled={timerMinutes <= 0}>
+            Start
+          </button>
+        {:else if timerStatus === 'running'}
+          <button class="timer-btn" onclick={pauseTimer}>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <rect x="3" y="1" width="3" height="12" rx="1" fill="currentColor"/>
+              <rect x="8" y="1" width="3" height="12" rx="1" fill="currentColor"/>
+            </svg>
+            Pause
+          </button>
+          <button class="timer-btn secondary" onclick={resetTimer}>Stop</button>
+        {:else if timerStatus === 'paused'}
+          <button class="timer-btn primary" onclick={resumeTimer}>Resume</button>
+          <button class="timer-btn secondary" onclick={resetTimer}>Reset</button>
+        {:else if timerStatus === 'done'}
+          <button class="timer-btn primary" onclick={resetTimer}>New session</button>
+        {/if}
+      </div>
+    </main>
+  {/if}
 </div>
 
 <style>
@@ -201,7 +456,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 20px 20px 12px;
+    padding: 20px 20px 10px;
     flex-shrink: 0;
   }
 
@@ -212,17 +467,76 @@
     color: var(--text);
   }
 
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
   .date {
     font-size: 13px;
     color: var(--text-secondary);
     font-weight: 500;
   }
 
+  .theme-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+    background: transparent;
+    padding: 0;
+    transition: all 0.15s;
+  }
+
+  .theme-btn:hover {
+    background: var(--surface-hover);
+    color: var(--text);
+  }
+
+  .tabs {
+    display: flex;
+    gap: 4px;
+    padding: 0 20px 12px;
+    flex-shrink: 0;
+  }
+
+  .tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s;
+    background: transparent;
+  }
+
+  .tab:hover {
+    background: var(--surface-hover);
+    color: var(--text);
+  }
+
+  .tab.active {
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: var(--shadow);
+  }
+
   .status {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 0 20px 16px;
+    padding: 0 20px 12px;
     font-size: 13px;
     color: var(--text-secondary);
     flex-shrink: 0;
@@ -465,5 +779,127 @@
     font-size: 13px;
     color: var(--text-muted);
     margin-top: 4px;
+  }
+
+  /* --- Focus Timer --- */
+  .focus-view {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    gap: 16px;
+  }
+
+  .timer-ring-container {
+    width: 220px;
+    height: 220px;
+  }
+
+  .timer-ring {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 2px 8px rgba(0,0,0,0.06));
+  }
+
+  .timer-ring-fill {
+    transition: stroke-dashoffset 0.1s linear, stroke 0.3s ease;
+  }
+
+  .timer-digits {
+    font-size: 28px;
+    font-weight: 600;
+    fill: var(--text);
+    font-family: var(--font);
+  }
+
+  .timer-label {
+    font-size: 11px;
+    fill: var(--text-muted);
+    font-family: var(--font);
+    font-weight: 500;
+  }
+
+  .timer-status-text {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  .presets {
+    display: flex;
+    gap: 8px;
+  }
+
+  .preset-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .preset-btn:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--text);
+  }
+
+  .preset-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .preset-btn:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+
+  .timer-controls {
+    display: flex;
+    gap: 8px;
+  }
+
+  .timer-btn {
+    padding: 10px 24px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .timer-btn.primary {
+    background: var(--accent);
+    color: #fff;
+    border: 1px solid transparent;
+  }
+
+  .timer-btn.primary:hover {
+    background: var(--accent-hover);
+  }
+
+  .timer-btn.primary:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  .timer-btn.secondary {
+    background: var(--surface);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+  }
+
+  .timer-btn.secondary:hover {
+    background: var(--surface-hover);
+    color: var(--text);
   }
 </style>

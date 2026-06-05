@@ -132,6 +132,8 @@
   let timerPaused = $state(false)
   let timerPauseRemaining = $state(0)
   let tickInterval = $state(null)
+  let doTick = $state(false)
+  let prevSecond = $state(-1)
 
   let timerDisplay = $derived.by(() => {
     const m = Math.floor(timerRemaining / 60)
@@ -139,29 +141,12 @@
     return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
   })
 
-  let timerProgress = $derived.by(() => {
-    if (timerMinutes <= 0) return 0
-    const total = timerMinutes * 60
-    return 1 - (timerRemaining / total)
-  })
-
-  const CIRCUMFERENCE = 326.73
-
-  let ringOffset = $derived(timerProgress * CIRCUMFERENCE)
-
   let timerStatus = $derived.by(() => {
     if (!timerRunning && timerRemaining === timerMinutes * 60) return 'ready'
     if (timerRunning) return 'running'
     if (timerPaused) return 'paused'
     if (timerRemaining <= 0) return 'done'
     return 'ready'
-  })
-
-  let ringColor = $derived.by(() => {
-    const pct = timerRemaining / (timerMinutes * 60)
-    if (pct > 0.5) return 'var(--accent)'
-    if (pct > 0.25) return 'var(--text-secondary)'
-    return '#b06060'
   })
 
   function setPreset(mins) {
@@ -182,6 +167,13 @@
       const elapsed = (Date.now() - timerStart) / 1000
       const remaining = Math.max(0, timerPauseRemaining - elapsed)
       timerRemaining = remaining
+
+      const cs = Math.floor(remaining)
+      if (cs !== prevSecond) {
+        prevSecond = cs
+        doTick = true
+        setTimeout(() => doTick = false, 200)
+      }
 
       if (remaining <= 0) {
         clearInterval(tickInterval)
@@ -212,6 +204,13 @@
       const elapsed = (Date.now() - timerStart) / 1000
       const remaining = Math.max(0, timerPauseRemaining - elapsed)
       timerRemaining = remaining
+
+      const cs = Math.floor(remaining)
+      if (cs !== prevSecond) {
+        prevSecond = cs
+        doTick = true
+        setTimeout(() => doTick = false, 200)
+      }
 
       if (remaining <= 0) {
         clearInterval(tickInterval)
@@ -377,23 +376,10 @@
     </main>
   {:else}
     <main class="focus-view">
-      <div class="timer-ring-container">
-        <svg viewBox="0 0 120 120" class="timer-ring">
-          <circle cx="60" cy="60" r="52" fill="none" stroke="var(--border)" stroke-width="5" />
-          <circle
-            cx="60" cy="60" r="52"
-            fill="none"
-            stroke={ringColor}
-            stroke-width="5"
-            stroke-linecap="round"
-            stroke-dasharray={CIRCUMFERENCE}
-            stroke-dashoffset={ringOffset}
-            transform="rotate(-90 60 60)"
-            class="timer-ring-fill"
-          />
-          <text x="60" y="50" text-anchor="middle" class="timer-digits">{timerDisplay}</text>
-          <text x="60" y="70" text-anchor="middle" class="timer-label">remaining</text>
-        </svg>
+      <div class="timer-digits-wrapper">
+        <div class="timer-digits" class:tick={doTick}>
+          {timerDisplay}
+        </div>
       </div>
 
       <div class="timer-status-text">
@@ -792,39 +778,39 @@
     gap: 16px;
   }
 
-  .timer-ring-container {
-    width: 220px;
-    height: 220px;
-  }
-
-  .timer-ring {
-    width: 100%;
-    height: 100%;
-    filter: drop-shadow(0 2px 8px rgba(0,0,0,0.06));
-  }
-
-  .timer-ring-fill {
-    transition: stroke-dashoffset 0.1s linear, stroke 0.3s ease;
+  .timer-digits-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 0;
   }
 
   .timer-digits {
-    font-size: 28px;
-    font-weight: 600;
-    fill: var(--text);
-    font-family: var(--font);
+    font-size: 5rem;
+    font-weight: 700;
+    letter-spacing: 4px;
+    color: var(--text);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    transition: transform 0.15s ease;
+    user-select: none;
   }
 
-  .timer-label {
-    font-size: 11px;
-    fill: var(--text-muted);
-    font-family: var(--font);
-    font-weight: 500;
+  .timer-digits.tick {
+    animation: timerPulse 0.2s ease;
+  }
+
+  @keyframes timerPulse {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.06); }
+    100% { transform: scale(1); }
   }
 
   .timer-status-text {
     font-size: 14px;
     color: var(--text-secondary);
     font-weight: 500;
+    height: 20px;
   }
 
   .presets {

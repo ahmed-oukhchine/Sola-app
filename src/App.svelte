@@ -6,6 +6,10 @@
     addTask,
     toggleTask,
     removeTask,
+    addSubtask,
+    toggleSubtask,
+    removeSubtask,
+    toggleExpand,
     loadPoints,
     savePoints,
     requestPermission,
@@ -18,17 +22,25 @@
   let showForm = $state(false)
   let now = $state(new Date())
 
+  let showMorning = $state(false)
+  let showEvening = $state(false)
+  let ritualTitle = $state('')
+
   onMount(() => {
     applyTheme(theme)
     requestPermission()
     scheduleAll()
     const id = setInterval(() => now = new Date(), 30000)
     return () => clearInterval(id)
+
+    checkRituals()
   })
+
+  let todayStr = $derived(new Date().toISOString().split('T')[0])
 
   let todayTasks = $derived(
     store.tasks
-      .filter(t => t.date === new Date().toISOString().split('T')[0])
+      .filter(t => t.date === todayStr)
       .sort((a, b) => a.startTime.localeCompare(b.startTime))
   )
 
@@ -62,6 +74,49 @@
     })
   )
 
+  let completedCount = $derived(todayTasks.filter(t => t.completed).length)
+
+  function checkRituals() {
+    const h = now.getHours()
+    const mKey = `focus-morning:${todayStr}`
+    const eKey = `focus-evening:${todayStr}`
+    const morningDone = localStorage.getItem(mKey)
+    const eveningDone = localStorage.getItem(eKey)
+
+    if (h < 12 && !morningDone) {
+      setTimeout(() => showMorning = true, 300)
+    }
+    if (h >= 18 && !eveningDone) {
+      setTimeout(() => showEvening = true, 600)
+    }
+  }
+
+  function completeMorning() {
+    localStorage.setItem(`focus-morning:${todayStr}`, 'done')
+    showMorning = false
+  }
+
+  function completeEvening() {
+    localStorage.setItem(`focus-evening:${todayStr}`, 'done')
+    showEvening = false
+  }
+
+  function handleRitualSubmit() {
+    if (!ritualTitle.trim()) return
+    addTask(ritualTitle.trim())
+    ritualTitle = ''
+  }
+
+  function skipMorning() {
+    localStorage.setItem(`focus-morning:${todayStr}`, 'skipped')
+    showMorning = false
+  }
+
+  function skipEvening() {
+    localStorage.setItem(`focus-evening:${todayStr}`, 'skipped')
+    showEvening = false
+  }
+
   function handleSubmit() {
     if (!title.trim()) return
     addTask(title.trim(), startTime, endTime)
@@ -69,12 +124,6 @@
     startTime = ''
     endTime = ''
     showForm = false
-  }
-
-  function handleQuickAdd() {
-    if (!title.trim()) return
-    addTask(title.trim())
-    title = ''
   }
 
   function timeDisplay(t) {
@@ -174,7 +223,6 @@
 
   // --- Timer ---
   let activeTab = $state('tasks')
-
   const PRESETS = [5, 15, 25, 45]
   let timerMinutes = $state(25)
   let timerRemaining = $state(25 * 60)
@@ -212,20 +260,17 @@
     timerPaused = false
     timerStart = Date.now()
     timerPauseRemaining = timerRemaining
-
     tickInterval = setInterval(() => {
       if (!timerRunning) return
       const elapsed = (Date.now() - timerStart) / 1000
       const remaining = Math.max(0, timerPauseRemaining - elapsed)
       timerRemaining = remaining
-
       const cs = Math.floor(remaining)
       if (cs !== prevSecond) {
         prevSecond = cs
         doTick = true
         setTimeout(() => doTick = false, 200)
       }
-
       if (remaining <= 0) {
         clearInterval(tickInterval)
         tickInterval = null
@@ -249,20 +294,17 @@
     timerPaused = false
     timerStart = Date.now()
     timerPauseRemaining = timerRemaining
-
     tickInterval = setInterval(() => {
       if (!timerRunning) return
       const elapsed = (Date.now() - timerStart) / 1000
       const remaining = Math.max(0, timerPauseRemaining - elapsed)
       timerRemaining = remaining
-
       const cs = Math.floor(remaining)
       if (cs !== prevSecond) {
         prevSecond = cs
         doTick = true
         setTimeout(() => doTick = false, 200)
       }
-
       if (remaining <= 0) {
         clearInterval(tickInterval)
         tickInterval = null
@@ -298,6 +340,17 @@
     if ('Notification' in window && Notification.permission === 'granted') {
       new Notification('Focus', { body: msg })
     }
+  }
+
+  // --- Subtasks ---
+  let subtaskInputs = $state({})
+
+  function handleSubtaskKey(e, taskId) {
+    if (e.key !== 'Enter') return
+    const val = subtaskInputs[taskId]
+    if (!val || !val.trim()) return
+    addSubtask(taskId, val.trim())
+    subtaskInputs = { ...subtaskInputs, [taskId]: '' }
   }
 </script>
 
@@ -408,30 +461,67 @@
             <div
               class="tl-task"
               class:completed={task.completed}
+              class:expanded={task.expanded}
               style="top: {taskTop(task)}px; height: {taskHeight(task)}px"
               transition:fly={{ y: 8, duration: 200, opacity: 0 }}
             >
-              <button
-                class="tl-check"
-                class:checked={task.completed}
-                onclick={() => { toggleTask(task.id); if (!task.completed) addPoints(10) }}
-                aria-label={task.completed ? 'Mark incomplete' : 'Mark complete'}
-              >
-                {#if task.completed}
+              <div class="tl-main" role="button" tabindex="0" onclick={() => toggleExpand(task.id)} onkeydown={(e) => { if (e.key === 'Enter') toggleExpand(task.id) }}>
+                <button
+                  class="tl-check"
+                  class:checked={task.completed}
+                  onclick={(e) => { e.stopPropagation(); toggleTask(task.id); if (!task.completed) addPoints(10) }}
+                  aria-label={task.completed ? 'Mark incomplete' : 'Mark complete'}
+                >
+                  {#if task.completed}
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path d="M2.5 6l3 3 4-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                  {/if}
+                </button>
+                <div class="tl-body">
+                  <span class="tl-title">{task.title}</span>
+                  <span class="tl-time">{timeDisplay(task.startTime)} &rarr; {timeDisplay(task.endTime)}</span>
+                </div>
+                <button class="tl-del" onclick={(e) => { e.stopPropagation(); removeTask(task.id) }} aria-label="Delete">
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M2.5 6l3 3 4-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
                   </svg>
-                {/if}
-              </button>
-              <div class="tl-body">
-                <span class="tl-title">{task.title}</span>
-                <span class="tl-time">{timeDisplay(task.startTime)} &rarr; {timeDisplay(task.endTime)}</span>
+                </button>
               </div>
-              <button class="tl-del" onclick={() => removeTask(task.id)} aria-label="Delete task">
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                </svg>
-              </button>
+              {#if task.expanded}
+                <div class="subtask-list" transition:slide={{ duration: 150 }}>
+                  {#each task.subtasks as st}
+                    <div class="subtask-item" class:st-done={st.completed}>
+                      <button
+                        class="st-check"
+                        class:checked={st.completed}
+                        onclick={(e) => { e.stopPropagation(); toggleSubtask(task.id, st.id); if (!st.completed) addPoints(3) }}
+                      >
+                        {#if st.completed}
+                          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                            <path d="M2 5l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                          </svg>
+                        {/if}
+                      </button>
+                      <span class="st-title">{st.title}</span>
+                      <button class="st-del" aria-label="Remove subtask" onclick={(e) => { e.stopPropagation(); removeSubtask(task.id, st.id) }}>
+                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                          <path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                        </svg>
+                      </button>
+                    </div>
+                  {/each}
+                  <div class="st-add">
+                    <input
+                      type="text"
+                      class="st-input"
+                      placeholder="Add a step..."
+                      bind:value={subtaskInputs[task.id]}
+                      onkeydown={(e) => handleSubtaskKey(e, task.id)}
+                    />
+                  </div>
+                </div>
+              {/if}
             </div>
           {/each}
         </div>
@@ -455,27 +545,64 @@
             <div
               class="us-task"
               class:completed={task.completed}
+              class:expanded={task.expanded}
               transition:fly={{ y: 6, duration: 180, opacity: 0 }}
             >
-              <button
-                class="check"
-                class:checked={task.completed}
-                onclick={() => { toggleTask(task.id); if (!task.completed) addPoints(10) }}
-              >
-                {#if task.completed}
+              <div class="us-main" role="button" tabindex="0" onclick={() => toggleExpand(task.id)} onkeydown={(e) => { if (e.key === 'Enter') toggleExpand(task.id) }}>
+                <button
+                  class="check"
+                  class:checked={task.completed}
+                  onclick={(e) => { e.stopPropagation(); toggleTask(task.id); if (!task.completed) addPoints(10) }}
+                >
+                  {#if task.completed}
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path d="M2.5 6l3 3 4-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                  {/if}
+                </button>
+                <div class="us-body">
+                  <span class="us-title">{task.title}</span>
+                </div>
+                <button class="delete" onclick={(e) => { e.stopPropagation(); removeTask(task.id) }} aria-label="Delete">
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M2.5 6l3 3 4-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
                   </svg>
-                {/if}
-              </button>
-              <div class="us-body">
-                <span class="us-title">{task.title}</span>
+                </button>
               </div>
-              <button class="delete" onclick={() => removeTask(task.id)} aria-label="Delete">
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                </svg>
-              </button>
+              {#if task.expanded}
+                <div class="subtask-list" transition:slide={{ duration: 150 }}>
+                  {#each task.subtasks as st}
+                    <div class="subtask-item" class:st-done={st.completed}>
+                      <button
+                        class="st-check"
+                        class:checked={st.completed}
+                        onclick={(e) => { e.stopPropagation(); toggleSubtask(task.id, st.id); if (!st.completed) addPoints(3) }}
+                      >
+                        {#if st.completed}
+                          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                            <path d="M2 5l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                          </svg>
+                        {/if}
+                      </button>
+                      <span class="st-title">{st.title}</span>
+                      <button class="st-del" aria-label="Remove subtask" onclick={(e) => { e.stopPropagation(); removeSubtask(task.id, st.id) }}>
+                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                          <path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                        </svg>
+                      </button>
+                    </div>
+                  {/each}
+                  <div class="st-add">
+                    <input
+                      type="text"
+                      class="st-input"
+                      placeholder="Add a step..."
+                      bind:value={subtaskInputs[task.id]}
+                      onkeydown={(e) => handleSubtaskKey(e, task.id)}
+                    />
+                  </div>
+                </div>
+              {/if}
             </div>
           {/each}
         </div>
@@ -514,9 +641,7 @@
 
       <div class="timer-controls">
         {#if timerStatus === 'ready'}
-          <button class="timer-btn primary" onclick={startTimer} disabled={timerMinutes <= 0}>
-            Start
-          </button>
+          <button class="timer-btn primary" onclick={startTimer} disabled={timerMinutes <= 0}>Start</button>
         {:else if timerStatus === 'running'}
           <button class="timer-btn" onclick={pauseTimer}>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -536,6 +661,106 @@
     </main>
   {/if}
 </div>
+
+<!-- Morning Ritual -->
+{#if showMorning}
+  <div class="ritual-overlay" transition:fly={{ y: 20, duration: 250, opacity: 0 }}>
+    <div class="ritual-card">
+      <div class="ritual-icon">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <circle cx="16" cy="16" r="8" fill="var(--accent)" opacity="0.15"/>
+          <circle cx="16" cy="16" r="4" fill="var(--accent)"/>
+          <path d="M16 2v3M16 27v3M2 16h3M27 16h3M5.6 5.6l2.1 2.1M24.3 24.3l2.1 2.1M5.6 26.4l2.1-2.1M24.3 7.7l2.1-2.1" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <h2 class="ritual-title">Good morning</h2>
+      <p class="ritual-sub">What are you focusing on today?</p>
+
+      <div class="ritual-input-row">
+        <input
+          type="text"
+          class="ritual-input"
+          placeholder="Add a task..."
+          bind:value={ritualTitle}
+          onkeydown={(e) => { if (e.key === 'Enter') handleRitualSubmit() }}
+        />
+        <button class="ritual-add-btn" aria-label="Add task" onclick={handleRitualSubmit} disabled={!ritualTitle.trim()}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+
+      {#if todayTasks.length > 0}
+        <div class="ritual-tasks">
+          {#each todayTasks as t}
+            <div class="ritual-task" class:rt-done={t.completed}>
+              <span>{t.title}</span>
+              {#if t.completed}
+                <span class="rt-check">&#10003;</span>
+              {/if}
+            </div>
+          {/each}
+        </div>
+      {/if}
+
+      <div class="ritual-actions">
+        <button class="ritual-btn primary" onclick={completeMorning}>Start the day</button>
+        <button class="ritual-btn secondary" onclick={skipMorning}>Skip</button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+<!-- Evening Shutdown -->
+{#if showEvening}
+  <div class="ritual-overlay" transition:fly={{ y: 20, duration: 250, opacity: 0 }}>
+    <div class="ritual-card">
+      <div class="ritual-icon">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <circle cx="16" cy="16" r="10" fill="var(--accent)" opacity="0.1"/>
+          <path d="M24 16A8 8 0 1116 8a8 8 0 008 8z" fill="var(--accent)" opacity="0.2"/>
+          <path d="M20 12l-6 6-3-3" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h2 class="ritual-title">End of day</h2>
+      <p class="ritual-sub">You completed <strong>{completedCount}</strong> of <strong>{todayTasks.length}</strong> tasks today</p>
+
+      {#if todayTasks.length > 0}
+        <div class="ritual-tasks">
+          {#each todayTasks as t}
+            <div class="ritual-task" class:rt-done={t.completed}>
+              <span>{t.title}</span>
+              {#if t.completed}
+                <span class="rt-check">&#10003;</span>
+              {/if}
+            </div>
+          {/each}
+        </div>
+      {/if}
+
+      <div class="ritual-input-row">
+        <input
+          type="text"
+          class="ritual-input"
+          placeholder="Add a task for tomorrow..."
+          bind:value={ritualTitle}
+          onkeydown={(e) => { if (e.key === 'Enter') handleRitualSubmit() }}
+        />
+        <button class="ritual-add-btn" aria-label="Add task" onclick={handleRitualSubmit} disabled={!ritualTitle.trim()}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="ritual-actions">
+        <button class="ritual-btn primary" onclick={completeEvening}>Close the day</button>
+        <button class="ritual-btn secondary" onclick={skipEvening}>Skip</button>
+      </div>
+    </div>
+  </div>
+{/if}
 
 <style>
   .app {
@@ -563,11 +788,22 @@
   .header-actions {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
+  }
+
+  .points-badge {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--surface);
+    padding: 2px 10px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    letter-spacing: 0.3px;
   }
 
   .date {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--text-secondary);
     font-weight: 500;
   }
@@ -838,6 +1074,319 @@
     margin-top: 4px;
   }
 
+  /* --- Timeline --- */
+  .timeline {
+    position: relative;
+    margin: 0 0 16px;
+    border-radius: var(--radius);
+    overflow: visible;
+  }
+
+  .timeline-bg {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .tl-hour {
+    position: absolute;
+    left: 0;
+    right: 0;
+    border-top: 1px solid var(--border);
+    height: 0;
+  }
+
+  .tl-label {
+    position: absolute;
+    left: 0;
+    top: -7px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    width: 40px;
+    text-align: right;
+    padding-right: 10px;
+  }
+
+  .tl-task {
+    position: absolute;
+    left: 48px;
+    right: 0;
+    background: var(--surface);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    transition: height 0.2s ease, opacity 0.2s;
+    overflow: hidden;
+  }
+
+  .tl-task.completed {
+    opacity: 0.4;
+  }
+
+  .tl-task::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--accent);
+    border-radius: 3px 0 0 3px;
+  }
+
+  .tl-task.completed::before {
+    background: var(--complete);
+  }
+
+  .tl-main {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 10px;
+    cursor: pointer;
+  }
+
+  .tl-check {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-top: 1px;
+    transition: all 0.2s;
+    background: transparent;
+    padding: 0;
+  }
+
+  .tl-check.checked {
+    background: var(--complete);
+    border-color: var(--complete);
+    color: #fff;
+  }
+
+  .tl-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .tl-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .tl-task.completed .tl-title {
+    text-decoration: line-through;
+    color: var(--text-secondary);
+  }
+
+  .tl-time {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .tl-del {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    background: transparent;
+    padding: 0;
+    transition: all 0.15s;
+  }
+
+  .tl-del:hover {
+    background: var(--surface-hover);
+    color: var(--text-secondary);
+  }
+
+  .now-line {
+    position: absolute;
+    left: 48px;
+    right: 0;
+    height: 2px;
+    background: var(--accent);
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  .now-line::before {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: -4px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  /* --- Unscheduled --- */
+  .unscheduled {
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+    margin-top: 4px;
+  }
+
+  .us-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+
+  .us-task {
+    background: var(--surface);
+    border-radius: 8px;
+    margin-bottom: 6px;
+    border: 1px solid var(--border);
+    transition: all 0.15s;
+    overflow: hidden;
+  }
+
+  .us-task.completed {
+    opacity: 0.45;
+  }
+
+  .us-main {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    cursor: pointer;
+  }
+
+  .us-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .us-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .us-task.completed .us-title {
+    text-decoration: line-through;
+    color: var(--text-secondary);
+  }
+
+  /* --- Subtasks --- */
+  .subtask-list {
+    border-top: 1px solid var(--border);
+    padding: 6px 10px 8px 14px;
+    overflow: hidden;
+  }
+
+  .subtask-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+  }
+
+  .subtask-item.st-done {
+    opacity: 0.5;
+  }
+
+  .st-check {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    background: transparent;
+    padding: 0;
+    transition: all 0.15s;
+  }
+
+  .st-check.checked {
+    background: var(--complete);
+    border-color: var(--complete);
+    color: #fff;
+  }
+
+  .st-title {
+    font-size: 12px;
+    color: var(--text-secondary);
+    flex: 1;
+    min-width: 0;
+  }
+
+  .subtask-item.st-done .st-title {
+    text-decoration: line-through;
+    color: var(--text-muted);
+  }
+
+  .st-del {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-muted);
+    background: transparent;
+    padding: 0;
+    transition: all 0.1s;
+  }
+
+  .st-del:hover {
+    background: var(--surface-hover);
+    color: var(--text-secondary);
+  }
+
+  .st-add {
+    padding: 4px 0 2px;
+  }
+
+  .st-input {
+    width: 100%;
+    padding: 6px 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 12px;
+  }
+
+  .st-input::placeholder {
+    color: var(--text-muted);
+  }
+
+  .st-input:focus {
+    border-color: var(--accent);
+  }
+
   /* --- Focus Timer --- */
   .focus-view {
     flex: 1;
@@ -960,227 +1509,150 @@
     color: var(--text);
   }
 
-  /* --- Points --- */
-  .points-badge {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--accent);
-    background: var(--surface);
-    padding: 2px 10px;
-    border-radius: 12px;
-    border: 1px solid var(--border);
-    letter-spacing: 0.3px;
-  }
-
-  /* --- Timeline --- */
-  .timeline {
-    position: relative;
-    margin: 0 0 16px;
-    border-radius: var(--radius);
-    overflow: visible;
-  }
-
-  .timeline-bg {
-    position: absolute;
+  /* --- Ritual Modals --- */
+  .ritual-overlay {
+    position: fixed;
     inset: 0;
-    pointer-events: none;
-  }
-
-  .tl-hour {
-    position: absolute;
-    left: 0;
-    right: 0;
-    border-top: 1px solid var(--border);
-    height: 0;
-  }
-
-  .tl-label {
-    position: absolute;
-    left: 0;
-    top: -7px;
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--text-muted);
-    width: 40px;
-    text-align: right;
-    padding-right: 10px;
-  }
-
-  .tl-task {
-    position: absolute;
-    left: 48px;
-    right: 0;
+    background: rgba(0,0,0,0.35);
     display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    padding: 8px 10px;
-    background: var(--surface);
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    box-shadow: var(--shadow);
-    transition: all 0.15s;
-    overflow: hidden;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    z-index: 100;
   }
 
-  .tl-task.completed {
+  .ritual-card {
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 28px 24px 20px;
+    width: 100%;
+    max-width: 340px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    text-align: center;
+  }
+
+  .ritual-icon {
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .ritual-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .ritual-sub {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+  }
+
+  .ritual-input-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .ritual-input {
+    flex: 1;
+    padding: 10px 14px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 14px;
+  }
+
+  .ritual-input:focus {
+    border-color: var(--accent);
+  }
+
+  .ritual-add-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: var(--accent);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s;
+  }
+
+  .ritual-add-btn:hover {
+    background: var(--accent-hover);
+  }
+
+  .ritual-add-btn:disabled {
     opacity: 0.4;
   }
 
-  .tl-task::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    background: var(--accent);
-    border-radius: 3px 0 0 3px;
+  .ritual-tasks {
+    text-align: left;
+    margin-bottom: 16px;
   }
 
-  .tl-task.completed::before {
-    background: var(--complete);
-  }
-
-  .tl-check {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    border: 2px solid var(--border);
+  .ritual-task {
     display: flex;
     align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    flex-shrink: 0;
-    margin-top: 1px;
-    transition: all 0.2s;
-    background: transparent;
-    padding: 0;
+    justify-content: space-between;
+    padding: 8px 10px;
+    font-size: 13px;
+    color: var(--text);
+    border-radius: 6px;
+    background: var(--bg);
+    margin-bottom: 4px;
   }
 
-  .tl-check.checked {
-    background: var(--complete);
-    border-color: var(--complete);
-    color: #fff;
+  .ritual-task.rt-done {
+    opacity: 0.5;
+    text-decoration: line-through;
+    color: var(--text-secondary);
   }
 
-  .tl-body {
-    flex: 1;
-    min-width: 0;
+  .rt-check {
+    color: var(--complete);
+    font-size: 12px;
+  }
+
+  .ritual-actions {
     display: flex;
     flex-direction: column;
-    gap: 1px;
-  }
-
-  .tl-title {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text);
-    line-height: 1.3;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .tl-task.completed .tl-title {
-    text-decoration: line-through;
-    color: var(--text-secondary);
-  }
-
-  .tl-time {
-    font-size: 10px;
-    color: var(--text-muted);
-    font-weight: 500;
-  }
-
-  .tl-del {
-    width: 22px;
-    height: 22px;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    color: var(--text-muted);
-    flex-shrink: 0;
-    background: transparent;
-    padding: 0;
-    transition: all 0.15s;
-  }
-
-  .tl-del:hover {
-    background: var(--surface-hover);
-    color: var(--text-secondary);
-  }
-
-  .now-line {
-    position: absolute;
-    left: 48px;
-    right: 0;
-    height: 2px;
-    background: var(--accent);
-    z-index: 10;
-    pointer-events: none;
-  }
-
-  .now-line::before {
-    content: '';
-    position: absolute;
-    left: -6px;
-    top: -4px;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: var(--accent);
-  }
-
-  /* --- Unscheduled section --- */
-  .unscheduled {
-    border-top: 1px solid var(--border);
-    padding-top: 12px;
-    margin-top: 4px;
-  }
-
-  .us-header {
-    display: flex;
-    align-items: center;
     gap: 6px;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 8px;
   }
 
-  .us-task {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
-    background: var(--surface);
-    border-radius: 8px;
-    margin-bottom: 6px;
-    border: 1px solid var(--border);
-    transition: all 0.15s;
-  }
-
-  .us-task.completed {
-    opacity: 0.45;
-  }
-
-  .us-body {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .us-title {
+  .ritual-btn {
+    padding: 10px;
+    border-radius: 10px;
     font-size: 14px;
     font-weight: 500;
-    color: var(--text);
+    cursor: pointer;
+    transition: all 0.15s;
   }
 
-  .us-task.completed .us-title {
-    text-decoration: line-through;
+  .ritual-btn.primary {
+    background: var(--accent);
+    color: #fff;
+    border: 1px solid transparent;
+  }
+
+  .ritual-btn.primary:hover {
+    background: var(--accent-hover);
+  }
+
+  .ritual-btn.secondary {
+    background: transparent;
     color: var(--text-secondary);
+    border: none;
+    font-size: 13px;
+  }
+
+  .ritual-btn.secondary:hover {
+    color: var(--text);
   }
 </style>

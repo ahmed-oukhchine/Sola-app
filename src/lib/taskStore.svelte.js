@@ -42,6 +42,8 @@ export function addTask(title, startTime = '', endTime = '') {
     endTime,
     completed: false,
     unscheduled: !startTime,
+    subtasks: [],
+    expanded: false,
     createdAt: Date.now()
   }
   store.tasks.push(task)
@@ -61,6 +63,45 @@ export function toggleTask(id) {
 export function removeTask(id) {
   store.tasks = store.tasks.filter(t => t.id !== id)
   save(store.tasks)
+}
+
+export function toggleExpand(id) {
+  const t = store.tasks.find(t => t.id === id)
+  if (t) {
+    t.expanded = !t.expanded
+    save(store.tasks)
+  }
+}
+
+export function addSubtask(taskId, title) {
+  const t = store.tasks.find(t => t.id === taskId)
+  if (t) {
+    t.subtasks.push({
+      id: crypto.randomUUID(),
+      title,
+      completed: false
+    })
+    save(store.tasks)
+  }
+}
+
+export function toggleSubtask(taskId, subtaskId) {
+  const t = store.tasks.find(t => t.id === taskId)
+  if (t) {
+    const s = t.subtasks.find(s => s.id === subtaskId)
+    if (s) {
+      s.completed = !s.completed
+      save(store.tasks)
+    }
+  }
+}
+
+export function removeSubtask(taskId, subtaskId) {
+  const t = store.tasks.find(t => t.id === taskId)
+  if (t) {
+    t.subtasks = t.subtasks.filter(s => s.id !== subtaskId)
+    save(store.tasks)
+  }
 }
 
 const scheduledTimeouts = new Map()

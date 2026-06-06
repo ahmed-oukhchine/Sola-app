@@ -22,7 +22,7 @@ function saveTasks() {
   saveTo(TASKS_KEY, store.tasks)
 }
 
-export function addTask(title, startTime = '', endTime = '', energy = null) {
+export function addTask(title, startTime = '', endTime = '', energy = null, repeat = null) {
   const task = {
     id: crypto.randomUUID(),
     title,
@@ -34,6 +34,7 @@ export function addTask(title, startTime = '', endTime = '', energy = null) {
     subtasks: [],
     expanded: false,
     energy,
+    repeat,
     createdAt: Date.now()
   }
   store.tasks.push(task)
@@ -50,12 +51,20 @@ export function toggleTask(id) {
   }
 }
 
-export function updateEnergy(id, energy) {
+export function updateTask(id, fields) {
   const t = store.tasks.find(t => t.id === id)
   if (t) {
-    t.energy = energy
+    if (fields.title !== undefined) t.title = fields.title
+    if (fields.startTime !== undefined) t.startTime = fields.startTime
+    if (fields.endTime !== undefined) t.endTime = fields.endTime
+    if (fields.energy !== undefined) t.energy = fields.energy
+    t.unscheduled = !t.startTime
     saveTasks()
   }
+}
+
+export function updateEnergy(id, energy) {
+  updateTask(id, { energy })
 }
 
 export function removeTask(id) {
@@ -248,4 +257,42 @@ export function scheduleAll() {
   for (const [key, id] of scheduledTimeouts) { clearTimeout(id) }
   scheduledTimeouts.clear()
   for (const t of store.tasks) { scheduleNotifications(t) }
+}
+
+// --- Recurring Tasks ---
+export function generateRecurringTasks() {
+  const today = new Date().toISOString().split('T')[0]
+  const dayOfWeek = new Date().getDay()
+  const recurring = store.tasks.filter(t => t.repeat && !t.completed)
+  for (const t of recurring) {
+    const shouldCreate = t.repeat === 'daily' ||
+      (t.repeat === 'weekday' && dayOfWeek > 0 && dayOfWeek < 6) ||
+      (t.repeat === 'weekly' && new Date(t.date).getDay() === dayOfWeek)
+    if (shouldCreate && !store.tasks.some(x => x.title === t.title && x.date === today)) {
+      const task = { ...t, id: crypto.randomUUID(), date: today, completed: false, subtasks: [], expanded: false, createdAt: Date.now() }
+      store.tasks.push(task)
+      scheduleNotifications(task)
+    }
+  }
+  saveTasks()
+}
+
+// --- Export / Import ---
+export function exportData() {
+  return JSON.stringify({
+    tasks: store.tasks,
+    inbox: inbox.items,
+    someday: someday.items,
+    routines: routines.items,
+    points: loadPoints()
+  }, null, 2)
+}
+
+export function importData(json) {
+  const d = JSON.parse(json)
+  if (d.tasks) { store.tasks = d.tasks; saveTo(TASKS_KEY, d.tasks) }
+  if (d.inbox) { inbox.items = d.inbox; saveTo(INBOX_KEY, d.inbox) }
+  if (d.someday) { someday.items = d.someday; saveTo(SOMEDAY_KEY, d.someday) }
+  if (d.routines) { routines.items = d.routines; saveTo(ROUTINES_KEY, d.routines) }
+  if (d.points != null) savePoints(d.points)
 }

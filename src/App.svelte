@@ -3,7 +3,7 @@
   import { onMount } from 'svelte'
   import Sidebar from './lib/Sidebar.svelte'
   import {
-    store, addTask, toggleTask, removeTask, updateEnergy,
+    store, addTask, toggleTask, removeTask, updateTask, exportData, importData, generateRecurringTasks,
     addSubtask, toggleSubtask, removeSubtask, toggleExpand,
     inbox, addToInbox, removeFromInbox, moveInboxToToday,
     someday, addToSomeday, removeFromSomeday, moveSomedayToToday,
@@ -19,6 +19,8 @@
   let points = $state(loadPoints())
   let streak = $state(computeStreak())
   let nextAction = $state(false)
+  let hideCompleted = $state(false)
+  let searchQuery = $state('')
   let showMorning = $state(false)
   let showEvening = $state(false)
   let ritualTitle = $state('')
@@ -91,6 +93,7 @@
     requestPermission()
     scheduleAll()
     checkRituals()
+    generateRecurringTasks()
     setInterval(() => {
       now = new Date()
       streak = computeStreak()
@@ -116,10 +119,11 @@
     return !t.unscheduled && sh * 60 + sm > n
   }))
   let dayStr = $derived(new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }))
-  let timedTasks = $derived(todayTasks.filter(t => !t.unscheduled))
-  let unscheduledTasks = $derived(todayTasks.filter(t => t.unscheduled))
+  let timedTasks = $derived(todayTasks.filter(t => !t.unscheduled && (!hideCompleted || !t.completed) && t.title.toLowerCase().includes(searchQuery.toLowerCase())))
+  let unscheduledTasks = $derived(todayTasks.filter(t => t.unscheduled && (!hideCompleted || !t.completed) && t.title.toLowerCase().includes(searchQuery.toLowerCase())))
   let actionTask = $derived(currentTask || nextTask || todayTasks.find(t => !t.completed))
   let completedCount = $derived(todayTasks.filter(t => t.completed).length)
+  let completionRate = $derived(store.tasks.length ? Math.round(store.tasks.filter(t => t.completed).length / store.tasks.length * 100) : 0)
 
   // Timeline
   const START_H = 5, END_H = 23, HOUR_H = 64
@@ -137,9 +141,9 @@
   let nowLineTop = $derived(((now.getHours() * 60 + now.getMinutes() - START_H * 60) / 60) * HOUR_H)
 
   // Form
-  let title = $state(''), startTime = $state(''), endTime = $state(''), taskEnergy = $state(null), showForm = $state(false)
+  let title = $state(''), startTime = $state(''), endTime = $state(''), taskEnergy = $state(null), taskRepeat = $state(null), showForm = $state(false)
   function openForm() {
-    showForm = true; taskEnergy = null
+    showForm = true; taskEnergy = null; taskRepeat = null
     const h = now.getHours(), m = now.getMinutes()
     const r = Math.ceil(m / 15) * 15
     startTime = `${String(r >= 60 ? h + 1 : h).padStart(2, '0')}:${String(r >= 60 ? 0 : r).padStart(2, '0')}`
@@ -148,7 +152,7 @@
   }
   function handleSubmit() {
     if (!title.trim()) return
-    addTask(title.trim(), startTime, endTime, taskEnergy)
+    addTask(title.trim(), startTime, endTime, taskEnergy, taskRepeat)
     title = ''; startTime = ''; endTime = ''; taskEnergy = null; showForm = false
   }
   function timeDisplay(t) {
@@ -193,6 +197,7 @@
   let timerMinutes = $state(25), timerRemaining = $state(25 * 60)
   let timerRunning = $state(false), timerPaused = $state(false), timerStart = $state(0)
   let timerPauseRemaining = $state(0), tickInterval = $state(null), doTick = $state(false), prevSecond = $state(-1)
+  let pomodoroActive = $state(false), pomodoroSession = $state('focus'), pomodoroCount = $state(0)
   let timerDisplay = $derived.by(() => {
     const m = Math.floor(timerRemaining / 60), s = Math.floor(timerRemaining % 60)
     return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
@@ -201,6 +206,26 @@
     !timerRunning && timerRemaining === timerMinutes * 60 ? 'ready' :
     timerRunning ? 'running' : timerPaused ? 'paused' : timerRemaining <= 0 ? 'done' : 'ready'
   )
+  function playTimerSound() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)()
+      const play = (freq, start, dur) => {
+        const o = ctx.createOscillator()
+        const g = ctx.createGain()
+        o.frequency.value = freq
+        o.type = 'sine'
+        g.gain.setValueAtTime(0.3, start)
+        g.gain.exponentialRampToValueAtTime(0.01, start + dur)
+        o.connect(g).connect(ctx.destination)
+        o.start(start)
+        o.stop(start + dur)
+      }
+      play(880, ctx.currentTime, 0.15)
+      play(660, ctx.currentTime + 0.15, 0.15)
+      play(880, ctx.currentTime + 0.3, 0.15)
+      play(1100, ctx.currentTime + 0.45, 0.4)
+    } catch {}
+  }
   function setPreset(m) { if (!timerRunning && !timerPaused) { timerMinutes = m; timerRemaining = m * 60 } }
   function timerTick() {
     if (!timerRunning) return
@@ -211,6 +236,19 @@
     if (cs !== prevSecond) { prevSecond = cs; doTick = true; setTimeout(() => doTick = false, 200) }
     if (remaining <= 0) {
       clearInterval(tickInterval); tickInterval = null; timerRunning = false
+      playTimerSound()
+      if (pomodoroActive) {
+        if (pomodoroSession === 'focus') {
+          pomodoroSession = 'break'; pomodoroCount++
+          const bm = pomodoroCount % 4 === 0 ? 15 : 5
+          timerMinutes = bm; timerRemaining = bm * 60
+          startTimerv()
+        } else {
+          pomodoroSession = 'focus'
+          timerMinutes = 25; timerRemaining = 25 * 60
+          startTimerv()
+        }
+      }
       if ('Notification' in window && Notification.permission === 'granted') new Notification('Focus', { body: 'Session complete!' })
       if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400])
     }
@@ -220,6 +258,60 @@
   function resumeTimer() { if (!timerPaused) return; timerRunning = true; timerPaused = false; timerStart = Date.now(); timerPauseRemaining = timerRemaining; tickInterval = setInterval(timerTick, 50) }
   function resetTimer() { timerRunning = false; timerPaused = false; clearInterval(tickInterval); tickInterval = null; timerRemaining = timerMinutes * 60 }
   $effect(() => () => { if (tickInterval) clearInterval(tickInterval) })
+
+  // Edit mode
+  let editTask = $state(null)
+  let editTitle = $state(''), editStart = $state(''), editEnd = $state(''), editEnergy = $state(null)
+  function startEdit(t) {
+    editTask = t.id
+    editTitle = t.title
+    editStart = t.startTime
+    editEnd = t.endTime
+    editEnergy = t.energy
+  }
+  function saveEdit() {
+    if (!editTitle.trim()) return
+    updateTask(editTask, { title: editTitle.trim(), startTime: editStart, endTime: editEnd, energy: editEnergy })
+    editTask = null
+  }
+  function cancelEdit() { editTask = null }
+
+  // Swipe
+  let swipingId = $state(null), swipeStartX = $state(0), swipeDelta = $state(0)
+  function touchStart(e, id) { swipingId = id; swipeStartX = e.touches[0].clientX }
+  function touchMove(e) {
+    if (!swipingId) return
+    swipeDelta = e.touches[0].clientX - swipeStartX
+    if (Math.abs(swipeDelta) > 10) e.preventDefault()
+  }
+  function touchEnd(e, task) {
+    if (!swipingId) return
+    const dx = swipeDelta
+    swipingId = null; swipeDelta = 0
+    if (dx < -80) removeTask(task.id)
+    else if (dx > 80) { const was = task.completed; toggleTask(task.id); if (!was) { addPoints(10); streak = computeStreak() } }
+  }
+
+  // Export / Import
+  function handleExport() {
+    const blob = new Blob([exportData()], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = `focus-backup-${todayStr}.json`; a.click()
+    URL.revokeObjectURL(url)
+  }
+  function handleImport() {
+    const input = document.createElement('input')
+    input.type = 'file'; input.accept = '.json'
+    input.onchange = async () => {
+      try {
+        const text = await input.files[0].text()
+        importData(text)
+        points = loadPoints(); streak = computeStreak()
+      } catch (e) { alert('Invalid backup file') }
+    }
+    input.click()
+  }
 
   // Subtask inputs
   let subtaskInputs = $state({})
@@ -241,6 +333,8 @@
   onNavigate={(v) => activeView = v}
   onClose={() => sidebarOpen = false}
   onThemeCycle={cycleTheme}
+  onExport={handleExport}
+  onImport={handleImport}
 />
 
 <div class="app">
@@ -261,6 +355,8 @@
     <div class="view-toolbar">
       <button class="view-btn" class:active={!nextAction} onclick={() => nextAction = false}>All</button>
       <button class="view-btn" class:active={nextAction} onclick={() => nextAction = true}>Next action</button>
+      <button class="view-btn" class:active={hideCompleted} onclick={() => hideCompleted = !hideCompleted}>Focus</button>
+      <input type="search" class="search-input" placeholder="Search..." bind:value={searchQuery} />
     </div>
 
     {#if nextAction && actionTask}
@@ -300,6 +396,13 @@
             <button type="button" class="energy-btn" class:selected={taskEnergy === 'medium'} onclick={() => taskEnergy = taskEnergy === 'medium' ? null : 'medium'}>Med</button>
             <button type="button" class="energy-btn" class:selected={taskEnergy === 'high'} onclick={() => taskEnergy = taskEnergy === 'high' ? null : 'high'}>High</button>
           </div>
+          <div class="repeat-row">
+            <span class="energy-label">Repeat</span>
+            <button type="button" class="energy-btn" class:selected={taskRepeat === null} onclick={() => taskRepeat = null}>None</button>
+            <button type="button" class="energy-btn" class:selected={taskRepeat === 'daily'} onclick={() => taskRepeat = 'daily'}>Daily</button>
+            <button type="button" class="energy-btn" class:selected={taskRepeat === 'weekday'} onclick={() => taskRepeat = 'weekday'}>Weekdays</button>
+            <button type="button" class="energy-btn" class:selected={taskRepeat === 'weekly'} onclick={() => taskRepeat = 'weekly'}>Weekly</button>
+          </div>
           <div class="form-actions">
             <button type="button" class="btn btn-cancel" onclick={() => showForm = false}>Cancel</button>
             <button type="submit" class="btn btn-save" disabled={!title.trim()}>Save</button>
@@ -324,21 +427,44 @@
               <div class="now-line" style="top: {nowLineTop}px"></div>
             {/if}
             {#each timedTasks as task (task.id)}
-              <div class="tl-task" class:completed={task.completed} class:expanded={task.expanded} style="top: {taskTop(task)}px; height: {taskHeight(task)}px" transition:fly={{ y: 8, duration: 200, opacity: 0 }}>
+              <div class="tl-task" role="button" tabindex="-1" class:completed={task.completed} class:expanded={task.expanded} style="top: {taskTop(task)}px; height: {taskHeight(task)}px; touch-action:pan-y" transition:fly={{ y: 8, duration: 200, opacity: 0 }} ontouchstart={(e) => touchStart(e, task.id)} ontouchmove={touchMove} ontouchend={(e) => touchEnd(e, task)}>
                 <div class="tl-main" role="button" tabindex="0" onclick={() => toggleExpand(task.id)} onkeydown={(e) => { if (e.key === 'Enter') toggleExpand(task.id) }}>
                   <button class="tl-check" class:checked={task.completed} onclick={(e) => { e.stopPropagation(); const was = task.completed; toggleTask(task.id); if (!was) { addPoints(10); streak = computeStreak() } }}>
                     {#if task.completed}<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6l3 3 4-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>{/if}
                   </button>
-                  <div class="tl-body">
-                    <span class="tl-title">{task.title}</span>
-                    <span class="tl-time">{timeDisplay(task.startTime)} → {timeDisplay(task.endTime)}</span>
-                  </div>
-                  {#if task.energy}
-                    <span class="tl-energy" class:en-low={task.energy === 'low'} class:en-med={task.energy === 'medium'} class:en-high={task.energy === 'high'}>{task.energy}</span>
-                  {/if}
-                  <button class="tl-del" aria-label="Delete" onclick={(e) => { e.stopPropagation(); removeTask(task.id) }}>
+                  {#if editTask === task.id}
+                    <div class="tl-body">
+                      <input type="text" class="edit-input" bind:value={editTitle} />
+                      <div class="edit-time-row">
+                        <input type="time" class="edit-time" bind:value={editStart} />
+                        <span class="time-arrow">→</span>
+                        <input type="time" class="edit-time" bind:value={editEnd} />
+                      </div>
+                      <div class="edit-energy-row">
+                        <button type="button" class="energy-btn sm" class:selected={editEnergy === 'low'} onclick={() => editEnergy = editEnergy === 'low' ? null : 'low'}>Low</button>
+                        <button type="button" class="energy-btn sm" class:selected={editEnergy === 'medium'} onclick={() => editEnergy = editEnergy === 'medium' ? null : 'medium'}>Med</button>
+                        <button type="button" class="energy-btn sm" class:selected={editEnergy === 'high'} onclick={() => editEnergy = editEnergy === 'high' ? null : 'high'}>High</button>
+                      </div>
+                      <div class="edit-actions">
+                        <button class="edit-save" onclick={(e) => { e.stopPropagation(); saveEdit() }}>Save</button>
+                        <button class="edit-cancel" onclick={(e) => { e.stopPropagation(); cancelEdit() }}>Cancel</button>
+                      </div>
+                    </div>
+                  {:else}
+                    <div class="tl-body" role="button" tabindex="-1" ondblclick={(e) => { e.stopPropagation(); startEdit(task) }}>
+                      <span class="tl-title">{task.title}</span>
+                      <span class="tl-time">{timeDisplay(task.startTime)} → {timeDisplay(task.endTime)}</span>
+                    </div>
+                    {#if task.energy}
+                      <span class="tl-energy" class:en-low={task.energy === 'low'} class:en-med={task.energy === 'medium'} class:en-high={task.energy === 'high'}>{task.energy}</span>
+                    {/if}
+                    {#if task.repeat}
+                      <span class="tl-repeat">{task.repeat === 'daily' ? 'D' : task.repeat === 'weekday' ? 'W' : '7'}</span>
+                    {/if}
+                    <button class="tl-del" aria-label="Delete" onclick={(e) => { e.stopPropagation(); removeTask(task.id) }}>
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
                   </button>
+                {/if}
                 </div>
                 {#if task.expanded}
                   <div class="subtask-list" transition:slide={{ duration: 150 }}>
@@ -371,18 +497,41 @@
               Unscheduled
             </div>
             {#each unscheduledTasks as task (task.id)}
-              <div class="us-task" class:completed={task.completed} class:expanded={task.expanded} transition:fly={{ y: 6, duration: 180, opacity: 0 }}>
+              <div class="us-task" role="button" tabindex="-1" class:completed={task.completed} class:expanded={task.expanded} style="touch-action:pan-y" transition:fly={{ y: 6, duration: 180, opacity: 0 }} ontouchstart={(e) => touchStart(e, task.id)} ontouchmove={touchMove} ontouchend={(e) => touchEnd(e, task)}>
                 <div class="us-main" role="button" tabindex="0" onclick={() => toggleExpand(task.id)} onkeydown={(e) => { if (e.key === 'Enter') toggleExpand(task.id) }}>
                   <button class="check" class:checked={task.completed} onclick={(e) => { e.stopPropagation(); const was = task.completed; toggleTask(task.id); if (!was) { addPoints(10); streak = computeStreak() } }}>
                     {#if task.completed}<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6l3 3 4-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>{/if}
                   </button>
-                  <div class="us-body"><span class="us-title">{task.title}</span></div>
-                  {#if task.energy}
-                    <span class="tl-energy" class:en-low={task.energy === 'low'} class:en-med={task.energy === 'medium'} class:en-high={task.energy === 'high'}>{task.energy}</span>
-                  {/if}
-                  <button class="delete" aria-label="Delete" onclick={(e) => { e.stopPropagation(); removeTask(task.id) }}>
+                  {#if editTask === task.id}
+                    <div class="us-body">
+                      <input type="text" class="edit-input" bind:value={editTitle} />
+                      <div class="edit-time-row">
+                        <input type="time" class="edit-time" bind:value={editStart} />
+                        <span class="time-arrow">→</span>
+                        <input type="time" class="edit-time" bind:value={editEnd} />
+                      </div>
+                      <div class="edit-energy-row">
+                        <button type="button" class="energy-btn sm" class:selected={editEnergy === 'low'} onclick={() => editEnergy = editEnergy === 'low' ? null : 'low'}>Low</button>
+                        <button type="button" class="energy-btn sm" class:selected={editEnergy === 'medium'} onclick={() => editEnergy = editEnergy === 'medium' ? null : 'medium'}>Med</button>
+                        <button type="button" class="energy-btn sm" class:selected={editEnergy === 'high'} onclick={() => editEnergy = editEnergy === 'high' ? null : 'high'}>High</button>
+                      </div>
+                      <div class="edit-actions">
+                        <button class="edit-save" onclick={(e) => { e.stopPropagation(); saveEdit() }}>Save</button>
+                        <button class="edit-cancel" onclick={(e) => { e.stopPropagation(); cancelEdit() }}>Cancel</button>
+                      </div>
+                    </div>
+                  {:else}
+                    <div class="us-body" role="button" tabindex="-1" ondblclick={(e) => { e.stopPropagation(); startEdit(task) }}><span class="us-title">{task.title}</span></div>
+                    {#if task.energy}
+                      <span class="tl-energy" class:en-low={task.energy === 'low'} class:en-med={task.energy === 'medium'} class:en-high={task.energy === 'high'}>{task.energy}</span>
+                    {/if}
+                    {#if task.repeat}
+                      <span class="tl-repeat">{task.repeat === 'daily' ? 'D' : task.repeat === 'weekday' ? 'W' : '7'}</span>
+                    {/if}
+                    <button class="delete" aria-label="Delete" onclick={(e) => { e.stopPropagation(); removeTask(task.id) }}>
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
                   </button>
+                {/if}
                 </div>
                 {#if task.expanded}
                   <div class="subtask-list" transition:slide={{ duration: 150 }}>
@@ -442,13 +591,16 @@
         <div class="timer-digits" class:tick={doTick}>{timerDisplay}</div>
       </div>
       <div class="timer-status-text">
-        {timerStatus === 'ready' ? 'Ready to focus' : timerStatus === 'running' ? 'Focusing...' : timerStatus === 'paused' ? 'Paused' : 'Session complete!'}
+        {timerStatus === 'ready' ? (pomodoroActive ? `Ready for ${pomodoroSession}` : 'Ready to focus') : timerStatus === 'running' ? (pomodoroActive ? `${pomodoroSession}...` : 'Focusing...') : timerStatus === 'paused' ? 'Paused' : 'Session complete!'}
       </div>
       <div class="presets">
         {#each PRESETS as m}
           <button class="preset-btn" class:active={timerMinutes === m && timerStatus === 'ready'} onclick={() => setPreset(m)} disabled={timerRunning || timerPaused}>{m}m</button>
         {/each}
       </div>
+      <button class="pomo-btn" class:active={pomodoroActive} onclick={() => { pomodoroActive = !pomodoroActive; if (!pomodoroActive) resetTimer() }}>
+        {pomodoroActive ? `🍅 ${pomodoroSession} ${pomodoroCount > 0 ? `(${pomodoroCount})` : ''}` : '🍅 Pomodoro'}
+      </button>
       <div class="timer-controls">
         {#if timerStatus === 'ready'}
           <button class="timer-btn primary" onclick={startTimerv} disabled={timerMinutes <= 0}>Start</button>
@@ -544,6 +696,26 @@
         </div>
       {/if}
     </main>
+  {:else if activeView === 'stats'}
+    <main class="view-content">
+      <h2 class="view-title">Statistics</h2>
+      <p class="view-sub">Your progress at a glance</p>
+      <div class="stats-grid">
+        <div class="stat-card"><span class="stat-num">✦{points}</span><span class="stat-label">Points</span></div>
+        <div class="stat-card"><span class="stat-num">🔥{streak}</span><span class="stat-label">Day streak</span></div>
+        <div class="stat-card"><span class="stat-num">{completedCount}/{todayTasks.length}</span><span class="stat-label">Today</span></div>
+        <div class="stat-card"><span class="stat-num">{Math.round(completionRate)}%</span><span class="stat-label">All time</span></div>
+      </div>
+      <h3 class="view-sub" style="margin-top:20px">Recent completions</h3>
+      <div class="inbox-list">
+        {#each [...store.tasks].reverse().filter(t => t.completed).slice(0, 20) as t (t.id)}
+          <div class="inbox-item"><span class="inbox-text">&#10003; {t.title}</span><span class="date">{t.date}</span></div>
+        {/each}
+        {#if store.tasks.filter(t => t.completed).length === 0}
+          <div class="empty"><p>No completions yet</p></div>
+        {/if}
+      </div>
+    </main>
   {/if}
 </div>
 
@@ -629,6 +801,7 @@
   .view-btn { padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 500; color: var(--text-secondary); cursor: pointer; background: transparent; transition: all 0.12s; }
   .view-btn:hover { background: var(--surface-hover); color: var(--text); }
   .view-btn.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+  .search-input { flex: 1; min-width: 60px; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 12px; }
 
   .next-action-card { margin: 0 20px 16px; padding: 20px; background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); text-align: center; box-shadow: var(--shadow); flex-shrink: 0; }
   .na-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
@@ -660,6 +833,8 @@
   .energy-btn { padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 500; color: var(--text-secondary); background: var(--surface); border: 1px solid var(--border); cursor: pointer; transition: all 0.12s; }
   .energy-btn:hover { border-color: var(--accent); }
   .energy-btn.selected { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .repeat-row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-bottom: 12px; }
 
   .form-actions { display: flex; gap: 8px; }
   .btn { flex: 1; padding: 10px; border-radius: 10px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
@@ -696,6 +871,7 @@
   .tl-energy.en-low { background: rgba(100, 100, 200, 0.15); color: #7788cc; }
   .tl-energy.en-med { background: rgba(150, 130, 80, 0.15); color: #b0a070; }
   .tl-energy.en-high { background: rgba(130, 180, 100, 0.15); color: #80a060; }
+  .tl-repeat { font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 4px; background: var(--border); color: var(--text-muted); flex-shrink: 0; }
   .tl-del { width: 22px; height: 22px; border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); flex-shrink: 0; background: transparent; padding: 0; transition: all 0.15s; }
   .tl-del:hover { background: var(--surface-hover); color: var(--text-secondary); }
   .now-line { position: absolute; left: 48px; right: 0; height: 2px; background: var(--accent); z-index: 10; pointer-events: none; }
@@ -760,6 +936,8 @@
   .timer-btn.secondary:hover { background: var(--surface-hover); color: var(--text); }
   .just5 { display: flex; align-items: center; gap: 6px; margin-top: 8px; padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--text-secondary); background: transparent; border: 1px dashed var(--border); cursor: pointer; transition: all 0.15s; }
   .just5:hover { border-color: var(--accent); color: var(--text); }
+  .pomo-btn { margin-top: 8px; padding: 6px 16px; border-radius: 8px; font-size: 12px; font-weight: 500; color: var(--text-secondary); background: var(--surface); border: 1px solid var(--border); cursor: pointer; transition: all 0.15s; }
+  .pomo-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
   .routine-add-row { display: flex; gap: 8px; margin-bottom: 16px; }
   .routine-select { padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 14px; }
@@ -803,4 +981,18 @@
   .ritual-btn.primary:hover { background: var(--accent-hover); }
   .ritual-btn.secondary { background: transparent; color: var(--text-secondary); border: none; font-size: 13px; }
   .ritual-btn.secondary:hover { color: var(--text); }
+
+  .edit-input { width: 100%; padding: 4px 6px; background: var(--bg); border: 1px solid var(--accent); border-radius: 4px; color: var(--text); font-size: 13px; margin-bottom: 4px; }
+  .edit-time-row { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
+  .edit-time { padding: 2px 4px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-size: 11px; flex: 1; }
+  .edit-energy-row { display: flex; gap: 4px; margin-bottom: 4px; }
+  .energy-btn.sm { padding: 2px 8px; font-size: 10px; }
+  .edit-actions { display: flex; gap: 4px; }
+  .edit-save { padding: 2px 10px; border-radius: 4px; font-size: 11px; font-weight: 500; background: var(--accent); color: #fff; cursor: pointer; border: none; }
+  .edit-cancel { padding: 2px 10px; border-radius: 4px; font-size: 11px; font-weight: 500; background: var(--surface); color: var(--text-secondary); cursor: pointer; border: 1px solid var(--border); }
+
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px; }
+  .stat-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 16px; text-align: center; }
+  .stat-num { font-size: 22px; font-weight: 700; color: var(--text); display: block; }
+  .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.3px; margin-top: 2px; display: block; }
 </style>

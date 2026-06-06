@@ -1,5 +1,5 @@
 <script>
-  let { open, activeView, streak, points, theme, onNavigate, onClose, onThemeCycle } = $props()
+  let { open, activeView, streak, points, theme, onNavigate, onClose, onThemeCycle, onExport, onImport } = $props()
 
   const VIEWS = [
     { id: 'today', label: 'Today', icon: `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2" y="3" width="14" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2 7h14M6 1v3M12 1v3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>` },
@@ -7,6 +7,7 @@
     { id: 'focus', label: 'Focus', icon: `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="6.5" stroke="currentColor" stroke-width="1.5"/><circle cx="9" cy="9" r="2" fill="currentColor"/></svg>` },
     { id: 'routines', label: 'Routines', icon: `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3 4h12M3 9h12M3 14h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="14" cy="14" r="3" fill="currentColor"/></svg>` },
     { id: 'someday', label: 'Someday', icon: `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 2v6l4 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.5"/></svg>` },
+    { id: 'stats', label: 'Stats', icon: `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2 14h14M4 11l3-5 3 3 4-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>` },
   ]
 </script>
 
@@ -45,6 +46,10 @@
           </svg>
           <span>{theme}</span>
         </button>
+        <div class="sb-io">
+          <button class="sb-io-btn" onclick={onExport}>Export</button>
+          <button class="sb-io-btn" onclick={onImport}>Import</button>
+        </div>
       </div>
     </div>
   </div>
@@ -156,4 +161,8 @@
   .sb-theme:hover {
     color: var(--text);
   }
+
+  .sb-io { display: flex; gap: 6px; }
+  .sb-io-btn { flex: 1; padding: 6px; border-radius: 6px; font-size: 11px; font-weight: 500; color: var(--text-muted); background: var(--bg); border: 1px solid var(--border); cursor: pointer; transition: all 0.12s; }
+  .sb-io-btn:hover { border-color: var(--accent); color: var(--text); }
 </style>

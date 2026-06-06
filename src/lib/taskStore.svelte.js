@@ -17,7 +17,23 @@ function save(t) {
 
 export const store = $state({ tasks: load() })
 
-export function addTask(title, startTime, endTime) {
+const POINTS_KEY = 'focus-points'
+
+export function loadPoints() {
+  try {
+    return parseInt(localStorage.getItem(POINTS_KEY)) || 0
+  } catch {
+    return 0
+  }
+}
+
+export function savePoints(p) {
+  try {
+    localStorage.setItem(POINTS_KEY, String(p))
+  } catch {}
+}
+
+export function addTask(title, startTime = '', endTime = '') {
   const task = {
     id: crypto.randomUUID(),
     title,
@@ -25,6 +41,7 @@ export function addTask(title, startTime, endTime) {
     startTime,
     endTime,
     completed: false,
+    unscheduled: !startTime,
     createdAt: Date.now()
   }
   store.tasks.push(task)

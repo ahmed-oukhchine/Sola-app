@@ -6,6 +6,8 @@
     addTask,
     toggleTask,
     removeTask,
+    loadPoints,
+    savePoints,
     requestPermission,
     scheduleAll
   } from './lib/taskStore.svelte.js'
@@ -61,12 +63,18 @@
   )
 
   function handleSubmit() {
-    if (!title.trim() || !startTime || !endTime) return
+    if (!title.trim()) return
     addTask(title.trim(), startTime, endTime)
     title = ''
     startTime = ''
     endTime = ''
     showForm = false
+  }
+
+  function handleQuickAdd() {
+    if (!title.trim()) return
+    addTask(title.trim())
+    title = ''
   }
 
   function timeDisplay(t) {
@@ -93,6 +101,49 @@
     showForm = true
     setDefaultTimes()
   }
+
+  // --- Points ---
+  let points = $state(loadPoints())
+
+  function addPoints(amount) {
+    points += amount
+    savePoints(points)
+  }
+
+  // --- Timeline ---
+  const START_H = 5
+  const END_H = 23
+  const HOUR_H = 64
+  const TOTAL_H = (END_H - START_H) * HOUR_H
+  const HOURS = Array.from({ length: END_H - START_H }, (_, i) => START_H + i)
+
+  let timedTasks = $derived(
+    todayTasks.filter(t => !t.unscheduled)
+  )
+
+  let unscheduledTasks = $derived(
+    todayTasks.filter(t => t.unscheduled)
+  )
+
+  function taskTop(task) {
+    const [sh, sm] = task.startTime.split(':').map(Number)
+    const mins = sh * 60 + sm
+    const startMins = START_H * 60
+    return ((mins - startMins) / 60) * HOUR_H
+  }
+
+  function taskHeight(task) {
+    const [sh, sm] = task.startTime.split(':').map(Number)
+    const [eh, em] = task.endTime ? task.endTime.split(':').map(Number) : [sh + 1, sm]
+    const duration = (eh * 60 + em) - (sh * 60 + sm)
+    return Math.max((duration / 60) * HOUR_H, 36)
+  }
+
+  let nowLineTop = $derived.by(() => {
+    const n = now.getHours() * 60 + now.getMinutes()
+    const s = START_H * 60
+    return ((n - s) / 60) * HOUR_H
+  })
 
   // --- Theme ---
   let theme = $state(localStorage.getItem('focus-theme') || 'system')
@@ -254,6 +305,7 @@
   <header class="header">
     <h1 class="logo">focus</h1>
     <div class="header-actions">
+      <span class="points-badge">✦ {points}</span>
       <span class="date">{dayStr}</span>
       <button class="theme-btn" onclick={cycleTheme} aria-label="Toggle theme" title={theme}>
         {@html THEME_ICONS[theme]}
@@ -322,9 +374,10 @@
             <input id="end-time" type="time" class="input" bind:value={endTime} />
           </div>
         </div>
+        <p class="time-optional">Leave times blank for unscheduled tasks</p>
         <div class="form-actions">
           <button type="button" class="btn btn-cancel" onclick={() => showForm = false}>Cancel</button>
-          <button type="submit" class="btn btn-save" disabled={!title.trim() || !startTime || !endTime}>Save</button>
+          <button type="submit" class="btn btn-save" disabled={!title.trim()}>Save</button>
         </div>
       </form>
     {:else}
@@ -337,40 +390,94 @@
     {/if}
 
     <main class="task-list">
-      {#each todayTasks as task (task.id)}
-        <div
-          class="task-card"
-          class:completed={task.completed}
-          transition:fly={{ y: 8, duration: 200, opacity: 0 }}
-        >
-          <button
-            class="check"
-            class:checked={task.completed}
-            onclick={() => toggleTask(task.id)}
-            aria-label={task.completed ? 'Mark incomplete' : 'Mark complete'}
-          >
-            {#if task.completed}
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <path d="M3 7l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
-            {/if}
-          </button>
-          <div class="card-body">
-            <span class="card-title">{task.title}</span>
-            <span class="card-time">{timeDisplay(task.startTime)} &rarr; {timeDisplay(task.endTime)}</span>
+      {#if timedTasks.length > 0}
+        <div class="timeline" style="height: {TOTAL_H}px">
+          <div class="timeline-bg">
+            {#each HOURS as h}
+              <div class="tl-hour" style="top: {(h - START_H) * HOUR_H}px">
+                <span class="tl-label">{h % 12 || 12}{h >= 12 ? 'p' : 'a'}</span>
+              </div>
+            {/each}
           </div>
-          <button class="delete" onclick={() => removeTask(task.id)} aria-label="Delete task">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-            </svg>
-          </button>
-        </div>
-      {/each}
 
-      {#if todayTasks.length === 0}
+          {#if nowLineTop >= 0 && nowLineTop <= TOTAL_H}
+            <div class="now-line" style="top: {nowLineTop}px"></div>
+          {/if}
+
+          {#each timedTasks as task (task.id)}
+            <div
+              class="tl-task"
+              class:completed={task.completed}
+              style="top: {taskTop(task)}px; height: {taskHeight(task)}px"
+              transition:fly={{ y: 8, duration: 200, opacity: 0 }}
+            >
+              <button
+                class="tl-check"
+                class:checked={task.completed}
+                onclick={() => { toggleTask(task.id); if (!task.completed) addPoints(10) }}
+                aria-label={task.completed ? 'Mark incomplete' : 'Mark complete'}
+              >
+                {#if task.completed}
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M2.5 6l3 3 4-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                {/if}
+              </button>
+              <div class="tl-body">
+                <span class="tl-title">{task.title}</span>
+                <span class="tl-time">{timeDisplay(task.startTime)} &rarr; {timeDisplay(task.endTime)}</span>
+              </div>
+              <button class="tl-del" onclick={() => removeTask(task.id)} aria-label="Delete task">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                </svg>
+              </button>
+            </div>
+          {/each}
+        </div>
+      {:else if todayTasks.length === 0}
         <div class="empty">
           <p>Nothing planned today</p>
           <p class="empty-sub">Tap "Add task" to get started</p>
+        </div>
+      {/if}
+
+      {#if unscheduledTasks.length > 0}
+        <div class="unscheduled">
+          <div class="us-header">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M7 4v4M7 9.5v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            Unscheduled
+          </div>
+          {#each unscheduledTasks as task (task.id)}
+            <div
+              class="us-task"
+              class:completed={task.completed}
+              transition:fly={{ y: 6, duration: 180, opacity: 0 }}
+            >
+              <button
+                class="check"
+                class:checked={task.completed}
+                onclick={() => { toggleTask(task.id); if (!task.completed) addPoints(10) }}
+              >
+                {#if task.completed}
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M2.5 6l3 3 4-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                {/if}
+              </button>
+              <div class="us-body">
+                <span class="us-title">{task.title}</span>
+              </div>
+              <button class="delete" onclick={() => removeTask(task.id)} aria-label="Delete">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                </svg>
+              </button>
+            </div>
+          {/each}
         </div>
       {/if}
     </main>
@@ -619,6 +726,13 @@
     margin-top: 14px;
   }
 
+  .time-optional {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin: -8px 0 14px;
+    text-align: center;
+  }
+
   input[type="time"]::-webkit-calendar-picker-indicator {
     filter: invert(0.5);
   }
@@ -670,23 +784,6 @@
     -webkit-overflow-scrolling: touch;
   }
 
-  .task-card {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 14px;
-    background: var(--surface);
-    border-radius: var(--radius);
-    margin-bottom: 8px;
-    box-shadow: var(--shadow);
-    transition: all 0.2s;
-    border: 1px solid var(--border);
-  }
-
-  .task-card.completed {
-    opacity: 0.5;
-  }
-
   .check {
     width: 24px;
     height: 24px;
@@ -706,32 +803,6 @@
     background: var(--complete);
     border-color: var(--complete);
     color: #fff;
-  }
-
-  .card-body {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .card-title {
-    font-size: 15px;
-    font-weight: 500;
-    color: var(--text);
-    line-height: 1.3;
-  }
-
-  .task-card.completed .card-title {
-    text-decoration: line-through;
-    color: var(--text-secondary);
-  }
-
-  .card-time {
-    font-size: 12px;
-    color: var(--text-muted);
-    font-weight: 500;
   }
 
   .delete {
@@ -887,5 +958,229 @@
   .timer-btn.secondary:hover {
     background: var(--surface-hover);
     color: var(--text);
+  }
+
+  /* --- Points --- */
+  .points-badge {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--surface);
+    padding: 2px 10px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    letter-spacing: 0.3px;
+  }
+
+  /* --- Timeline --- */
+  .timeline {
+    position: relative;
+    margin: 0 0 16px;
+    border-radius: var(--radius);
+    overflow: visible;
+  }
+
+  .timeline-bg {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .tl-hour {
+    position: absolute;
+    left: 0;
+    right: 0;
+    border-top: 1px solid var(--border);
+    height: 0;
+  }
+
+  .tl-label {
+    position: absolute;
+    left: 0;
+    top: -7px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    width: 40px;
+    text-align: right;
+    padding-right: 10px;
+  }
+
+  .tl-task {
+    position: absolute;
+    left: 48px;
+    right: 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 10px;
+    background: var(--surface);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    transition: all 0.15s;
+    overflow: hidden;
+  }
+
+  .tl-task.completed {
+    opacity: 0.4;
+  }
+
+  .tl-task::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--accent);
+    border-radius: 3px 0 0 3px;
+  }
+
+  .tl-task.completed::before {
+    background: var(--complete);
+  }
+
+  .tl-check {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-top: 1px;
+    transition: all 0.2s;
+    background: transparent;
+    padding: 0;
+  }
+
+  .tl-check.checked {
+    background: var(--complete);
+    border-color: var(--complete);
+    color: #fff;
+  }
+
+  .tl-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .tl-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .tl-task.completed .tl-title {
+    text-decoration: line-through;
+    color: var(--text-secondary);
+  }
+
+  .tl-time {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .tl-del {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    background: transparent;
+    padding: 0;
+    transition: all 0.15s;
+  }
+
+  .tl-del:hover {
+    background: var(--surface-hover);
+    color: var(--text-secondary);
+  }
+
+  .now-line {
+    position: absolute;
+    left: 48px;
+    right: 0;
+    height: 2px;
+    background: var(--accent);
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  .now-line::before {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: -4px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  /* --- Unscheduled section --- */
+  .unscheduled {
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+    margin-top: 4px;
+  }
+
+  .us-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+
+  .us-task {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--surface);
+    border-radius: 8px;
+    margin-bottom: 6px;
+    border: 1px solid var(--border);
+    transition: all 0.15s;
+  }
+
+  .us-task.completed {
+    opacity: 0.45;
+  }
+
+  .us-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .us-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .us-task.completed .us-title {
+    text-decoration: line-through;
+    color: var(--text-secondary);
   }
 </style>

@@ -19,6 +19,9 @@
   let points = $state(loadPoints())
   let streak = $state(computeStreak())
   let nextAction = $state(false)
+  let showMorning = $state(false)
+  let showEvening = $state(false)
+  let ritualTitle = $state('')
 
   // Theme
   let theme = $state(localStorage.getItem('focus-theme') || 'system')
@@ -43,12 +46,51 @@
     savePoints(points)
   }
 
+  function checkRituals() {
+    const h = now.getHours()
+    const mKey = `focus-morning:${todayStr}`
+    const eKey = `focus-evening:${todayStr}`
+    if (h < 12 && !localStorage.getItem(mKey)) {
+      setTimeout(() => showMorning = true, 300)
+    }
+    if (h >= 18 && !localStorage.getItem(eKey)) {
+      setTimeout(() => showEvening = true, 600)
+    }
+  }
+
+  function completeMorning() {
+    localStorage.setItem(`focus-morning:${todayStr}`, 'done')
+    showMorning = false
+  }
+
+  function skipMorning() {
+    localStorage.setItem(`focus-morning:${todayStr}`, 'skipped')
+    showMorning = false
+  }
+
+  function completeEvening() {
+    localStorage.setItem(`focus-evening:${todayStr}`, 'done')
+    showEvening = false
+  }
+
+  function skipEvening() {
+    localStorage.setItem(`focus-evening:${todayStr}`, 'skipped')
+    showEvening = false
+  }
+
+  function handleRitualSubmit() {
+    if (!ritualTitle.trim()) return
+    addTask(ritualTitle.trim())
+    ritualTitle = ''
+  }
+
   onMount(() => {
     const root = document.documentElement
     if (theme === 'dark') root.setAttribute('data-theme', 'dark')
     else if (theme === 'light') root.setAttribute('data-theme', 'light')
     requestPermission()
     scheduleAll()
+    checkRituals()
     setInterval(() => {
       now = new Date()
       streak = computeStreak()
@@ -77,6 +119,7 @@
   let timedTasks = $derived(todayTasks.filter(t => !t.unscheduled))
   let unscheduledTasks = $derived(todayTasks.filter(t => t.unscheduled))
   let actionTask = $derived(currentTask || nextTask || todayTasks.find(t => !t.completed))
+  let completedCount = $derived(todayTasks.filter(t => t.completed).length)
 
   // Timeline
   const START_H = 5, END_H = 23, HOUR_H = 64
@@ -504,6 +547,74 @@
   {/if}
 </div>
 
+<!-- Morning Ritual -->
+{#if showMorning}
+  <div class="ritual-overlay" transition:fly={{ y: 20, duration: 250, opacity: 0 }}>
+    <div class="ritual-card">
+      <div class="ritual-icon">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <circle cx="16" cy="16" r="8" fill="var(--accent)" opacity="0.15"/>
+          <circle cx="16" cy="16" r="4" fill="var(--accent)"/>
+          <path d="M16 2v3M16 27v3M2 16h3M27 16h3M5.6 5.6l2.1 2.1M24.3 24.3l2.1 2.1M5.6 26.4l2.1-2.1M24.3 7.7l2.1-2.1" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <h2 class="ritual-title">Good morning</h2>
+      <p class="ritual-sub">What are you focusing on today?</p>
+      <div class="ritual-input-row">
+        <input type="text" class="ritual-input" placeholder="Add a task..." bind:value={ritualTitle} onkeydown={(e) => { if (e.key === 'Enter') handleRitualSubmit() }} />
+        <button class="ritual-add-btn" aria-label="Add task" onclick={handleRitualSubmit} disabled={!ritualTitle.trim()}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      {#if todayTasks.length > 0}
+        <div class="ritual-tasks">
+          {#each todayTasks as t}
+            <div class="ritual-task" class:rt-done={t.completed}><span>{t.title}</span>{#if t.completed}<span class="rt-check">&#10003;</span>{/if}</div>
+          {/each}
+        </div>
+      {/if}
+      <div class="ritual-actions">
+        <button class="ritual-btn primary" onclick={completeMorning}>Start the day</button>
+        <button class="ritual-btn secondary" onclick={skipMorning}>Skip</button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+<!-- Evening Shutdown -->
+{#if showEvening}
+  <div class="ritual-overlay" transition:fly={{ y: 20, duration: 250, opacity: 0 }}>
+    <div class="ritual-card">
+      <div class="ritual-icon">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <circle cx="16" cy="16" r="10" fill="var(--accent)" opacity="0.1"/>
+          <path d="M24 16A8 8 0 1116 8a8 8 0 008 8z" fill="var(--accent)" opacity="0.2"/>
+          <path d="M20 12l-6 6-3-3" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h2 class="ritual-title">End of day</h2>
+      <p class="ritual-sub">You completed <strong>{completedCount}</strong> of <strong>{todayTasks.length}</strong> tasks today</p>
+      {#if todayTasks.length > 0}
+        <div class="ritual-tasks">
+          {#each todayTasks as t}
+            <div class="ritual-task" class:rt-done={t.completed}><span>{t.title}</span>{#if t.completed}<span class="rt-check">&#10003;</span>{/if}</div>
+          {/each}
+        </div>
+      {/if}
+      <div class="ritual-input-row">
+        <input type="text" class="ritual-input" placeholder="Add a task for tomorrow..." bind:value={ritualTitle} onkeydown={(e) => { if (e.key === 'Enter') handleRitualSubmit() }} />
+        <button class="ritual-add-btn" aria-label="Add task" onclick={handleRitualSubmit} disabled={!ritualTitle.trim()}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div class="ritual-actions">
+        <button class="ritual-btn primary" onclick={completeEvening}>Close the day</button>
+        <button class="ritual-btn secondary" onclick={skipEvening}>Skip</button>
+      </div>
+    </div>
+  </div>
+{/if}
+
 <style>
   .app { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
   .header { display: flex; align-items: center; gap: 10px; padding: 16px 20px 8px; flex-shrink: 0; }
@@ -670,4 +781,26 @@
   .rg-input { width: 100%; padding: 6px 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 12px; }
   .rg-input::placeholder { color: var(--text-muted); }
   .rg-input:focus { border-color: var(--accent); }
+
+  .ritual-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; padding: 24px; z-index: 100; }
+  .ritual-card { background: var(--surface); border-radius: 16px; padding: 28px 24px 20px; width: 100%; max-width: 340px; box-shadow: 0 8px 32px rgba(0,0,0,0.15); text-align: center; }
+  .ritual-icon { margin-bottom: 12px; display: flex; justify-content: center; }
+  .ritual-title { font-size: 20px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .ritual-sub { font-size: 14px; color: var(--text-secondary); margin-bottom: 20px; }
+  .ritual-input-row { display: flex; gap: 8px; margin-bottom: 16px; }
+  .ritual-input { flex: 1; padding: 10px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-size: 14px; }
+  .ritual-input:focus { border-color: var(--accent); }
+  .ritual-add-btn { width: 40px; height: 40px; border-radius: 10px; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: background 0.15s; }
+  .ritual-add-btn:hover { background: var(--accent-hover); }
+  .ritual-add-btn:disabled { opacity: 0.4; }
+  .ritual-tasks { text-align: left; margin-bottom: 16px; }
+  .ritual-task { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; font-size: 13px; color: var(--text); border-radius: 6px; background: var(--bg); margin-bottom: 4px; }
+  .ritual-task.rt-done { opacity: 0.5; text-decoration: line-through; color: var(--text-secondary); }
+  .rt-check { color: var(--complete); font-size: 12px; }
+  .ritual-actions { display: flex; flex-direction: column; gap: 6px; }
+  .ritual-btn { padding: 10px; border-radius: 10px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+  .ritual-btn.primary { background: var(--accent); color: #fff; border: 1px solid transparent; }
+  .ritual-btn.primary:hover { background: var(--accent-hover); }
+  .ritual-btn.secondary { background: transparent; color: var(--text-secondary); border: none; font-size: 13px; }
+  .ritual-btn.secondary:hover { color: var(--text); }
 </style>

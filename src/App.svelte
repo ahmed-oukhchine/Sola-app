@@ -225,7 +225,7 @@
         <div class="na-label">Next action</div>
         <div class="na-title">{actionTask.title}</div>
         <div class="na-time">{actionTask.startTime ? `${timeDisplay(actionTask.startTime)} → ${timeDisplay(actionTask.endTime)}` : 'Unscheduled'}</div>
-        <button class="na-btn" onclick={() => { toggleTask(actionTask.id); if (!actionTask.completed) addPoints(10) }}>
+        <button class="na-btn" onclick={() => { const nwas = actionTask.completed; toggleTask(actionTask.id); if (!nwas) addPoints(10) }}>
           {actionTask.completed ? 'Undo' : 'Complete'}
         </button>
       </div>
@@ -283,7 +283,7 @@
             {#each timedTasks as task (task.id)}
               <div class="tl-task" class:completed={task.completed} class:expanded={task.expanded} style="top: {taskTop(task)}px; height: {taskHeight(task)}px" transition:fly={{ y: 8, duration: 200, opacity: 0 }}>
                 <div class="tl-main" role="button" tabindex="0" onclick={() => toggleExpand(task.id)} onkeydown={(e) => { if (e.key === 'Enter') toggleExpand(task.id) }}>
-                  <button class="tl-check" class:checked={task.completed} onclick={(e) => { e.stopPropagation(); toggleTask(task.id); if (!task.completed) { addPoints(10); streak = computeStreak() } }}>
+                  <button class="tl-check" class:checked={task.completed} onclick={(e) => { e.stopPropagation(); const was = task.completed; toggleTask(task.id); if (!was) { addPoints(10); streak = computeStreak() } }}>
                     {#if task.completed}<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6l3 3 4-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>{/if}
                   </button>
                   <div class="tl-body">
@@ -301,7 +301,7 @@
                   <div class="subtask-list" transition:slide={{ duration: 150 }}>
                     {#each task.subtasks as st}
                       <div class="subtask-item" class:st-done={st.completed}>
-                        <button class="st-check" class:checked={st.completed} onclick={(e) => { e.stopPropagation(); toggleSubtask(task.id, st.id); if (!st.completed) addPoints(3) }}>
+                        <button class="st-check" class:checked={st.completed} onclick={(e) => { e.stopPropagation(); const swas = st.completed; toggleSubtask(task.id, st.id); if (!swas) addPoints(3) }}>
                           {#if st.completed}<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>{/if}
                         </button>
                         <span class="st-title">{st.title}</span>
@@ -330,7 +330,7 @@
             {#each unscheduledTasks as task (task.id)}
               <div class="us-task" class:completed={task.completed} class:expanded={task.expanded} transition:fly={{ y: 6, duration: 180, opacity: 0 }}>
                 <div class="us-main" role="button" tabindex="0" onclick={() => toggleExpand(task.id)} onkeydown={(e) => { if (e.key === 'Enter') toggleExpand(task.id) }}>
-                  <button class="check" class:checked={task.completed} onclick={(e) => { e.stopPropagation(); toggleTask(task.id); if (!task.completed) { addPoints(10); streak = computeStreak() } }}>
+                  <button class="check" class:checked={task.completed} onclick={(e) => { e.stopPropagation(); const was = task.completed; toggleTask(task.id); if (!was) { addPoints(10); streak = computeStreak() } }}>
                     {#if task.completed}<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6l3 3 4-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>{/if}
                   </button>
                   <div class="us-body"><span class="us-title">{task.title}</span></div>
@@ -345,7 +345,7 @@
                   <div class="subtask-list" transition:slide={{ duration: 150 }}>
                     {#each task.subtasks as st}
                       <div class="subtask-item" class:st-done={st.completed}>
-                        <button class="st-check" class:checked={st.completed} onclick={(e) => { e.stopPropagation(); toggleSubtask(task.id, st.id); if (!st.completed) addPoints(3) }}>
+                        <button class="st-check" class:checked={st.completed} onclick={(e) => { e.stopPropagation(); const swas = st.completed; toggleSubtask(task.id, st.id); if (!swas) addPoints(3) }}>
                           {#if st.completed}<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>{/if}
                         </button>
                         <span class="st-title">{st.title}</span>

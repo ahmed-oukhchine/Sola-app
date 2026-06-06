@@ -190,7 +190,7 @@
 </script>
 
 <Sidebar
-  {open}
+  open={sidebarOpen}
   {activeView}
   {streak}
   {points}

@@ -28,7 +28,11 @@ function api(path, options = {}) {
       auth.user = null
       throw new Error('Unauthorized')
     }
-    return r.json()
+    const text = await r.text()
+    if (!text) throw new Error(`Empty response from ${path} — is the API server running?`)
+    try { return JSON.parse(text) } catch {
+      throw new Error(`Invalid JSON from ${path}: ${text.slice(0, 100)}`)
+    }
   })
 }
 

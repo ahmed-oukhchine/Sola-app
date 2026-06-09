@@ -1,26 +1,102 @@
-function loadFrom(key, fallback) {
+const BASE = '/api'
+
+export const store = $state({ tasks: [] })
+export const inbox = $state({ items: [] })
+export const someday = $state({ items: [] })
+export const routines = $state({ items: [] })
+export const auth = $state({ user: null, token: null, loading: true })
+
+let _points = 0
+
+function getToken() {
+  return auth.token || localStorage.getItem('focus-token')
+}
+
+function setToken(token) {
+  auth.token = token
+  if (token) localStorage.setItem('focus-token', token)
+  else localStorage.removeItem('focus-token')
+}
+
+function api(path, options = {}) {
+  const token = getToken()
+  const headers = { 'Content-Type': 'application/json' }
+  if (token) headers['Authorization'] = `Bearer ${token}`
+  return fetch(`${BASE}${path}`, { headers, ...options }).then(async r => {
+    if (r.status === 401) {
+      setToken(null)
+      auth.user = null
+      throw new Error('Unauthorized')
+    }
+    return r.json()
+  })
+}
+
+// --- Auth ---
+
+export async function checkAuth() {
+  const token = localStorage.getItem('focus-token')
+  if (!token) { auth.loading = false; return }
   try {
-    const d = localStorage.getItem(key)
-    return d ? JSON.parse(d) : fallback
-  } catch {
-    return fallback
+    const user = await api('/me')
+    if (user && user.id) {
+      auth.user = user
+      setToken(token)
+    } else {
+      setToken(null)
+    }
+  } catch { setToken(null) }
+  auth.loading = false
+}
+
+export async function login(username, password) {
+  const res = await api('/login', { method: 'POST', body: JSON.stringify({ username, password }) })
+  if (res.error) throw new Error(res.error)
+  setToken(res.token)
+  auth.user = res.user
+  return res.user
+}
+
+export async function register(username, password) {
+  const res = await api('/register', { method: 'POST', body: JSON.stringify({ username, password }) })
+  if (res.error) throw new Error(res.error)
+  setToken(res.token)
+  auth.user = res.user
+  return res.user
+}
+
+export function logout() {
+  setToken(null)
+  auth.user = null
+  store.tasks = []
+  inbox.items = []
+  someday.items = []
+  routines.items = []
+  _points = 0
+}
+
+export async function loadAll() {
+  try {
+    const [tasks, inboxItems, somedayItems, routinesItems, points] = await Promise.all([
+      api('/tasks'),
+      api('/inbox'),
+      api('/someday'),
+      api('/routines'),
+      api('/points')
+    ])
+    store.tasks = tasks
+    inbox.items = inboxItems
+    someday.items = somedayItems
+    routines.items = routinesItems
+    _points = points.points
+    scheduleAll()
+    generateRecurringTasks()
+  } catch (e) {
+    if (e.message !== 'Unauthorized') console.error('Failed to load data', e)
   }
 }
 
-function saveTo(key, data) {
-  try {
-    localStorage.setItem(key, JSON.stringify(data))
-  } catch {}
-}
-
 // --- Tasks ---
-const TASKS_KEY = 'focus-tasks'
-
-export const store = $state({ tasks: loadFrom(TASKS_KEY, []) })
-
-function saveTasks() {
-  saveTo(TASKS_KEY, store.tasks)
-}
 
 export function addTask(title, startTime = '', endTime = '', energy = null, repeat = null) {
   const task = {
@@ -38,8 +114,8 @@ export function addTask(title, startTime = '', endTime = '', energy = null, repe
     createdAt: Date.now()
   }
   store.tasks.push(task)
-  saveTasks()
   scheduleNotifications(task)
+  api('/tasks', { method: 'POST', body: JSON.stringify(task) }).catch(() => {})
   return task
 }
 
@@ -47,7 +123,7 @@ export function toggleTask(id) {
   const t = store.tasks.find(t => t.id === id)
   if (t) {
     t.completed = !t.completed
-    saveTasks()
+    api(`/tasks/${id}/toggle`, { method: 'PUT' }).catch(() => {})
   }
 }
 
@@ -59,7 +135,7 @@ export function updateTask(id, fields) {
     if (fields.endTime !== undefined) t.endTime = fields.endTime
     if (fields.energy !== undefined) t.energy = fields.energy
     t.unscheduled = !t.startTime
-    saveTasks()
+    api(`/tasks/${id}`, { method: 'PUT', body: JSON.stringify(fields) }).catch(() => {})
   }
 }
 
@@ -69,22 +145,23 @@ export function updateEnergy(id, energy) {
 
 export function removeTask(id) {
   store.tasks = store.tasks.filter(t => t.id !== id)
-  saveTasks()
+  api(`/tasks/${id}`, { method: 'DELETE' }).catch(() => {})
 }
 
 export function toggleExpand(id) {
   const t = store.tasks.find(t => t.id === id)
   if (t) {
     t.expanded = !t.expanded
-    saveTasks()
+    api(`/tasks/${id}/expand`, { method: 'PUT' }).catch(() => {})
   }
 }
 
 export function addSubtask(taskId, title) {
   const t = store.tasks.find(t => t.id === taskId)
   if (t) {
-    t.subtasks.push({ id: crypto.randomUUID(), title, completed: false })
-    saveTasks()
+    const subtask = { id: crypto.randomUUID(), title, completed: false }
+    t.subtasks.push(subtask)
+    api(`/tasks/${taskId}/subtasks`, { method: 'POST', body: JSON.stringify({ title, id: subtask.id }) }).catch(() => {})
   }
 }
 
@@ -92,7 +169,10 @@ export function toggleSubtask(taskId, subtaskId) {
   const t = store.tasks.find(t => t.id === taskId)
   if (t) {
     const s = t.subtasks.find(s => s.id === subtaskId)
-    if (s) { s.completed = !s.completed; saveTasks() }
+    if (s) {
+      s.completed = !s.completed
+      api(`/subtasks/${subtaskId}/toggle`, { method: 'PUT' }).catch(() => {})
+    }
   }
 }
 
@@ -100,22 +180,21 @@ export function removeSubtask(taskId, subtaskId) {
   const t = store.tasks.find(t => t.id === taskId)
   if (t) {
     t.subtasks = t.subtasks.filter(s => s.id !== subtaskId)
-    saveTasks()
+    api(`/subtasks/${subtaskId}`, { method: 'DELETE' }).catch(() => {})
   }
 }
 
 // --- Inbox ---
-const INBOX_KEY = 'focus-inbox'
-export const inbox = $state({ items: loadFrom(INBOX_KEY, []) })
 
 export function addToInbox(title) {
-  inbox.items.push({ id: crypto.randomUUID(), title, createdAt: Date.now() })
-  saveTo(INBOX_KEY, inbox.items)
+  const item = { id: crypto.randomUUID(), title, createdAt: Date.now() }
+  inbox.items.push(item)
+  api('/inbox', { method: 'POST', body: JSON.stringify({ title, id: item.id }) }).catch(() => {})
 }
 
 export function removeFromInbox(id) {
   inbox.items = inbox.items.filter(i => i.id !== id)
-  saveTo(INBOX_KEY, inbox.items)
+  api(`/inbox/${id}`, { method: 'DELETE' }).catch(() => {})
 }
 
 export function moveInboxToToday(id) {
@@ -127,17 +206,16 @@ export function moveInboxToToday(id) {
 }
 
 // --- Someday ---
-const SOMEDAY_KEY = 'focus-someday'
-export const someday = $state({ items: loadFrom(SOMEDAY_KEY, []) })
 
 export function addToSomeday(title) {
-  someday.items.push({ id: crypto.randomUUID(), title, createdAt: Date.now() })
-  saveTo(SOMEDAY_KEY, someday.items)
+  const item = { id: crypto.randomUUID(), title, createdAt: Date.now() }
+  someday.items.push(item)
+  api('/someday', { method: 'POST', body: JSON.stringify({ title, id: item.id }) }).catch(() => {})
 }
 
 export function removeFromSomeday(id) {
   someday.items = someday.items.filter(i => i.id !== id)
-  saveTo(SOMEDAY_KEY, someday.items)
+  api(`/someday/${id}`, { method: 'DELETE' }).catch(() => {})
 }
 
 export function moveSomedayToToday(id) {
@@ -149,32 +227,30 @@ export function moveSomedayToToday(id) {
 }
 
 // --- Routines ---
-const ROUTINES_KEY = 'focus-routines'
-export const routines = $state({ items: loadFrom(ROUTINES_KEY, []) })
 
 export function addRoutine(title, type) {
-  routines.items.push({
+  const routine = {
     id: crypto.randomUUID(),
     title,
     type,
-    items: [
-      { id: crypto.randomUUID(), title: '', completed: false }
-    ],
+    items: [{ id: crypto.randomUUID(), title: '', completed: false }],
     createdAt: Date.now()
-  })
-  saveTo(ROUTINES_KEY, routines.items)
+  }
+  routines.items.push(routine)
+  api('/routines', { method: 'POST', body: JSON.stringify({ title, type, id: routine.id }) }).catch(() => {})
 }
 
 export function removeRoutine(id) {
   routines.items = routines.items.filter(r => r.id !== id)
-  saveTo(ROUTINES_KEY, routines.items)
+  api(`/routines/${id}`, { method: 'DELETE' }).catch(() => {})
 }
 
 export function addRoutineItem(routineId, title) {
   const r = routines.items.find(r => r.id === routineId)
   if (r) {
-    r.items.push({ id: crypto.randomUUID(), title, completed: false })
-    saveTo(ROUTINES_KEY, routines.items)
+    const item = { id: crypto.randomUUID(), title, completed: false }
+    r.items.push(item)
+    api(`/routines/${routineId}/items`, { method: 'POST', body: JSON.stringify({ title, id: item.id }) }).catch(() => {})
   }
 }
 
@@ -184,7 +260,7 @@ export function toggleRoutineItem(routineId, itemId) {
     const item = r.items.find(i => i.id === itemId)
     if (item) {
       item.completed = !item.completed
-      saveTo(ROUTINES_KEY, routines.items)
+      api(`/routine-items/${itemId}/toggle`, { method: 'PUT' }).catch(() => {})
     }
   }
 }
@@ -193,16 +269,21 @@ export function removeRoutineItem(routineId, itemId) {
   const r = routines.items.find(r => r.id === routineId)
   if (r) {
     r.items = r.items.filter(i => i.id !== itemId)
-    saveTo(ROUTINES_KEY, routines.items)
+    api(`/routine-items/${itemId}`, { method: 'DELETE' }).catch(() => {})
   }
 }
 
 // --- Points ---
-const POINTS_KEY = 'focus-points'
-export function loadPoints() { return parseInt(loadFrom(POINTS_KEY, '0')) || 0 }
-export function savePoints(p) { saveTo(POINTS_KEY, String(p)) }
+
+export function loadPoints() { return _points }
+
+export function savePoints(p) {
+  _points = p
+  api('/points', { method: 'PUT', body: JSON.stringify({ points: p }) }).catch(() => {})
+}
 
 // --- Streak ---
+
 export function computeStreak() {
   const dates = new Set()
   for (const t of store.tasks) {
@@ -221,6 +302,7 @@ export function computeStreak() {
 }
 
 // --- Notifications ---
+
 const scheduledTimeouts = new Map()
 
 function scheduleNotifications(task) {
@@ -254,12 +336,13 @@ export function requestPermission() {
 }
 
 export function scheduleAll() {
-  for (const [key, id] of scheduledTimeouts) { clearTimeout(id) }
+  for (const [, id] of scheduledTimeouts) { clearTimeout(id) }
   scheduledTimeouts.clear()
   for (const t of store.tasks) { scheduleNotifications(t) }
 }
 
 // --- Recurring Tasks ---
+
 export function generateRecurringTasks() {
   const today = new Date().toISOString().split('T')[0]
   const dayOfWeek = new Date().getDay()
@@ -272,27 +355,70 @@ export function generateRecurringTasks() {
       const task = { ...t, id: crypto.randomUUID(), date: today, completed: false, subtasks: [], expanded: false, createdAt: Date.now() }
       store.tasks.push(task)
       scheduleNotifications(task)
+      api('/tasks', { method: 'POST', body: JSON.stringify(task) }).catch(() => {})
     }
   }
-  saveTasks()
 }
 
 // --- Export / Import ---
+
 export function exportData() {
-  return JSON.stringify({
-    tasks: store.tasks,
-    inbox: inbox.items,
-    someday: someday.items,
-    routines: routines.items,
-    points: loadPoints()
-  }, null, 2)
+  return api('/tasks').then(tasks => {
+    return api('/inbox').then(inboxItems => {
+      return api('/someday').then(somedayItems => {
+        return api('/routines').then(routinesItems => {
+          return api('/points').then(p => {
+            return JSON.stringify({
+              tasks, inbox: inboxItems, someday: somedayItems, routines: routinesItems, points: p.points
+            }, null, 2)
+          })
+        })
+      })
+    })
+  })
 }
 
-export function importData(json) {
+export async function importData(json) {
   const d = JSON.parse(json)
-  if (d.tasks) { store.tasks = d.tasks; saveTo(TASKS_KEY, d.tasks) }
-  if (d.inbox) { inbox.items = d.inbox; saveTo(INBOX_KEY, d.inbox) }
-  if (d.someday) { someday.items = d.someday; saveTo(SOMEDAY_KEY, d.someday) }
-  if (d.routines) { routines.items = d.routines; saveTo(ROUTINES_KEY, d.routines) }
+  await Promise.all([
+    api('/tasks', { method: 'DELETE' }),
+    api('/inbox', { method: 'DELETE' }),
+    api('/someday', { method: 'DELETE' }),
+    api('/routines', { method: 'DELETE' })
+  ])
+  const promises = []
+  if (d.tasks) {
+    store.tasks = d.tasks
+    for (const t of d.tasks) {
+      promises.push(api('/tasks', { method: 'POST', body: JSON.stringify(t) }).then(created => {
+        if (t.subtasks) {
+          for (const s of t.subtasks) {
+            promises.push(api(`/tasks/${created.id}/subtasks`, { method: 'POST', body: JSON.stringify(s) }))
+          }
+        }
+      }))
+    }
+  }
+  if (d.inbox) {
+    inbox.items = d.inbox
+    for (const i of d.inbox) promises.push(api('/inbox', { method: 'POST', body: JSON.stringify(i) }))
+  }
+  if (d.someday) {
+    someday.items = d.someday
+    for (const i of d.someday) promises.push(api('/someday', { method: 'POST', body: JSON.stringify(i) }))
+  }
+  if (d.routines) {
+    routines.items = d.routines
+    for (const r of d.routines) {
+      promises.push(api('/routines', { method: 'POST', body: JSON.stringify({ title: r.title, type: r.type, id: r.id }) }).then(created => {
+        if (r.items) {
+          for (const item of r.items) {
+            promises.push(api(`/routines/${created.id}/items`, { method: 'POST', body: JSON.stringify(item) }))
+          }
+        }
+      }))
+    }
+  }
   if (d.points != null) savePoints(d.points)
+  await Promise.all(promises)
 }

@@ -3,14 +3,15 @@
   import { onMount } from 'svelte'
   import Sidebar from './lib/Sidebar.svelte'
   import {
-    store, addTask, toggleTask, removeTask, updateTask, exportData, importData, generateRecurringTasks,
+    store, addTask, toggleTask, removeTask, updateTask, loadAll, exportData, importData, generateRecurringTasks,
     addSubtask, toggleSubtask, removeSubtask, toggleExpand,
     inbox, addToInbox, removeFromInbox, moveInboxToToday,
     someday, addToSomeday, removeFromSomeday, moveSomedayToToday,
     routines, addRoutine, removeRoutine,
     addRoutineItem, toggleRoutineItem, removeRoutineItem,
     loadPoints, savePoints, computeStreak,
-    requestPermission, scheduleAll
+    requestPermission, scheduleAll,
+    auth, login, register, logout, checkAuth
   } from './lib/taskStore.svelte.js'
 
   let activeView = $state('today')
@@ -24,6 +25,8 @@
   let showMorning = $state(false)
   let showEvening = $state(false)
   let ritualTitle = $state('')
+  let authView = $state('login')
+  let authUsername = $state(''), authPassword = $state(''), authError = $state('')
 
   // Theme
   let theme = $state(localStorage.getItem('focus-theme') || 'system')
@@ -86,14 +89,23 @@
     ritualTitle = ''
   }
 
-  onMount(() => {
-    const root = document.documentElement
-    if (theme === 'dark') root.setAttribute('data-theme', 'dark')
-    else if (theme === 'light') root.setAttribute('data-theme', 'light')
-    requestPermission()
-    scheduleAll()
-    checkRituals()
-    generateRecurringTasks()
+  onMount(async () => {
+    await checkAuth()
+    if (auth.user) {
+      await loadAll()
+      points = loadPoints(); streak = computeStreak()
+      const root = document.documentElement
+      if (theme === 'dark') root.setAttribute('data-theme', 'dark')
+      else if (theme === 'light') root.setAttribute('data-theme', 'light')
+      requestPermission()
+      scheduleAll()
+      checkRituals()
+      generateRecurringTasks()
+    } else {
+      const root = document.documentElement
+      if (theme === 'dark') root.setAttribute('data-theme', 'dark')
+      else if (theme === 'light') root.setAttribute('data-theme', 'light')
+    }
     setInterval(() => {
       now = new Date()
       streak = computeStreak()
@@ -259,6 +271,15 @@
   function resetTimer() { timerRunning = false; timerPaused = false; clearInterval(tickInterval); tickInterval = null; timerRemaining = timerMinutes * 60 }
   $effect(() => () => { if (tickInterval) clearInterval(tickInterval) })
 
+  $effect(() => {
+    if (!dragging) return
+    const onMove = (e) => dragMove(e)
+    const onUp = (e) => dragEnd(e)
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp) }
+  })
+
   // Edit mode
   let editTask = $state(null)
   let editTitle = $state(''), editStart = $state(''), editEnd = $state(''), editEnergy = $state(null)
@@ -275,6 +296,61 @@
     editTask = null
   }
   function cancelEdit() { editTask = null }
+
+  // Drag-to-reschedule
+  let dragTask = $state(null), dragStartY = $state(0), dragging = $state(false)
+  const SNAP_MINUTES = 15
+  function dragStart(e, task) {
+    if (task.unscheduled) return
+    dragTask = task.id
+    dragging = true
+    dragStartY = e.clientY
+  }
+  function dragMove(e) {
+    if (!dragging || !dragTask) return
+    e.preventDefault()
+    const snap = Math.round((e.clientY - dragStartY) / HOUR_H * 60 / SNAP_MINUTES) * SNAP_MINUTES
+    const t = store.tasks.find(t => t.id === dragTask)
+    if (t) {
+      const [sh, sm] = t.startTime.split(':').map(Number)
+      let total = sh * 60 + sm + snap
+      if (total < START_H * 60) total = START_H * 60
+      if (total > END_H * 60 - 15) total = END_H * 60 - 15
+    }
+  }
+  function dragEnd(e) {
+    if (!dragging || !dragTask) return
+    const snap = Math.round((e.clientY - dragStartY) / HOUR_H * 60 / SNAP_MINUTES) * SNAP_MINUTES
+    const t = store.tasks.find(t => t.id === dragTask)
+    if (t) {
+      const [sh, sm] = t.startTime.split(':').map(Number)
+      let total = sh * 60 + sm + snap
+      if (total < START_H * 60) total = START_H * 60
+      if (total > END_H * 60 - 15) total = END_H * 60 - 15
+      const nh = Math.floor(total / 60), nm = total % 60
+      const ns = `${String(nh).padStart(2, '0')}:${String(nm).padStart(2, '0')}`
+      const dur = t.endTime ? (() => { const [eh, em] = t.endTime.split(':').map(Number); return eh * 60 + em - (sh * 60 + sm) })() : 30
+      const etotal = total + dur
+      const neh = Math.floor(etotal / 60), nem = etotal % 60
+      const ne = `${String(neh).padStart(2, '0')}:${String(nem).padStart(2, '0')}`
+      updateTask(dragTask, { startTime: ns, endTime: ne })
+    }
+    dragTask = null; dragging = false
+  }
+
+  // Auth
+  async function handleAuth(e) {
+    e.preventDefault()
+    authError = ''
+    try {
+      if (authView === 'login') await login(authUsername, authPassword)
+      else await register(authUsername, authPassword)
+      authUsername = ''; authPassword = ''
+      await loadAll()
+      points = loadPoints(); streak = computeStreak()
+      scheduleAll(); generateRecurringTasks()
+    } catch (err) { authError = err.message }
+  }
 
   // Swipe
   let swipingId = $state(null), swipeStartX = $state(0), swipeDelta = $state(0)
@@ -293,8 +369,9 @@
   }
 
   // Export / Import
-  function handleExport() {
-    const blob = new Blob([exportData()], { type: 'application/json' })
+  async function handleExport() {
+    const json = await exportData()
+    const blob = new Blob([json], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url; a.download = `focus-backup-${todayStr}.json`; a.click()
@@ -306,7 +383,7 @@
     input.onchange = async () => {
       try {
         const text = await input.files[0].text()
-        importData(text)
+        await importData(text)
         points = loadPoints(); streak = computeStreak()
       } catch (e) { alert('Invalid backup file') }
     }
@@ -324,6 +401,28 @@
   }
 </script>
 
+{#if auth.loading}
+  <div class="auth-screen">
+    <div class="auth-card" style="text-align:center;padding:40px;color:var(--text-secondary)">Loading...</div>
+  </div>
+{:else if !auth.user}
+  <div class="auth-screen">
+    <div class="auth-card">
+      <h1 class="auth-logo">focus</h1>
+      <p class="auth-sub">{authView === 'login' ? 'Welcome back' : 'Create an account'}</p>
+      <form onsubmit={handleAuth}>
+        <input type="text" class="auth-input" placeholder="Username" bind:value={authUsername} required />
+        <input type="password" class="auth-input" placeholder="Password" bind:value={authPassword} required />
+        {#if authError}<p class="auth-error">{authError}</p>{/if}
+        <button type="submit" class="auth-btn">{authView === 'login' ? 'Log in' : 'Register'}</button>
+      </form>
+      <p class="auth-switch">
+        {authView === 'login' ? "Don't have an account?" : 'Already have an account?'}
+        <button class="auth-link" onclick={() => { authView = authView === 'login' ? 'register' : 'login'; authError = '' }}>{authView === 'login' ? 'Register' : 'Log in'}</button>
+      </p>
+    </div>
+  </div>
+{:else}
 <Sidebar
   open={sidebarOpen}
   {activeView}
@@ -346,6 +445,9 @@
     </button>
     <h1 class="logo">focus</h1>
     <div class="header-actions">
+      <button class="hdr-btn" onclick={() => { logout(); authView = 'login' }} aria-label="Logout">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h3M11 11l3-3-3-3M14 8H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
       <span class="points-badge">✦ {points}</span>
       <span class="date">{dayStr}</span>
     </div>
@@ -427,7 +529,7 @@
               <div class="now-line" style="top: {nowLineTop}px"></div>
             {/if}
             {#each timedTasks as task (task.id)}
-              <div class="tl-task" role="button" tabindex="-1" class:completed={task.completed} class:expanded={task.expanded} style="top: {taskTop(task)}px; height: {taskHeight(task)}px; touch-action:pan-y" transition:fly={{ y: 8, duration: 200, opacity: 0 }} ontouchstart={(e) => touchStart(e, task.id)} ontouchmove={touchMove} ontouchend={(e) => touchEnd(e, task)}>
+              <div class="tl-task" role="button" tabindex="-1" class:completed={task.completed} class:expanded={task.expanded} class:dragging={dragTask === task.id} style="top: {taskTop(task)}px; height: {taskHeight(task)}px; touch-action:pan-y" transition:fly={{ y: 8, duration: 200, opacity: 0 }} onmousedown={(e) => { if (!task.unscheduled) dragStart(e, task) }} ontouchstart={(e) => touchStart(e, task.id)} ontouchmove={touchMove} ontouchend={(e) => touchEnd(e, task)}>
                 <div class="tl-main" role="button" tabindex="0" onclick={() => toggleExpand(task.id)} onkeydown={(e) => { if (e.key === 'Enter') toggleExpand(task.id) }}>
                   <button class="tl-check" class:checked={task.completed} onclick={(e) => { e.stopPropagation(); const was = task.completed; toggleTask(task.id); if (!was) { addPoints(10); streak = computeStreak() } }}>
                     {#if task.completed}<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6l3 3 4-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>{/if}
@@ -719,6 +821,8 @@
   {/if}
 </div>
 
+{/if}
+
 <!-- Morning Ritual -->
 {#if showMorning}
   <div class="ritual-overlay" transition:fly={{ y: 20, duration: 250, opacity: 0 }}>
@@ -794,6 +898,8 @@
   .hamburger:hover { background: var(--surface-hover); color: var(--text); }
   .logo { font-size: 20px; font-weight: 600; letter-spacing: -0.3px; color: var(--text); flex: 1; }
   .header-actions { display: flex; align-items: center; gap: 8px; }
+  .hdr-btn { width: 30px; height: 30px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); cursor: pointer; background: transparent; padding: 0; transition: all 0.12s; }
+  .hdr-btn:hover { background: var(--surface-hover); color: var(--text-secondary); }
   .points-badge { font-size: 12px; font-weight: 600; color: var(--accent); background: var(--surface); padding: 2px 10px; border-radius: 12px; border: 1px solid var(--border); }
   .date { font-size: 12px; color: var(--text-secondary); font-weight: 500; }
 
@@ -995,4 +1101,19 @@
   .stat-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 16px; text-align: center; }
   .stat-num { font-size: 22px; font-weight: 700; color: var(--text); display: block; }
   .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.3px; margin-top: 2px; display: block; }
+
+  .dragging { opacity: 0.6; z-index: 20; cursor: grabbing !important; }
+
+  .auth-screen { display: flex; align-items: center; justify-content: center; height: 100%; padding: 24px; }
+  .auth-card { background: var(--surface); border-radius: 16px; padding: 32px 28px; width: 100%; max-width: 320px; box-shadow: 0 8px 32px rgba(0,0,0,0.12); }
+  .auth-logo { font-size: 28px; font-weight: 700; text-align: center; margin-bottom: 4px; color: var(--text); letter-spacing: -0.5px; }
+  .auth-sub { font-size: 14px; color: var(--text-secondary); text-align: center; margin-bottom: 24px; }
+  .auth-input { width: 100%; padding: 12px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-size: 15px; margin-bottom: 12px; }
+  .auth-input:focus { border-color: var(--accent); }
+  .auth-btn { width: 100%; padding: 12px; border-radius: 10px; font-size: 15px; font-weight: 500; background: var(--accent); color: #fff; border: none; cursor: pointer; transition: background 0.15s; }
+  .auth-btn:hover { background: var(--accent-hover); }
+  .auth-error { font-size: 13px; color: #c06060; text-align: center; margin-bottom: 10px; }
+  .auth-switch { font-size: 13px; color: var(--text-secondary); text-align: center; margin-top: 16px; }
+  .auth-link { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 13px; font-weight: 500; padding: 0; text-decoration: underline; }
+
 </style>

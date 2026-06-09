@@ -1,3 +1,3 @@
 @echo off
 cd /d "%~dp0"
-npm run dev
+npm run dev:full

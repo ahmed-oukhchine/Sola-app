@@ -12,6 +12,7 @@ import {
   addRoutineItem, toggleRoutineItem, deleteRoutineItemById,
   getPoints, setPoints,
   clearAllTasks, clearAllInbox, clearAllSomeday, clearAllRoutines,
+  getLifeCourseItems, addLifeCourseItem, deleteLifeCourseItem, clearAllLifeCourses,
   createUser, findUserByUsername, findUserById
 } from './db.js'
 
@@ -91,6 +92,10 @@ app.post('/api/routines/:id/items', authMiddleware, (req, res) => res.json(addRo
 app.put('/api/routine-items/:id/toggle', authMiddleware, (req, res) => res.json(toggleRoutineItem(req.params.id)))
 app.delete('/api/routine-items/:id', authMiddleware, (req, res) => res.json(deleteRoutineItemById(req.params.id)))
 app.delete('/api/routines', authMiddleware, (req, res) => res.json(clearAllRoutines()))
+
+app.get('/api/life-courses', authMiddleware, (req, res) => res.json(getLifeCourseItems()))
+app.post('/api/life-courses', authMiddleware, (req, res) => res.json(addLifeCourseItem(req.body.title, req.body.id)))
+app.delete('/api/life-courses/:id', authMiddleware, (req, res) => res.json(deleteLifeCourseItem(req.params.id)))
 
 app.get('/api/points', authMiddleware, (req, res) => res.json(getPoints()))
 app.put('/api/points', authMiddleware, (req, res) => res.json(setPoints(req.body.points)))

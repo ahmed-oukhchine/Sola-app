@@ -9,6 +9,7 @@
     someday, addToSomeday, removeFromSomeday, moveSomedayToToday,
     routines, addRoutine, removeRoutine,
     addRoutineItem, toggleRoutineItem, removeRoutineItem,
+    lifeCourses, addLifeCourse, removeLifeCourse,
     loadPoints, savePoints, computeStreak,
     requestPermission, scheduleAll,
     auth, login, register, logout, checkAuth
@@ -187,6 +188,14 @@
     if (!somedayTitle.trim()) return
     addToSomeday(somedayTitle.trim())
     somedayTitle = ''
+  }
+
+  // Life Courses
+  let lifeCourseTitle = $state('')
+  function handleLifeCourseAdd() {
+    if (!lifeCourseTitle.trim()) return
+    addLifeCourse(lifeCourseTitle.trim())
+    lifeCourseTitle = ''
   }
 
   // Routines
@@ -790,6 +799,31 @@
               <div class="inbox-actions">
                 <button class="inbox-action" onclick={() => moveSomedayToToday(item.id)} title="Move to today">Today</button>
                 <button class="inbox-action del" onclick={() => removeFromSomeday(item.id)} title="Delete">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                </button>
+              </div>
+            </div>
+          {/each}
+        </div>
+      {/if}
+    </main>
+  {:else if activeView === 'life-courses'}
+    <main class="view-content">
+      <h2 class="view-title">Life Courses</h2>
+      <p class="view-sub">Lessons life taught you — write them down so you never forget</p>
+      <div class="inbox-add">
+        <input type="text" class="input" placeholder="A lesson you learned..." bind:value={lifeCourseTitle} onkeydown={(e) => { if (e.key === 'Enter') handleLifeCourseAdd() }} />
+        <button class="inbox-add-btn" onclick={handleLifeCourseAdd} disabled={!lifeCourseTitle.trim()}>Add</button>
+      </div>
+      {#if lifeCourses.items.length === 0}
+        <div class="empty"><p>No lessons yet</p></div>
+      {:else}
+        <div class="inbox-list">
+          {#each [...lifeCourses.items].reverse() as item (item.id)}
+            <div class="inbox-item" transition:fly={{ y: 6, duration: 150, opacity: 0 }}>
+              <span class="inbox-text">{item.title}</span>
+              <div class="inbox-actions">
+                <button class="inbox-action del" onclick={() => removeLifeCourse(item.id)} title="Delete">
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
                 </button>
               </div>

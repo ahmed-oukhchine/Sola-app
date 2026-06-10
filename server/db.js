@@ -66,6 +66,12 @@ db.exec(`
     password TEXT NOT NULL,
     createdAt INTEGER NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS life_courses (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    createdAt INTEGER NOT NULL
+  );
 `)
 
 const insertTask = db.prepare(`INSERT INTO tasks (id, title, date, startTime, endTime, completed, unscheduled, energy, repeat, createdAt) VALUES (@id, @title, @date, @startTime, @endTime, @completed, @unscheduled, @energy, @repeat, @createdAt)`)
@@ -99,6 +105,11 @@ const clearTasks = db.prepare(`DELETE FROM tasks`)
 const clearInbox = db.prepare(`DELETE FROM inbox`)
 const clearSomeday = db.prepare(`DELETE FROM someday`)
 const clearRoutines = db.prepare(`DELETE FROM routines`)
+const clearLifeCourses = db.prepare(`DELETE FROM life_courses`)
+
+const insertLifeCourse = db.prepare(`INSERT INTO life_courses (id, title, createdAt) VALUES (@id, @title, @createdAt)`)
+const deleteLifeCourse = db.prepare(`DELETE FROM life_courses WHERE id=?`)
+const getLifeCourses = db.prepare(`SELECT * FROM life_courses ORDER BY createdAt`)
 
 const insertUser = db.prepare(`INSERT INTO users (id, username, password, createdAt) VALUES (@id, @username, @password, @createdAt)`)
 const getUserByUsername = db.prepare(`SELECT * FROM users WHERE username=?`)
@@ -289,6 +300,22 @@ export function clearAllTasks() { clearTasks.run(); return { success: true } }
 export function clearAllInbox() { clearInbox.run(); return { success: true } }
 export function clearAllSomeday() { clearSomeday.run(); return { success: true } }
 export function clearAllRoutines() { clearRoutines.run(); return { success: true } }
+export function clearAllLifeCourses() { clearLifeCourses.run(); return { success: true } }
+
+export function getLifeCourseItems() {
+  return getLifeCourses.all()
+}
+
+export function addLifeCourseItem(title, id) {
+  const itemId = id || randomUUID()
+  insertLifeCourse.run({ id: itemId, title, createdAt: Date.now() })
+  return { id: itemId, title, createdAt: Date.now() }
+}
+
+export function deleteLifeCourseItem(id) {
+  deleteLifeCourse.run(id)
+  return { success: true }
+}
 
 export function createUser(username, hashedPassword) {
   const id = randomUUID()

@@ -4,6 +4,7 @@ export const store = $state({ tasks: [] })
 export const inbox = $state({ items: [] })
 export const someday = $state({ items: [] })
 export const routines = $state({ items: [] })
+export const lifeCourses = $state({ items: [] })
 export const auth = $state({ user: null, token: null, loading: true })
 
 let _points = 0
@@ -76,22 +77,25 @@ export function logout() {
   inbox.items = []
   someday.items = []
   routines.items = []
+  lifeCourses.items = []
   _points = 0
 }
 
 export async function loadAll() {
   try {
-    const [tasks, inboxItems, somedayItems, routinesItems, points] = await Promise.all([
+    const [tasks, inboxItems, somedayItems, routinesItems, courses, points] = await Promise.all([
       api('/tasks'),
       api('/inbox'),
       api('/someday'),
       api('/routines'),
+      api('/life-courses'),
       api('/points')
     ])
     store.tasks = tasks
     inbox.items = inboxItems
     someday.items = somedayItems
     routines.items = routinesItems
+    lifeCourses.items = courses
     _points = points.points
     scheduleAll()
     generateRecurringTasks()
@@ -277,6 +281,19 @@ export function removeRoutineItem(routineId, itemId) {
   }
 }
 
+// --- Life Courses ---
+
+export function addLifeCourse(title) {
+  const item = { id: crypto.randomUUID(), title, createdAt: Date.now() }
+  lifeCourses.items.push(item)
+  api('/life-courses', { method: 'POST', body: JSON.stringify({ title, id: item.id }) }).catch(() => {})
+}
+
+export function removeLifeCourse(id) {
+  lifeCourses.items = lifeCourses.items.filter(i => i.id !== id)
+  api(`/life-courses/${id}`, { method: 'DELETE' }).catch(() => {})
+}
+
 // --- Points ---
 
 export function loadPoints() { return _points }
@@ -371,10 +388,12 @@ export function exportData() {
     return api('/inbox').then(inboxItems => {
       return api('/someday').then(somedayItems => {
         return api('/routines').then(routinesItems => {
-          return api('/points').then(p => {
-            return JSON.stringify({
-              tasks, inbox: inboxItems, someday: somedayItems, routines: routinesItems, points: p.points
-            }, null, 2)
+          return api('/life-courses').then(courses => {
+            return api('/points').then(p => {
+              return JSON.stringify({
+                tasks, inbox: inboxItems, someday: somedayItems, routines: routinesItems, lifeCourses: courses, points: p.points
+              }, null, 2)
+            })
           })
         })
       })
@@ -388,7 +407,8 @@ export async function importData(json) {
     api('/tasks', { method: 'DELETE' }),
     api('/inbox', { method: 'DELETE' }),
     api('/someday', { method: 'DELETE' }),
-    api('/routines', { method: 'DELETE' })
+    api('/routines', { method: 'DELETE' }),
+    api('/life-courses', { method: 'DELETE' })
   ])
   const promises = []
   if (d.tasks) {
@@ -422,6 +442,10 @@ export async function importData(json) {
         }
       }))
     }
+  }
+  if (d.lifeCourses) {
+    lifeCourses.items = d.lifeCourses
+    for (const c of d.lifeCourses) promises.push(api('/life-courses', { method: 'POST', body: JSON.stringify(c) }))
   }
   if (d.points != null) savePoints(d.points)
   await Promise.all(promises)

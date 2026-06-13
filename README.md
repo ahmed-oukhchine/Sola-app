@@ -27,3 +27,20 @@ npm run dev
 | Windows | `run.bat` or `npm run dev` |
 
 The dev server starts at `http://localhost:5173` by default.
+
+## Build APK (Android)
+
+**Prerequisites:** [Android SDK](https://developer.android.com/studio) installed.
+
+```bash
+npm install @capacitor/core @capacitor/cli @capacitor/android
+npx cap init FocusApp com.yourname.focusapp
+npx cap add android
+npm run build
+npx cap copy
+npx cap open android
+```
+
+Android Studio will open. Then **Build → Build Bundle(s) / APK(s) → Build APK(s)**.
+
+APK location: `android/app/build/outputs/apk/debug/app-debug.apk`

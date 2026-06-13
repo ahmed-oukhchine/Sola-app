@@ -32,87 +32,6 @@
   let weeklyReviewData = $state(null)
   let ritualTitle = $state('')
   let theme = $state(localStorage.getItem('focus-theme') || 'system')
-  let accentColor = $state(localStorage.getItem('focus-accent') || '')
-  let bgColor = $state(localStorage.getItem('focus-bg') || '')
-
-  function hexToRgb(hex) {
-    const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16)
-    return { r, g, b }
-  }
-
-  function shadeColor(hex, percent) {
-    const { r, g, b } = hexToRgb(hex)
-    const t = percent < 0 ? 0 : 255
-    const f = percent < 0 ? 1 + percent : 1 - percent
-    const tr = Math.round(t + (r - t) * f), tg = Math.round(t + (g - t) * f), tb = Math.round(t + (b - t) * f)
-    return `#${tr.toString(16).padStart(2, '0')}${tg.toString(16).padStart(2, '0')}${tb.toString(16).padStart(2, '0')}`
-  }
-
-  function isValidHex(c) { return /^#[0-9a-fA-F]{6}$/.test(c) }
-
-  function applyAccentColor(color) {
-    if (!color || !isValidHex(color)) return
-    const { r, g, b } = hexToRgb(color)
-    const root = document.documentElement
-    root.style.setProperty('--accent', color)
-    root.style.setProperty('--accent-hover', shadeColor(color, 10))
-    root.style.setProperty('--accent-subtle', `rgba(${r}, ${g}, ${b}, ${theme === 'light' ? 0.08 : 0.12})`)
-    root.style.setProperty('--accent-gradient', `linear-gradient(135deg, ${color}, ${shadeColor(color, -12)})`)
-    root.style.setProperty('--accent-glow', `0 0 30px rgba(${r}, ${g}, ${b}, ${theme === 'light' ? 0.08 : 0.15})`)
-    root.style.setProperty('--glow', `0 0 0 2px rgba(${r}, ${g}, ${b}, 0.25)`)
-    localStorage.setItem('focus-accent', color)
-  }
-
-  function setAccentColor(color) {
-    accentColor = color
-    applyAccentColor(color)
-  }
-
-  function luminance(hex) {
-    const { r, g, b } = hexToRgb(hex)
-    return 0.299 * r + 0.587 * g + 0.114 * b
-  }
-
-  function applyBgColor(color) {
-    if (!color || !isValidHex(color)) return
-    const { r, g, b } = hexToRgb(color)
-    const lum = luminance(color)
-    const isDark = lum < 140
-    const root = document.documentElement
-    root.style.setProperty('--bg', color)
-    root.style.setProperty('--bg-gradient', `radial-gradient(ellipse at 30% 0%, ${shadeColor(color, 10)} 0%, ${color} 60%)`)
-    if (theme === 'light' || (!theme && !isDark)) {
-      root.style.setProperty('--text', '#2c2420')
-      root.style.setProperty('--text-secondary', 'rgba(44, 36, 32, 0.5)')
-      root.style.setProperty('--text-muted', 'rgba(44, 36, 32, 0.25)')
-      root.style.setProperty('--surface', 'rgba(255, 255, 255, 0.7)')
-      root.style.setProperty('--surface-raised', 'rgba(255, 255, 255, 0.9)')
-      root.style.setProperty('--surface-hover', 'rgba(255, 255, 255, 0.85)')
-      root.style.setProperty('--border', 'rgba(0, 0, 0, 0.06)')
-      root.style.setProperty('--shadow-sm', '0 1px 3px rgba(0, 0, 0, 0.04)')
-      root.style.setProperty('--shadow-md', '0 4px 16px rgba(0, 0, 0, 0.06)')
-      root.style.setProperty('--shadow-lg', '0 8px 32px rgba(0, 0, 0, 0.08)')
-      root.style.setProperty('--shadow-xl', '0 20px 60px rgba(0, 0, 0, 0.1)')
-    } else {
-      root.style.setProperty('--text', '#f0ebe3')
-      root.style.setProperty('--text-secondary', 'rgba(240, 235, 227, 0.55)')
-      root.style.setProperty('--text-muted', 'rgba(240, 235, 227, 0.3)')
-      root.style.setProperty('--surface', 'rgba(255, 255, 255, 0.05)')
-      root.style.setProperty('--surface-raised', 'rgba(255, 255, 255, 0.08)')
-      root.style.setProperty('--surface-hover', 'rgba(255, 255, 255, 0.1)')
-      root.style.setProperty('--border', 'rgba(255, 255, 255, 0.08)')
-      root.style.setProperty('--shadow-sm', '0 1px 3px rgba(0, 0, 0, 0.3)')
-      root.style.setProperty('--shadow-md', '0 4px 16px rgba(0, 0, 0, 0.3)')
-      root.style.setProperty('--shadow-lg', '0 8px 32px rgba(0, 0, 0, 0.4)')
-      root.style.setProperty('--shadow-xl', '0 20px 60px rgba(0, 0, 0, 0.5)')
-    }
-    localStorage.setItem('focus-bg', color)
-  }
-
-  function setBgColor(color) {
-    bgColor = color
-    applyBgColor(color)
-  }
   let todayStr = $derived(new Date().toISOString().split('T')[0])
   let dayStr = $derived(new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }))
   let todayTasks = $derived(store.tasks.filter(t => t.date === todayStr))
@@ -128,8 +47,6 @@
     if (next === 'dark') root.setAttribute('data-theme', 'dark')
     else if (next === 'light') root.setAttribute('data-theme', 'light')
     else root.removeAttribute('data-theme')
-    if (accentColor) applyAccentColor(accentColor)
-    if (bgColor) applyBgColor(bgColor)
   }
 
   function toggleSidebarCollapse() {
@@ -196,8 +113,6 @@
     scheduleAll()
     checkRituals()
     checkWeeklyReview()
-    if (accentColor) applyAccentColor(accentColor)
-    if (bgColor) applyBgColor(bgColor)
     setInterval(() => {
       now = new Date()
       streak = computeStreak()
@@ -281,7 +196,7 @@
   {#if activeView === 'calendar'}<div in:fade={{ duration: 200 }}><CalendarView /></div>{/if}
   {#if activeView === 'goals'}<div in:fade={{ duration: 200 }}><GoalsView /></div>{/if}
   {#if activeView === 'kanban'}<div in:fade={{ duration: 200 }}><KanbanView /></div>{/if}
-  {#if activeView === 'settings'}<div in:fade={{ duration: 200 }}><SettingsView {theme} onThemeCycle={cycleTheme} accentColor={accentColor} onAccentChange={setAccentColor} bgColor={bgColor} onBgChange={setBgColor} /></div>{/if}
+  {#if activeView === 'settings'}<div in:fade={{ duration: 200 }}><SettingsView {theme} onThemeCycle={cycleTheme} /></div>{/if}
   {#if activeView === 'habits'}<div in:fade={{ duration: 200 }}><HabitsView /></div>{/if}
   {#if activeView === 'tags'}<div in:fade={{ duration: 200 }}><TagsView /></div>{/if}
   {#if activeView === 'today'}<div in:fade={{ duration: 200 }}><TodayView {now} onCompleteTask={onCompleteTask} onCompleteSubtask={onCompleteSubtask} /></div>{/if}

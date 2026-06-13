@@ -373,7 +373,7 @@
   .hamburger { width: 38px; height: 38px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); background: var(--surface); border: 1px solid var(--border); padding: 0; transition: all 0.2s var(--ease); flex-shrink: 0; backdrop-filter: blur(var(--glass-blur)); }
   .hamburger:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); }
   .hamburger:active { transform: scale(0.92); }
-  .logo { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; color: transparent; flex: 1; background: var(--accent-gradient); -webkit-background-clip: text; background-clip: text; }
+  .logo { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; color: #f0f0f0; flex: 1; text-shadow: 0 0 40px rgba(255,255,255,0.06); }
   .header-actions { display: flex; align-items: center; gap: 8px; }
   .points-badge { font-size: 12px; font-weight: 600; color: var(--accent); background: var(--accent-subtle); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(212, 165, 116, 0.15); }
   .header-search-btn { width: 34px; height: 34px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); background: var(--surface); border: 1px solid var(--border); padding: 0; transition: all 0.15s var(--ease); flex-shrink: 0; }

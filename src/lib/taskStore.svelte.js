@@ -1,116 +1,93 @@
-const BASE = '/api'
+import Dexie from 'dexie'
+
+const db = new Dexie('FocusApp')
+db.version(1).stores({
+  data: 'key'
+})
 
 export const store = $state({ tasks: [] })
 export const inbox = $state({ items: [] })
 export const someday = $state({ items: [] })
 export const routines = $state({ items: [] })
 export const lifeCourses = $state({ items: [] })
-export const auth = $state({ user: null, token: null, loading: true })
+export const tags = $state({ items: [] })
+export const habits = $state({ items: [] })
+export const habitLogs = $state({ items: [] })
+export const focusSessions = $state({ items: [] })
+export const notes = $state({ items: [] })
+export const templates = $state({ items: [] })
+export const goals = $state({ items: [] })
 
 let _points = 0
 
-function getToken() {
-  return auth.token || localStorage.getItem('focus-token')
+const DATA_SOURCES = {
+  tasks: () => store.tasks,
+  inbox: () => inbox.items,
+  someday: () => someday.items,
+  routines: () => routines.items,
+  lifeCourses: () => lifeCourses.items,
+  tags: () => tags.items,
+  habits: () => habits.items,
+  habitLogs: () => habitLogs.items,
+  focusSessions: () => focusSessions.items,
+  notes: () => notes.items,
+  templates: () => templates.items,
+  goals: () => goals.items
 }
 
-function setToken(token) {
-  auth.token = token
-  if (token) localStorage.setItem('focus-token', token)
-  else localStorage.removeItem('focus-token')
+const KEYS = {
+  tasks: 'focus-tasks',
+  inbox: 'focus-inbox',
+  someday: 'focus-someday',
+  routines: 'focus-routines',
+  lifeCourses: 'focus-life-courses',
+  points: 'focus-points',
+  tags: 'focus-tags',
+  habits: 'focus-habits',
+  habitLogs: 'focus-habit-logs',
+  focusSessions: 'focus-focus-sessions',
+  notes: 'focus-notes',
+  templates: 'focus-templates',
+  goals: 'focus-goals'
 }
 
-function api(path, options = {}) {
-  const token = getToken()
-  const headers = { 'Content-Type': 'application/json' }
-  if (token) headers['Authorization'] = `Bearer ${token}`
-  return fetch(`${BASE}${path}`, { headers, ...options }).then(async r => {
-    if (r.status === 401) {
-      setToken(null)
-      auth.user = null
-      throw new Error('Unauthorized')
-    }
-    const text = await r.text()
-    if (!text) throw new Error(`Empty response from ${path} — is the API server running?`)
-    try { return JSON.parse(text) } catch {
-      throw new Error(`Invalid JSON from ${path}: ${text.slice(0, 100)}`)
-    }
-  })
+function setSource(key, data) {
+  if (key === 'tasks') { store.tasks = data; return }
+  const obj = { inbox, someday, routines, lifeCourses, tags, habits, habitLogs, focusSessions, notes, templates, goals }[key]
+  if (obj) obj.items = data?.items || []
 }
 
-// --- Auth ---
-
-export async function checkAuth() {
-  const token = localStorage.getItem('focus-token')
-  if (!token) { auth.loading = false; return }
-  try {
-    const user = await api('/me')
-    if (user && user.id) {
-      auth.user = user
-      setToken(token)
-    } else {
-      setToken(null)
-    }
-  } catch { setToken(null) }
-  auth.loading = false
-}
-
-export async function login(username, password) {
-  const res = await api('/login', { method: 'POST', body: JSON.stringify({ username, password }) })
-  if (res.error) throw new Error(res.error)
-  setToken(res.token)
-  auth.user = res.user
-  return res.user
-}
-
-export async function register(username, password) {
-  const res = await api('/register', { method: 'POST', body: JSON.stringify({ username, password }) })
-  if (res.error) throw new Error(res.error)
-  setToken(res.token)
-  auth.user = res.user
-  return res.user
-}
-
-export function logout() {
-  setToken(null)
-  auth.user = null
-  store.tasks = []
-  inbox.items = []
-  someday.items = []
-  routines.items = []
-  lifeCourses.items = []
-  _points = 0
+async function persist() {
+  const records = []
+  for (const [key] of Object.entries(KEYS)) {
+    if (key === 'points') continue
+    const fn = DATA_SOURCES[key]
+    records.push({ key, value: fn ? fn() : [] })
+  }
+  records.push({ key: 'points', value: _points })
+  try { await db.data.bulkPut(records) } catch {}
 }
 
 export async function loadAll() {
   try {
-    const [tasks, inboxItems, somedayItems, routinesItems, courses, points] = await Promise.all([
-      api('/tasks'),
-      api('/inbox'),
-      api('/someday'),
-      api('/routines'),
-      api('/life-courses'),
-      api('/points')
-    ])
-    store.tasks = tasks
-    inbox.items = inboxItems
-    someday.items = somedayItems
-    routines.items = routinesItems
-    lifeCourses.items = courses
-    _points = points.points
-    scheduleAll()
-    generateRecurringTasks()
-  } catch (e) {
-    if (e.message !== 'Unauthorized') console.error('Failed to load data', e)
-  }
+    const records = await db.data.toArray()
+    for (const { key, value } of records) {
+      if (key === 'points') { _points = value; continue }
+      if (key === 'tasks') { store.tasks = value; continue }
+      setSource(key, { items: value })
+    }
+  } catch {}
+  scheduleAll()
+  generateRecurringTasks()
 }
 
 // --- Tasks ---
 
-export function addTask(title, startTime = '', endTime = '', energy = null, repeat = null) {
+export function addTask(title, startTime = '', endTime = '', energy = null, repeat = null, priority = null, date = null, tagsList = []) {
   const task = {
     id: crypto.randomUUID(),
     title,
-    date: new Date().toISOString().split('T')[0],
+    date: date || new Date().toISOString().split('T')[0],
     startTime,
     endTime,
     completed: false,
@@ -119,20 +96,19 @@ export function addTask(title, startTime = '', endTime = '', energy = null, repe
     expanded: false,
     energy,
     repeat,
+    priority,
+    tags: tagsList,
     createdAt: Date.now()
   }
   store.tasks.push(task)
   scheduleNotifications(task)
-  api('/tasks', { method: 'POST', body: JSON.stringify(task) }).catch(() => {})
+  persist()
   return task
 }
 
 export function toggleTask(id) {
   const t = store.tasks.find(t => t.id === id)
-  if (t) {
-    t.completed = !t.completed
-    api(`/tasks/${id}/toggle`, { method: 'PUT' }).catch(() => {})
-  }
+  if (t) { t.completed = !t.completed; persist() }
 }
 
 export function updateTask(id, fields) {
@@ -142,34 +118,29 @@ export function updateTask(id, fields) {
     if (fields.startTime !== undefined) t.startTime = fields.startTime
     if (fields.endTime !== undefined) t.endTime = fields.endTime
     if (fields.energy !== undefined) t.energy = fields.energy
+    if (fields.priority !== undefined) t.priority = fields.priority
+    if (fields.tags !== undefined) t.tags = fields.tags
+    if (fields.date !== undefined) t.date = fields.date
     t.unscheduled = !t.startTime
-    api(`/tasks/${id}`, { method: 'PUT', body: JSON.stringify(fields) }).catch(() => {})
+    persist()
   }
-}
-
-export function updateEnergy(id, energy) {
-  updateTask(id, { energy })
 }
 
 export function removeTask(id) {
   store.tasks = store.tasks.filter(t => t.id !== id)
-  api(`/tasks/${id}`, { method: 'DELETE' }).catch(() => {})
+  persist()
 }
 
 export function toggleExpand(id) {
   const t = store.tasks.find(t => t.id === id)
-  if (t) {
-    t.expanded = !t.expanded
-    api(`/tasks/${id}/expand`, { method: 'PUT' }).catch(() => {})
-  }
+  if (t) { t.expanded = !t.expanded; persist() }
 }
 
 export function addSubtask(taskId, title) {
   const t = store.tasks.find(t => t.id === taskId)
   if (t) {
-    const subtask = { id: crypto.randomUUID(), title, completed: false }
-    t.subtasks.push(subtask)
-    api(`/tasks/${taskId}/subtasks`, { method: 'POST', body: JSON.stringify({ title, id: subtask.id }) }).catch(() => {})
+    t.subtasks.push({ id: crypto.randomUUID(), title, completed: false })
+    persist()
   }
 }
 
@@ -177,10 +148,7 @@ export function toggleSubtask(taskId, subtaskId) {
   const t = store.tasks.find(t => t.id === taskId)
   if (t) {
     const s = t.subtasks.find(s => s.id === subtaskId)
-    if (s) {
-      s.completed = !s.completed
-      api(`/subtasks/${subtaskId}/toggle`, { method: 'PUT' }).catch(() => {})
-    }
+    if (s) { s.completed = !s.completed; persist() }
   }
 }
 
@@ -188,27 +156,26 @@ export function removeSubtask(taskId, subtaskId) {
   const t = store.tasks.find(t => t.id === taskId)
   if (t) {
     t.subtasks = t.subtasks.filter(s => s.id !== subtaskId)
-    api(`/subtasks/${subtaskId}`, { method: 'DELETE' }).catch(() => {})
+    persist()
   }
 }
 
 // --- Inbox ---
 
 export function addToInbox(title) {
-  const item = { id: crypto.randomUUID(), title, createdAt: Date.now() }
-  inbox.items.push(item)
-  api('/inbox', { method: 'POST', body: JSON.stringify({ title, id: item.id }) }).catch(() => {})
+  inbox.items.push({ id: crypto.randomUUID(), title, createdAt: Date.now() })
+  persist()
 }
 
 export function removeFromInbox(id) {
   inbox.items = inbox.items.filter(i => i.id !== id)
-  api(`/inbox/${id}`, { method: 'DELETE' }).catch(() => {})
+  persist()
 }
 
 export function moveInboxToToday(id) {
   const item = inbox.items.find(i => i.id === id)
   if (item) {
-    addTask(item.title)
+    addTask(item.title, '', '', null, null, null, new Date().toISOString().split('T')[0], [])
     removeFromInbox(id)
   }
 }
@@ -216,14 +183,13 @@ export function moveInboxToToday(id) {
 // --- Someday ---
 
 export function addToSomeday(title) {
-  const item = { id: crypto.randomUUID(), title, createdAt: Date.now() }
-  someday.items.push(item)
-  api('/someday', { method: 'POST', body: JSON.stringify({ title, id: item.id }) }).catch(() => {})
+  someday.items.push({ id: crypto.randomUUID(), title, createdAt: Date.now() })
+  persist()
 }
 
 export function removeFromSomeday(id) {
   someday.items = someday.items.filter(i => i.id !== id)
-  api(`/someday/${id}`, { method: 'DELETE' }).catch(() => {})
+  persist()
 }
 
 export function moveSomedayToToday(id) {
@@ -237,28 +203,20 @@ export function moveSomedayToToday(id) {
 // --- Routines ---
 
 export function addRoutine(title, type) {
-  const routine = {
-    id: crypto.randomUUID(),
-    title,
-    type,
-    items: [{ id: crypto.randomUUID(), title: '', completed: false }],
-    createdAt: Date.now()
-  }
-  routines.items.push(routine)
-  api('/routines', { method: 'POST', body: JSON.stringify({ title, type, id: routine.id }) }).catch(() => {})
+  routines.items.push({ id: crypto.randomUUID(), title, type, items: [], createdAt: Date.now() })
+  persist()
 }
 
 export function removeRoutine(id) {
   routines.items = routines.items.filter(r => r.id !== id)
-  api(`/routines/${id}`, { method: 'DELETE' }).catch(() => {})
+  persist()
 }
 
 export function addRoutineItem(routineId, title) {
   const r = routines.items.find(r => r.id === routineId)
   if (r) {
-    const item = { id: crypto.randomUUID(), title, completed: false }
-    r.items.push(item)
-    api(`/routines/${routineId}/items`, { method: 'POST', body: JSON.stringify({ title, id: item.id }) }).catch(() => {})
+    r.items.push({ id: crypto.randomUUID(), title, completed: false })
+    persist()
   }
 }
 
@@ -266,10 +224,7 @@ export function toggleRoutineItem(routineId, itemId) {
   const r = routines.items.find(r => r.id === routineId)
   if (r) {
     const item = r.items.find(i => i.id === itemId)
-    if (item) {
-      item.completed = !item.completed
-      api(`/routine-items/${itemId}/toggle`, { method: 'PUT' }).catch(() => {})
-    }
+    if (item) { item.completed = !item.completed; persist() }
   }
 }
 
@@ -277,21 +232,159 @@ export function removeRoutineItem(routineId, itemId) {
   const r = routines.items.find(r => r.id === routineId)
   if (r) {
     r.items = r.items.filter(i => i.id !== itemId)
-    api(`/routine-items/${itemId}`, { method: 'DELETE' }).catch(() => {})
+    persist()
   }
 }
 
 // --- Life Courses ---
 
-export function addLifeCourse(title) {
-  const item = { id: crypto.randomUUID(), title, createdAt: Date.now() }
-  lifeCourses.items.push(item)
-  api('/life-courses', { method: 'POST', body: JSON.stringify({ title, id: item.id }) }).catch(() => {})
+export function addLifeCourse(title, description = '') {
+  lifeCourses.items.push({ id: crypto.randomUUID(), title, description, createdAt: Date.now() })
+  persist()
+}
+
+export function updateLifeCourse(id, fields) {
+  const item = lifeCourses.items.find(i => i.id === id)
+  if (item) { Object.assign(item, fields); persist() }
 }
 
 export function removeLifeCourse(id) {
   lifeCourses.items = lifeCourses.items.filter(i => i.id !== id)
-  api(`/life-courses/${id}`, { method: 'DELETE' }).catch(() => {})
+  persist()
+}
+
+// --- Tags ---
+
+export function addTag(name, color = '#6b6b6b') {
+  if (tags.items.some(t => t.name.toLowerCase() === name.toLowerCase())) return
+  tags.items.push({ id: crypto.randomUUID(), name, color, createdAt: Date.now() })
+  persist()
+}
+
+export function removeTag(id) {
+  tags.items = tags.items.filter(t => t.id !== id)
+  persist()
+}
+
+export function updateTagColor(id, color) {
+  const t = tags.items.find(t => t.id === id)
+  if (t) { t.color = color; persist() }
+}
+
+// --- Habits ---
+
+export function addHabit(name) {
+  if (habits.items.some(h => h.name.toLowerCase() === name.toLowerCase())) return
+  habits.items.push({ id: crypto.randomUUID(), name, createdAt: Date.now() })
+  persist()
+}
+
+export function removeHabit(id) {
+  habits.items = habits.items.filter(h => h.id !== id)
+  persist()
+}
+
+export function toggleHabitLog(habitId, date) {
+  const existing = habitLogs.items.find(l => l.habitId === habitId && l.date === date)
+  if (existing) {
+    habitLogs.items = habitLogs.items.filter(l => l.id !== existing.id)
+  } else {
+    habitLogs.items.push({ id: crypto.randomUUID(), habitId, date, createdAt: Date.now() })
+  }
+  persist()
+}
+
+export function isHabitDone(habitId, date) {
+  return habitLogs.items.some(l => l.habitId === habitId && l.date === date)
+}
+
+// --- Focus Sessions ---
+
+export function logFocusSession(minutes, type = 'focus') {
+  focusSessions.items.push({
+    id: crypto.randomUUID(),
+    date: new Date().toISOString().split('T')[0],
+    minutes,
+    type,
+    createdAt: Date.now()
+  })
+  persist()
+}
+
+// --- Notes ---
+
+export function getNote(date) {
+  return notes.items.find(n => n.date === date)
+}
+
+export function saveNote(date, content) {
+  const existing = notes.items.find(n => n.date === date)
+  if (existing) {
+    existing.content = content
+  } else {
+    notes.items.push({ id: crypto.randomUUID(), date, content })
+  }
+  persist()
+}
+
+// --- Templates ---
+
+export function addTemplate(data) {
+  templates.items.push({ id: crypto.randomUUID(), ...data, createdAt: Date.now() })
+  persist()
+}
+
+export function removeTemplate(id) {
+  templates.items = templates.items.filter(t => t.id !== id)
+  persist()
+}
+
+// --- Goals ---
+
+export function addGoal(title, description = '', target = 0, period = 'weekly') {
+  goals.items.push({
+    id: crypto.randomUUID(),
+    title,
+    description,
+    target,
+    period,
+    linkedTaskIds: [],
+    createdAt: Date.now()
+  })
+  persist()
+}
+
+export function updateGoal(id, fields) {
+  const g = goals.items.find(g => g.id === id)
+  if (g) { Object.assign(g, fields); persist() }
+}
+
+export function removeGoal(id) {
+  goals.items = goals.items.filter(g => g.id !== id)
+  persist()
+}
+
+export function linkTaskToGoal(goalId, taskId) {
+  const g = goals.items.find(g => g.id === goalId)
+  if (g && !g.linkedTaskIds.includes(taskId)) {
+    g.linkedTaskIds.push(taskId)
+    persist()
+  }
+}
+
+export function unlinkTaskFromGoal(goalId, taskId) {
+  const g = goals.items.find(g => g.id === goalId)
+  if (g) {
+    g.linkedTaskIds = g.linkedTaskIds.filter(id => id !== taskId)
+    persist()
+  }
+}
+
+export function getGoalProgress(goal) {
+  if (!goal.linkedTaskIds.length) return 0
+  const linked = store.tasks.filter(t => goal.linkedTaskIds.includes(t.id))
+  const completed = linked.filter(t => t.completed).length
+  return goal.target > 0 ? Math.min(1, completed / goal.target) : linked.length ? completed / linked.length : 0
 }
 
 // --- Points ---
@@ -300,7 +393,7 @@ export function loadPoints() { return _points }
 
 export function savePoints(p) {
   _points = p
-  api('/points', { method: 'PUT', body: JSON.stringify({ points: p }) }).catch(() => {})
+  db.data.put({ key: 'points', value: p })
 }
 
 // --- Streak ---
@@ -376,77 +469,32 @@ export function generateRecurringTasks() {
       const task = { ...t, id: crypto.randomUUID(), date: today, completed: false, subtasks: [], expanded: false, createdAt: Date.now() }
       store.tasks.push(task)
       scheduleNotifications(task)
-      api('/tasks', { method: 'POST', body: JSON.stringify(task) }).catch(() => {})
+      persist()
     }
   }
 }
 
 // --- Export / Import ---
 
-export function exportData() {
-  return api('/tasks').then(tasks => {
-    return api('/inbox').then(inboxItems => {
-      return api('/someday').then(somedayItems => {
-        return api('/routines').then(routinesItems => {
-          return api('/life-courses').then(courses => {
-            return api('/points').then(p => {
-              return JSON.stringify({
-                tasks, inbox: inboxItems, someday: somedayItems, routines: routinesItems, lifeCourses: courses, points: p.points
-              }, null, 2)
-            })
-          })
-        })
-      })
-    })
-  })
+export async function exportData() {
+  const records = await db.data.toArray()
+  const data = {}
+  for (const { key, value } of records) {
+    data[key] = value
+  }
+  return JSON.stringify(data, null, 2)
 }
 
 export async function importData(json) {
   const d = JSON.parse(json)
-  await Promise.all([
-    api('/tasks', { method: 'DELETE' }),
-    api('/inbox', { method: 'DELETE' }),
-    api('/someday', { method: 'DELETE' }),
-    api('/routines', { method: 'DELETE' }),
-    api('/life-courses', { method: 'DELETE' })
-  ])
-  const promises = []
-  if (d.tasks) {
-    store.tasks = d.tasks
-    for (const t of d.tasks) {
-      promises.push(api('/tasks', { method: 'POST', body: JSON.stringify(t) }).then(created => {
-        if (t.subtasks) {
-          for (const s of t.subtasks) {
-            promises.push(api(`/tasks/${created.id}/subtasks`, { method: 'POST', body: JSON.stringify(s) }))
-          }
-        }
-      }))
-    }
+  const records = []
+  for (const [key, value] of Object.entries(d)) {
+    records.push({ key, value })
   }
-  if (d.inbox) {
-    inbox.items = d.inbox
-    for (const i of d.inbox) promises.push(api('/inbox', { method: 'POST', body: JSON.stringify(i) }))
+  await db.data.bulkPut(records)
+  for (const { key, value } of records) {
+    if (key === 'points') { _points = value; continue }
+    if (key === 'tasks') { store.tasks = value; continue }
+    setSource(key, { items: value })
   }
-  if (d.someday) {
-    someday.items = d.someday
-    for (const i of d.someday) promises.push(api('/someday', { method: 'POST', body: JSON.stringify(i) }))
-  }
-  if (d.routines) {
-    routines.items = d.routines
-    for (const r of d.routines) {
-      promises.push(api('/routines', { method: 'POST', body: JSON.stringify({ title: r.title, type: r.type, id: r.id }) }).then(created => {
-        if (r.items) {
-          for (const item of r.items) {
-            promises.push(api(`/routines/${created.id}/items`, { method: 'POST', body: JSON.stringify(item) }))
-          }
-        }
-      }))
-    }
-  }
-  if (d.lifeCourses) {
-    lifeCourses.items = d.lifeCourses
-    for (const c of d.lifeCourses) promises.push(api('/life-courses', { method: 'POST', body: JSON.stringify(c) }))
-  }
-  if (d.points != null) savePoints(d.points)
-  await Promise.all(promises)
 }

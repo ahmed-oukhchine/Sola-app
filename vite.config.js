@@ -3,11 +3,6 @@ import { svelte } from '@sveltejs/vite-plugin-svelte'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
-  server: {
-    proxy: {
-      '/api': 'http://localhost:3001'
-    }
-  },
   plugins: [
     svelte(),
     VitePWA({
@@ -16,21 +11,24 @@ export default defineConfig({
       manifest: {
         name: 'Focus',
         short_name: 'Focus',
-        description: 'ADHD-friendly task timer',
+        description: 'ADHD-friendly focus app',
         theme_color: '#181818',
         background_color: '#181818',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',
         icons: [
-          {
-            src: 'favicon.svg',
-            sizes: 'any',
-            type: 'image/svg+xml',
-            purpose: 'any maskable'
-          }
+          { src: 'favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' }
         ]
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,svg}']
       }
     })
-  ]
+  ],
+  server: {
+    proxy: {
+      '/api': 'http://localhost:3001'
+    }
+  }
 })

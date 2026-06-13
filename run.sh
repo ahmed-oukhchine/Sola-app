@@ -1,3 +1,3 @@
-#!/bin/bash
-cd "$(dirname "$0")"
-npm run dev:full
+#!/usr/bin/env bash
+set -e
+npm run dev

@@ -293,7 +293,7 @@
   ><button
     class="view-btn"
     class:active={hideCompleted}
-    onclick={() => (hideCompleted = !hideCompleted)}>Focus</button
+    onclick={() => (hideCompleted = !hideCompleted)}>Sola</button
   ><input
     type="search"
     class="search-input"

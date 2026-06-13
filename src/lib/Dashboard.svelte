@@ -71,7 +71,7 @@
     </button>
     <button class="db-action-btn" onclick={() => onNavigate('focus')}>
       <Crosshair size={16} strokeWidth={1.5} />
-      Focus
+      Sola
     </button>
     <button class="db-action-btn" onclick={() => onNavigate('stats')}>
       <TrendingUp size={16} strokeWidth={1.5} />

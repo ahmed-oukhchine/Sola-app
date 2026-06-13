@@ -260,7 +260,7 @@
     <button class="hamburger" onclick={() => sidebarOpen = true} aria-label="Menu">
         <Menu size={20} strokeWidth={1.5} />
     </button>
-    <h1 class="logo">focus</h1>
+    <h1 class="logo">Sola</h1>
     <div class="header-actions">
       <button class="header-search-btn" onclick={() => showSearch = true} aria-label="Search (Ctrl+K)">
         <Search size={16} strokeWidth={1.5} />

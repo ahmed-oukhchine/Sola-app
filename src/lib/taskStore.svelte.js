@@ -578,7 +578,7 @@ function scheduleNotifications(task) {
 function notify(msg) {
   if (localStorage.getItem('focus-ntfy-enabled') !== 'true') return
   if ('Notification' in window && Notification.permission === 'granted') {
-    new Notification('Focus', { body: msg })
+    new Notification('Sola', { body: msg })
   }
 }
 

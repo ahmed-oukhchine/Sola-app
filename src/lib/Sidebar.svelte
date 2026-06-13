@@ -7,7 +7,7 @@
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'today', label: 'Today', icon: CalendarDays },
     { id: 'inbox', label: 'Inbox', icon: Inbox },
-    { id: 'focus', label: 'Focus', icon: Crosshair },
+    { id: 'focus', label: 'Sola', icon: Crosshair },
     { id: 'routines', label: 'Routines', icon: ListChecks },
     { id: 'someday', label: 'Someday', icon: Clock },
     { id: 'calendar', label: 'Calendar', icon: Calendar },

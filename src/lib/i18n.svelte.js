@@ -2,7 +2,7 @@ const TRANSLATIONS = {
   en: {
     today: 'Today',
     inbox: 'Inbox',
-    focus: 'Focus',
+    focus: 'Sola',
     routines: 'Routines',
     someday: 'Someday',
     lifeCourses: 'Life Courses',
@@ -35,7 +35,7 @@ const TRANSLATIONS = {
     evening: 'Evening',
     unscheduled: 'Unscheduled',
     nextAction: 'Next action',
-    focus: 'Focus',
+    focus: 'Sola',
     all: 'All',
     noTasks: 'No tasks yet',
     allDone: 'All done for today',

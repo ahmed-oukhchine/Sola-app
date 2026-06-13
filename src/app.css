@@ -14,9 +14,9 @@
   --surface-hover: rgba(255, 255, 255, 0.1);
   --border: rgba(255, 255, 255, 0.08);
   --border-light: rgba(255, 255, 255, 0.04);
-  --text: #f0ebe3;
-  --text-secondary: rgba(240, 235, 227, 0.55);
-  --text-muted: rgba(240, 235, 227, 0.3);
+  --text: #e8e8e8;
+  --text-secondary: rgba(232, 232, 232, 0.55);
+  --text-muted: rgba(232, 232, 232, 0.3);
   --accent: #d4a574;
   --accent-hover: #deb486;
   --accent-subtle: rgba(212, 165, 116, 0.12);
@@ -53,9 +53,9 @@
   --surface-hover: rgba(255, 255, 255, 0.85);
   --border: rgba(0, 0, 0, 0.06);
   --border-light: rgba(0, 0, 0, 0.03);
-  --text: #2c2420;
-  --text-secondary: rgba(44, 36, 32, 0.5);
-  --text-muted: rgba(44, 36, 32, 0.25);
+  --text: #222222;
+  --text-secondary: rgba(34, 34, 34, 0.5);
+  --text-muted: rgba(34, 34, 34, 0.25);
   --accent: #b07050;
   --accent-hover: #a06040;
   --accent-subtle: rgba(176, 112, 80, 0.08);

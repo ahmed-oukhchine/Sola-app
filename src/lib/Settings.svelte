@@ -101,6 +101,8 @@
       if (!confirm('Sign out? You will need your password to sign back in.')) return
       localStorage.removeItem('focus-account-hash')
       localStorage.removeItem('focus-account-user')
+      localStorage.removeItem('focus-session-expiry')
+      localStorage.removeItem('focus-session-activity')
       window.location.reload()
     }}>Sign out</button>
   </div>

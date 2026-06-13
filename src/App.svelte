@@ -42,7 +42,9 @@
   let completionRate = $derived(store.tasks.length ? Math.round(store.tasks.filter(t => t.completed).length / store.tasks.length * 100) : 0)
   let recentCompletions = $derived(store.tasks.filter(t => t.completed).toReversed().slice(0, 20))
   let showOnboarding = $state(!localStorage.getItem('focus-onboarded'))
-  let showAccount = $state(!showOnboarding)
+  let hasAccount = $state(!!localStorage.getItem('focus-account-hash'))
+  let sessionValid = $state(hasAccount && (parseInt(localStorage.getItem('focus-session-expiry') || '0') > Date.now()))
+  let showAccount = $state(!showOnboarding && (!sessionValid || !hasAccount))
   let userName = $state(localStorage.getItem('focus-account-user') || '')
   let accentColor = $state(localStorage.getItem('focus-accent') || '')
 
@@ -104,6 +106,9 @@
 
   function handleUnlock(user) {
     userName = user
+    const expiry = Date.now() + 30 * 60 * 1000
+    localStorage.setItem('focus-session-expiry', String(expiry))
+    localStorage.setItem('focus-session-activity', String(Date.now()))
     showAccount = false
   }
 
@@ -188,7 +193,20 @@
       streak = computeStreak()
     }, 30000)
     document.addEventListener('keydown', handleKeydown)
-    return () => document.removeEventListener('keydown', handleKeydown)
+
+    function slideSession() {
+      localStorage.setItem('focus-session-expiry', String(Date.now() + 30 * 60 * 1000))
+      localStorage.setItem('focus-session-activity', String(Date.now()))
+    }
+    document.addEventListener('click', slideSession)
+    document.addEventListener('keydown', slideSession)
+    document.addEventListener('touchstart', slideSession)
+    return () => {
+      document.removeEventListener('keydown', handleKeydown)
+      document.removeEventListener('click', slideSession)
+      document.removeEventListener('keydown', slideSession)
+      document.removeEventListener('touchstart', slideSession)
+    }
   })
 
   function handleKeydown(e) {

@@ -83,7 +83,21 @@ export async function loadAll() {
 
 // --- Tasks ---
 
-export function addTask(title, startTime = '', endTime = '', energy = null, repeat = null, priority = null, date = null, tagsList = []) {
+export function addTask(title, startTime = '', endTime = '', energy = null, repeat = null, priority = null, date = null, tagsList = [], estimatedMinutes = null) {
+  if (!date && !startTime) {
+    const parsed = parseTaskFromString(title)
+    if (parsed.date || parsed.startTime) {
+      date = parsed.date
+      startTime = parsed.startTime || ''
+      title = parsed.title
+    }
+  }
+  if (!estimatedMinutes && startTime && endTime) {
+    const [sh, sm] = startTime.split(':').map(Number)
+    const [eh, em] = endTime.split(':').map(Number)
+    estimatedMinutes = (eh * 60 + em) - (sh * 60 + sm)
+  }
+  const maxOrder = store.tasks.reduce((m, t) => Math.max(m, t.order || 0), 0)
   const task = {
     id: crypto.randomUUID(),
     title,
@@ -98,6 +112,8 @@ export function addTask(title, startTime = '', endTime = '', energy = null, repe
     repeat,
     priority,
     tags: tagsList,
+    estimatedMinutes,
+    order: maxOrder + 1,
     createdAt: Date.now()
   }
   store.tasks.push(task)
@@ -158,6 +174,140 @@ export function removeSubtask(taskId, subtaskId) {
     t.subtasks = t.subtasks.filter(s => s.id !== subtaskId)
     persist()
   }
+}
+
+// --- Reorder ---
+
+export function reorderTask(id, newOrder) {
+  const t = store.tasks.find(t => t.id === id)
+  if (t) { t.order = newOrder; persist() }
+}
+
+export function getTaskOrder(task) {
+  return task.order || 0
+}
+
+// --- Full-text Search ---
+
+export function searchAll(query) {
+  if (!query || !query.trim()) return []
+  const q = query.toLowerCase().trim()
+  const results = []
+
+  for (const t of store.tasks) {
+    if (t.title.toLowerCase().includes(q)) {
+      results.push({ type: 'task', id: t.id, title: t.title, subtitle: `${t.date}${t.completed ? ' ✓' : ''}` })
+    } else {
+      const match = t.subtasks.find(s => s.title.toLowerCase().includes(q))
+      if (match) results.push({ type: 'task', id: t.id, title: match.title, subtitle: `subtask of "${t.title}"` })
+    }
+  }
+  for (const i of inbox.items) {
+    if (i.title.toLowerCase().includes(q)) results.push({ type: 'inbox', id: i.id, title: i.title, subtitle: 'Inbox' })
+  }
+  for (const s of someday.items) {
+    if (s.title.toLowerCase().includes(q)) results.push({ type: 'someday', id: s.id, title: s.title, subtitle: 'Someday' })
+  }
+  for (const n of notes.items) {
+    if (n.content && n.content.toLowerCase().includes(q)) {
+      const preview = n.content.substring(0, 80)
+      results.push({ type: 'note', id: n.id, title: `Note ${n.date}`, subtitle: preview })
+    }
+  }
+  for (const g of goals.items) {
+    if (g.title.toLowerCase().includes(q)) results.push({ type: 'goal', id: g.id, title: g.title, subtitle: 'Goal' })
+  }
+  for (const h of habits.items) {
+    if (h.name.toLowerCase().includes(q)) results.push({ type: 'habit', id: h.id, title: h.name, subtitle: 'Habit' })
+  }
+
+  return results.slice(0, 30)
+}
+
+// --- Natural Language Date Parsing ---
+
+const DAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+const SHORT = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
+
+export function parseNaturalDate(text) {
+  if (!text) return null
+  const lower = text.toLowerCase()
+
+  const dateMatch = lower.match(/\b(today|tonight)\b/)
+  if (dateMatch) return new Date().toISOString().split('T')[0]
+
+  const tomorrowMatch = lower.match(/\b(tomorrow)\b/)
+  if (tomorrowMatch) {
+    const d = new Date(); d.setDate(d.getDate() + 1)
+    return d.toISOString().split('T')[0]
+  }
+
+  const inMatch = lower.match(/\bin\s+(\d+)\s+(day|days|hour|hours)\b/)
+  if (inMatch) {
+    const n = parseInt(inMatch[1])
+    const unit = inMatch[2]
+    const d = new Date()
+    if (unit.startsWith('day')) d.setDate(d.getDate() + n)
+    else d.setHours(d.getHours() + n)
+    return d.toISOString().split('T')[0]
+  }
+
+  const nextMatch = lower.match(/\bnext\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday|week|month)\b/)
+  if (nextMatch) {
+    const day = nextMatch[1]
+    if (day === 'week') {
+      const d = new Date(); d.setDate(d.getDate() + (8 - d.getDay()))
+      return d.toISOString().split('T')[0]
+    }
+    if (day === 'month') {
+      const d = new Date(); d.setMonth(d.getMonth() + 1)
+      return d.toISOString().split('T')[0]
+    }
+    const target = DAYS.indexOf(day)
+    const d = new Date()
+    const current = d.getDay()
+    let diff = target - current
+    if (diff <= 0) diff += 7
+    d.setDate(d.getDate() + diff)
+    return d.toISOString().split('T')[0]
+  }
+
+  const dayMatch = lower.match(/\b(on\s+)?(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/)
+  if (dayMatch) {
+    const target = DAYS.indexOf(dayMatch[2])
+    const d = new Date()
+    const current = d.getDay()
+    let diff = target - current
+    if (diff <= 0) diff += 7
+    d.setDate(d.getDate() + diff)
+    return d.toISOString().split('T')[0]
+  }
+
+  return null
+}
+
+export function extractTime(text) {
+  const m = text.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)\b/i)
+  if (m) {
+    let h = parseInt(m[1])
+    const min = parseInt(m[2]) || 0
+    const suffix = m[3][0].toLowerCase()
+    if (suffix === 'p' && h < 12) h += 12
+    if (suffix === 'a' && h === 12) h = 0
+    return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`
+  }
+  return null
+}
+
+export function parseTaskFromString(text) {
+  const date = parseNaturalDate(text)
+  const time = extractTime(text)
+  let title = text
+  if (time) {
+    title = title.replace(/\d{1,2}(?::\d{2})?\s*(am|pm|a\.m\.|p\.m\.)/i, '').trim()
+  }
+  const dateStr = date || new Date().toISOString().split('T')[0]
+  return { title: title.replace(/\b(tomorrow|today|tonight|in\s+\d+\s+(day|days|hour|hours)|next\s+\w+)/gi, '').replace(/\s+/g, ' ').trim() || text, date: dateStr, startTime: time || '', endTime: '' }
 }
 
 // --- Inbox ---

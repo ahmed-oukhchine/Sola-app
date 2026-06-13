@@ -1,5 +1,5 @@
 <script>
-  import { fade } from 'svelte/transition'
+  import { fade, fly } from 'svelte/transition'
   import { onMount } from 'svelte'
   import Sidebar from './lib/Sidebar.svelte'
   import Dashboard from './lib/Dashboard.svelte'
@@ -16,6 +16,7 @@
   import SomedayView from './lib/Someday.svelte'
   import LifeCoursesView from './lib/LifeCourses.svelte'
   import StatsView from './lib/Stats.svelte'
+  import SearchModal from './lib/Search.svelte'
   import { store, addTask, loadAll, exportData, importData, loadPoints, savePoints, computeStreak, requestPermission, scheduleAll } from './lib/taskStore.svelte.js'
 
   let activeView = $state('dashboard')
@@ -26,6 +27,9 @@
   let streak = $state(computeStreak())
   let showMorning = $state(false)
   let showEvening = $state(false)
+  let showWeeklyReview = $state(false)
+  let showSearch = $state(false)
+  let weeklyReviewData = $state(null)
   let ritualTitle = $state('')
   let theme = $state(localStorage.getItem('focus-theme') || 'system')
   let todayStr = $derived(new Date().toISOString().split('T')[0])
@@ -108,11 +112,46 @@
     requestPermission()
     scheduleAll()
     checkRituals()
+    checkWeeklyReview()
     setInterval(() => {
       now = new Date()
       streak = computeStreak()
     }, 30000)
+    document.addEventListener('keydown', handleKeydown)
+    return () => document.removeEventListener('keydown', handleKeydown)
   })
+
+  function handleKeydown(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); showSearch = true }
+  }
+
+  function checkWeeklyReview() {
+    const day = new Date().getDay()
+    if (day !== 0) return
+    const lastReview = localStorage.getItem('focus-weekly-review')
+    if (lastReview === new Date().toISOString().split('T')[0]) return
+    const byDate = {}
+    for (const t of store.tasks) {
+      if (!t.completed) continue
+      byDate[t.date] = (byDate[t.date] || 0) + 1
+    }
+    const dates = Object.keys(byDate).sort()
+    let bestDay = '', bestCount = 0
+    for (const [d, c] of Object.entries(byDate)) {
+      if (c > bestCount) { bestCount = c; bestDay = d }
+    }
+    const totalCompleted = store.tasks.filter(t => t.completed).length
+    const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7)
+    const weekKey = weekAgo.toISOString().split('T')[0]
+    const weekCompleted = store.tasks.filter(t => t.completed && t.date >= weekKey).length
+    weeklyReviewData = { totalCompleted, weekCompleted, bestDay: bestDay ? `${bestDay} (${bestCount} tasks)` : '—', streak: computeStreak() }
+    showWeeklyReview = true
+  }
+
+  function dismissWeeklyReview() {
+    localStorage.setItem('focus-weekly-review', todayStr)
+    showWeeklyReview = false
+  }
 
   async function handleExport() {
     const json = await exportData()
@@ -145,6 +184,9 @@
     </button>
     <h1 class="logo">focus</h1>
     <div class="header-actions">
+      <button class="header-search-btn" onclick={() => showSearch = true} aria-label="Search (Ctrl+K)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5"/><path d="M11 11l3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
       <span class="points-badge">✦ {points}</span>
       <span class="date">{dayStr}</span>
     </div>
@@ -165,6 +207,29 @@
   {#if activeView === 'life-courses'}<div in:fade={{ duration: 200 }}><LifeCoursesView /></div>{/if}
   {#if activeView === 'stats'}<div in:fade={{ duration: 200 }}><StatsView {points} {streak} {completedCount} todayTotal={todayTasks.length} {completionRate} {recentCompletions} /></div>{/if}
 </div>
+
+<SearchModal open={showSearch} onClose={() => showSearch = false} onNavigate={(v) => activeView = v} />
+
+{#if showWeeklyReview && weeklyReviewData}
+  <div class="ritual-overlay" transition:fly={{ y: 20, duration: 250, opacity: 0 }}>
+    <div class="ritual-card">
+      <div class="ritual-icon">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><rect x="4" y="6" width="24" height="20" rx="3" stroke="var(--accent)" stroke-width="2" fill="none"/><path d="M4 12h24M12 6v4M20 6v4" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"/><circle cx="11" cy="18" r="1.5" fill="var(--accent)"/><circle cx="16" cy="18" r="1.5" fill="var(--accent)"/><circle cx="21" cy="18" r="1.5" fill="var(--accent)"/><circle cx="11" cy="23" r="1.5" fill="var(--accent)"/><circle cx="16" cy="23" r="1.5" fill="var(--accent)"/></svg>
+      </div>
+      <h2 class="ritual-title">Weekly Review</h2>
+      <p class="ritual-sub">Here's how this week went</p>
+      <div class="review-grid">
+        <div class="review-item"><span class="review-num">{weeklyReviewData.totalCompleted}</span><span class="review-label">Total done</span></div>
+        <div class="review-item"><span class="review-num">{weeklyReviewData.weekCompleted}</span><span class="review-label">This week</span></div>
+        <div class="review-item"><span class="review-num">🔥{weeklyReviewData.streak}</span><span class="review-label">Streak</span></div>
+        <div class="review-item"><span class="review-num" style="font-size:12px">{weeklyReviewData.bestDay}</span><span class="review-label">Best day</span></div>
+      </div>
+      <div class="ritual-actions">
+        <button class="ritual-btn primary" onclick={dismissWeeklyReview}>Got it</button>
+      </div>
+    </div>
+  </div>
+{/if}
 
 {#if showMorning}
   <div class="ritual-overlay" transition:fly={{ y: 20, duration: 250, opacity: 0 }}>
@@ -234,6 +299,12 @@
   .logo { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; color: var(--text); flex: 1; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
   .header-actions { display: flex; align-items: center; gap: 8px; }
   .points-badge { font-size: 12px; font-weight: 600; color: var(--accent); background: var(--accent-subtle); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(212, 165, 116, 0.15); }
+  .header-search-btn { width: 34px; height: 34px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); background: var(--surface); border: 1px solid var(--border); padding: 0; transition: all 0.15s var(--ease); flex-shrink: 0; }
+  .header-search-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); }
+  .review-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+  .review-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px; text-align: center; }
+  .review-num { display: block; font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+  .review-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
   .date { font-size: 12px; color: var(--text-muted); font-weight: 500; letter-spacing: 0.3px; }
   .ritual-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; padding: 24px; z-index: 100; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
   .ritual-card { background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 36px 28px 28px; width: 100%; max-width: 340px; box-shadow: var(--shadow-xl); text-align: center; animation: scaleIn 0.3s var(--ease-out); backdrop-filter: blur(var(--glass-blur)); }

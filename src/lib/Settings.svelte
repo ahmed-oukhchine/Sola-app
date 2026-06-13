@@ -4,10 +4,10 @@
   let locale = $state(getLocale())
   import { exportData, importData, loadPoints, computeStreak } from './taskStore.svelte.js'
 
-  let { theme, onThemeCycle, accentColor, onAccentChange } = $props()
+  let { theme, onThemeCycle, accentColor, onAccentChange, bgColor, onBgChange } = $props()
 
   let colorInput = $state(accentColor || '')
-  let showColorPicker = $state(false)
+  let bgInput = $state(bgColor || '')
 
   function handleColorChange(e) {
     const val = e.target.value
@@ -23,6 +23,22 @@
     colorInput = ''
     onAccentChange('')
     localStorage.removeItem('focus-accent')
+  }
+
+  function handleBgChange(e) {
+    const val = e.target.value
+    bgInput = val
+    if (/^#[0-9a-fA-F]{6}$/.test(val)) onBgChange(val)
+  }
+
+  function handleBgInputKeydown(e) {
+    if (e.key === 'Enter' && /^#[0-9a-fA-F]{6}$/.test(bgInput)) onBgChange(bgInput)
+  }
+
+  function resetBg() {
+    bgInput = ''
+    onBgChange('')
+    localStorage.removeItem('focus-bg')
   }
 
   let points = $state(loadPoints())
@@ -86,6 +102,19 @@
         <input type="text" class="accent-input" placeholder="#d4a574" bind:value={colorInput} onkeydown={handleColorInputKeydown} />
         {#if accentColor}
           <button class="accent-reset" onclick={resetAccent} aria-label="Reset accent color">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2l-10 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </button>
+        {/if}
+      </div>
+    </div>
+
+    <div class="settings-row">
+      <span class="settings-label">Background</span>
+      <div class="accent-row">
+        <input type="color" class="accent-picker" value={bgColor || '#1a1614'} oninput={handleBgChange} />
+        <input type="text" class="accent-input" placeholder="#1a1614" bind:value={bgInput} onkeydown={handleBgInputKeydown} />
+        {#if bgColor}
+          <button class="accent-reset" onclick={resetBg} aria-label="Reset background color">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2l-10 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
           </button>
         {/if}

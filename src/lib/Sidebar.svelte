@@ -94,7 +94,7 @@
   @keyframes slideIn { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
   .sb-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 18px 14px; border-bottom: 1px solid var(--border); }
   .sb-header-col { padding: 18px 0; }
-  .sb-logo { font-size: 22px; font-weight: 700; color: var(--text); letter-spacing: -0.5px; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .sb-logo { font-size: 22px; font-weight: 700; color: transparent; letter-spacing: -0.5px; background: var(--accent-gradient); -webkit-background-clip: text; background-clip: text; }
   .sb-toggle { width: 34px; height: 34px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); background: transparent; transition: all 0.15s var(--ease); }
   .sb-toggle:hover { background: var(--surface-hover); color: var(--text); }
   .sb-items { flex: 1; padding: 10px; display: flex; flex-direction: column; gap: 2px; overflow-y: auto; }

@@ -4,7 +4,9 @@
   let locale = $state(getLocale())
   import { exportData, importData, loadPoints, computeStreak, requestNotificationPermission } from './taskStore.svelte.js'
 
-  let { theme, onThemeCycle } = $props()
+  let { theme, onThemeCycle, accentColor, onAccentChange } = $props()
+
+  let colorInput = $state(accentColor || '')
 
   let points = $state(loadPoints())
   let streak = $state(computeStreak())
@@ -115,6 +117,18 @@
         {/each}
       </select>
     </div>
+    <div class="settings-row">
+      <span class="settings-label">Accent color</span>
+      <div class="accent-row">
+        <input type="color" class="accent-picker" value={accentColor || (theme === 'light' ? '#b07050' : '#d4a574')} oninput={(e) => { const v = e.target.value; colorInput = v; onAccentChange(v) }} />
+        <input type="text" class="accent-input" placeholder="#d4a574" bind:value={colorInput} onkeydown={(e) => { if (e.key === 'Enter' && /^#[0-9a-fA-F]{6}$/.test(colorInput)) onAccentChange(colorInput) }} />
+        {#if accentColor}
+          <button class="accent-reset" onclick={() => { colorInput = ''; onAccentChange('') }} aria-label="Reset accent">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2l-10 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </button>
+        {/if}
+      </div>
+    </div>
   </div>
 
   <div class="settings-section">
@@ -206,4 +220,12 @@
   .toggle-btn.on { background: var(--accent); }
   .toggle-knob { width: 18px; height: 18px; border-radius: 50%; background: #fff; position: absolute; top: 3px; left: 3px; transition: left 0.2s var(--ease); box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
   .toggle-btn.on .toggle-knob { left: 23px; }
+  .accent-row { display: flex; align-items: center; gap: 8px; }
+  .accent-picker { width: 36px; height: 36px; border: none; border-radius: 50%; cursor: pointer; background: none; padding: 0; }
+  .accent-picker::-webkit-color-swatch-wrapper { padding: 0; }
+  .accent-picker::-webkit-color-swatch { border: 2px solid var(--border); border-radius: 50%; }
+  .accent-input { width: 90px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 13px; font-family: var(--font-mono); text-align: center; }
+  .accent-input:focus { border-color: var(--accent); outline: none; }
+  .accent-reset { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); background: var(--surface); border: 1px solid var(--border); padding: 0; }
+  .accent-reset:hover { color: var(--danger); border-color: var(--danger); }
 </style>

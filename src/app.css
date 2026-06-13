@@ -7,8 +7,8 @@
 }
 
 :root {
-  --bg: #1a1614;
-  --bg-gradient: radial-gradient(ellipse at 30% 0%, #2a221e 0%, #1a1614 60%);
+  --bg: #121212;
+  --bg-gradient: radial-gradient(ellipse at 30% 0%, #1a1a1a 0%, #121212 60%);
   --surface: rgba(255, 255, 255, 0.05);
   --surface-raised: rgba(255, 255, 255, 0.08);
   --surface-hover: rgba(255, 255, 255, 0.1);
@@ -46,8 +46,8 @@
 }
 
 [data-theme="light"] {
-  --bg: #f5f0eb;
-  --bg-gradient: radial-gradient(ellipse at 30% 0%, #faf7f2 0%, #f5f0eb 100%);
+  --bg: #f5f5f5;
+  --bg-gradient: radial-gradient(ellipse at 30% 0%, #fafafa 0%, #f5f5f5 100%);
   --surface: rgba(255, 255, 255, 0.7);
   --surface-raised: rgba(255, 255, 255, 0.9);
   --surface-hover: rgba(255, 255, 255, 0.85);

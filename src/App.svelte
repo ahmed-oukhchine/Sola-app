@@ -41,6 +41,54 @@
   let locked = $state(!!localStorage.getItem('focus-lock-hash'))
   let lockPassword = $state('')
   let lockError = $state('')
+  let accentColor = $state(localStorage.getItem('focus-accent') || '')
+
+  function isValidHex(c) { return /^#[0-9a-fA-F]{6}$/.test(c) }
+
+  function hexToRgb(hex) {
+    const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16)
+    return { r, g, b }
+  }
+
+  function shadeColor(hex, percent) {
+    const { r, g, b } = hexToRgb(hex)
+    const t = percent < 0 ? 0 : 255
+    const f = percent < 0 ? 1 + percent : 1 - percent
+    return `#${Math.round(t + (r - t) * f).toString(16).padStart(2, '0')}${Math.round(t + (g - t) * f).toString(16).padStart(2, '0')}${Math.round(t + (b - t) * f).toString(16).padStart(2, '0')}`
+  }
+
+  function applyAccent(color) {
+    if (!color || !isValidHex(color)) return
+    const { r, g, b } = hexToRgb(color)
+    const root = document.documentElement
+    root.style.setProperty('--accent', color)
+    root.style.setProperty('--accent-hover', shadeColor(color, 10))
+    root.style.setProperty('--accent-subtle', `rgba(${r}, ${g}, ${b}, ${theme === 'light' ? 0.08 : 0.12})`)
+    root.style.setProperty('--accent-gradient', `linear-gradient(135deg, ${color}, ${shadeColor(color, -12)})`)
+    root.style.setProperty('--accent-glow', `0 0 30px rgba(${r}, ${g}, ${b}, ${theme === 'light' ? 0.08 : 0.15})`)
+    root.style.setProperty('--glow', `0 0 0 2px rgba(${r}, ${g}, ${b}, 0.25)`)
+  }
+
+  function setAccent(color) {
+    accentColor = color
+    if (color && isValidHex(color)) {
+      localStorage.setItem('focus-accent', color)
+      applyAccent(color)
+    } else {
+      localStorage.removeItem('focus-accent')
+      const root = document.documentElement
+      root.style.removeProperty('--accent')
+      root.style.removeProperty('--accent-hover')
+      root.style.removeProperty('--accent-subtle')
+      root.style.removeProperty('--accent-gradient')
+      root.style.removeProperty('--accent-glow')
+      root.style.removeProperty('--glow')
+    }
+  }
+
+  function resetAccent() {
+    setAccent('')
+  }
 
   async function unlock() {
     lockError = ''
@@ -64,6 +112,7 @@
     if (next === 'dark') root.setAttribute('data-theme', 'dark')
     else if (next === 'light') root.setAttribute('data-theme', 'light')
     else root.removeAttribute('data-theme')
+    if (accentColor) applyAccent(accentColor)
   }
 
   function toggleSidebarCollapse() {
@@ -126,6 +175,7 @@
     const root = document.documentElement
     if (theme === 'dark') root.setAttribute('data-theme', 'dark')
     else if (theme === 'light') root.setAttribute('data-theme', 'light')
+    if (accentColor) applyAccent(accentColor)
     requestPermission()
     scheduleAll()
     checkRituals()
@@ -234,7 +284,7 @@
   {#if activeView === 'calendar'}<div in:fade={{ duration: 200 }}><CalendarView /></div>{/if}
   {#if activeView === 'goals'}<div in:fade={{ duration: 200 }}><GoalsView /></div>{/if}
   {#if activeView === 'kanban'}<div in:fade={{ duration: 200 }}><KanbanView /></div>{/if}
-  {#if activeView === 'settings'}<div in:fade={{ duration: 200 }}><SettingsView {theme} onThemeCycle={cycleTheme} /></div>{/if}
+  {#if activeView === 'settings'}<div in:fade={{ duration: 200 }}><SettingsView {theme} onThemeCycle={cycleTheme} {accentColor} onAccentChange={setAccent} /></div>{/if}
   {#if activeView === 'habits'}<div in:fade={{ duration: 200 }}><HabitsView /></div>{/if}
   {#if activeView === 'tags'}<div in:fade={{ duration: 200 }}><TagsView /></div>{/if}
   {#if activeView === 'today'}<div in:fade={{ duration: 200 }}><TodayView {now} onCompleteTask={onCompleteTask} onCompleteSubtask={onCompleteSubtask} /></div>{/if}

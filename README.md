@@ -8,8 +8,8 @@ A personal focus and task management app — runs entirely in the browser with I
 
 ```bash
 # 1. Clone
-git clone https://github.com/ahmed-oukhchine/Personnel-Focus-App.git
-cd Personnel-Focus-App
+git clone https://github.com/ahmed-oukhchine/Sola-app.git
+cd Sola-app
 
 # 2. Install dependencies
 npm install

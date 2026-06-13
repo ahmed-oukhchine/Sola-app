@@ -41,7 +41,8 @@
   let completionRate = $derived(store.tasks.length ? Math.round(store.tasks.filter(t => t.completed).length / store.tasks.length * 100) : 0)
   let recentCompletions = $derived(store.tasks.filter(t => t.completed).toReversed().slice(0, 20))
   let showOnboarding = $state(!localStorage.getItem('focus-onboarded'))
-  let showAccount = $state(!showOnboarding && !!localStorage.getItem('focus-account-hash'))
+  let hasLegacyLock = !!localStorage.getItem('focus-lock-hash') && !localStorage.getItem('focus-account-hash')
+  let showAccount = $state(!showOnboarding && (!!localStorage.getItem('focus-account-hash') || hasLegacyLock))
   let userName = $state(localStorage.getItem('focus-account-user') || '')
   let accentColor = $state(localStorage.getItem('focus-accent') || '')
 

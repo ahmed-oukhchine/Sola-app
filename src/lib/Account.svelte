@@ -1,7 +1,16 @@
 <script>
+  import { fade } from 'svelte/transition'
   let { onUnlock } = $props()
-  let hasAccount = $state(!!localStorage.getItem('focus-account-hash'))
-  let storedUser = $state(localStorage.getItem('focus-account-user') || '')
+  let hasLegacy = !!localStorage.getItem('focus-lock-hash') && !localStorage.getItem('focus-account-hash')
+  let hasAccount = $state(!!localStorage.getItem('focus-account-hash') || hasLegacy)
+  let storedUser = $state(localStorage.getItem('focus-account-user') || (hasLegacy ? 'User' : ''))
+
+  if (hasLegacy) {
+    localStorage.setItem('focus-account-hash', localStorage.getItem('focus-lock-hash'))
+    localStorage.setItem('focus-account-user', 'User')
+    localStorage.removeItem('focus-lock-hash')
+    hasAccount = true
+  }
 
   let username = $state('')
   let password = $state('')

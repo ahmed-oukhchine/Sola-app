@@ -1,5 +1,5 @@
 <script>
-  import { CalendarDays, Inbox, Crosshair, TrendingUp } from 'lucide-svelte'
+  import { CalendarDays, Inbox, Crosshair, TrendingUp, Flame } from 'lucide-svelte'
   import { store, addTask, loadPoints, computeStreak } from './taskStore.svelte.js'
 
   let { onNavigate } = $props()
@@ -43,7 +43,7 @@
 
   <div class="stats-grid" style="margin-bottom:16px">
     <div class="stat-card"><span class="stat-num">✦{points}</span><span class="stat-label">Points</span></div>
-    <div class="stat-card"><span class="stat-num">🔥{streak}</span><span class="stat-label">Day streak</span></div>
+    <div class="stat-card"><span class="stat-num"><Flame size={20} strokeWidth={1.5} />{streak}</span><span class="stat-label">Day streak</span></div>
     <div class="stat-card"><span class="stat-num">{completedCount}/{totalCount}</span><span class="stat-label">Today</span></div>
     <div class="stat-card"><span class="stat-num">{completionRate}%</span><span class="stat-label">Rate</span></div>
   </div>

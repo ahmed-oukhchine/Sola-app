@@ -28,8 +28,6 @@
     timerRunning ? 'running' : timerPaused ? 'paused' : timerRemaining <= 0 ? 'done' : 'ready'
   )
   let progress = $derived(1 - timerRemaining / (timerMinutes * 60))
-  let ringDash = $derived(2 * Math.PI * 120 * (1 - progress))
-
   function playTimerSound() {
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)()
@@ -194,28 +192,17 @@
 </script>
 
 <main class="focus-view">
-  <div class="timer-ring-container">
-    <svg class="timer-ring" width="280" height="280" viewBox="0 0 280 280">
-      <circle cx="140" cy="140" r="120" fill="none" stroke="var(--border)" stroke-width="4" opacity="0.3"/>
-      <circle class="timer-ring-progress" cx="140" cy="140" r="120" fill="none" stroke="url(#ringGrad)" stroke-width="4" stroke-linecap="round"
-        stroke-dasharray={2 * Math.PI * 120} stroke-dashoffset={ringDash} transform="rotate(-90 140 140)"/>
-      <defs>
-        <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#d4a574"/>
-          <stop offset="100%" stop-color="#c17f59"/>
-        </linearGradient>
-      </defs>
-    </svg>
-    <div class="timer-digits-wrapper">
-      <div class="timer-digits" class:tick={doTick}>{timerDisplay}</div>
-      <div class="timer-status-text">
-        {timerStatus === 'ready' ? (pomodoroActive ? `Ready for ${pomodoroSession}` : 'Ready') : timerStatus === 'running' ? (pomodoroActive ? `${pomodoroSession}` : 'Focusing') : timerStatus === 'paused' ? 'Paused' : 'Complete!'}
-      </div>
-      {#if soundType !== 'none'}
-        <div class="sound-indicator">{SOUNDS.find(s => s.id === soundType)?.label}</div>
-      {/if}
-    </div>
+  <div class="progress-bar">
+    <div class="progress-bar-fill" style="transform: scaleX({progress})"></div>
   </div>
+
+  <div class="timer-digits" class:tick={doTick}>{timerDisplay}</div>
+  <div class="timer-status-text">
+    {timerStatus === 'ready' ? (pomodoroActive ? `Ready for ${pomodoroSession}` : 'Ready') : timerStatus === 'running' ? (pomodoroActive ? `${pomodoroSession}` : 'Focusing') : timerStatus === 'paused' ? 'Paused' : 'Complete!'}
+  </div>
+  {#if soundType !== 'none'}
+    <div class="sound-indicator">{SOUNDS.find(s => s.id === soundType)?.label}</div>
+  {/if}
 
   <div class="sound-row">
     {#each SOUNDS as s}
@@ -265,15 +252,13 @@
 </main>
 
 <style>
-  .focus-view { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; gap: 16px; }
-  .timer-ring-container { position: relative; display: flex; align-items: center; justify-content: center; }
-  .timer-ring { position: absolute; }
-  .timer-ring-progress { transition: stroke-dashoffset 0.3s var(--ease); filter: drop-shadow(0 0 8px rgba(212, 165, 116, 0.2)); }
-  .timer-digits-wrapper { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 220px; height: 220px; border-radius: 50%; justify-content: center; background: var(--surface); border: 1px solid var(--border); backdrop-filter: blur(var(--glass-blur)); z-index: 1; }
-  .timer-digits { font-size: 3.4rem; font-weight: 700; letter-spacing: 3px; color: var(--text); line-height: 1; font-variant-numeric: tabular-nums; transition: transform 0.15s var(--ease-spring); user-select: none; }
+  .focus-view { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; gap: 14px; position: relative; }
+  .progress-bar { position: fixed; top: 0; left: 0; right: 0; height: 3px; background: rgba(255,255,255,0.04); z-index: 10; }
+  .progress-bar-fill { height: 100%; background: var(--accent-gradient); transform-origin: left; transition: transform 0.3s var(--ease); border-radius: 0 2px 2px 0; }
+  .timer-digits { font-size: 6rem; font-weight: 700; letter-spacing: 4px; color: var(--text); line-height: 1; font-variant-numeric: tabular-nums; user-select: none; margin-top: 40px; }
   .timer-digits.tick { animation: timerPop 0.15s var(--ease-spring); }
   @keyframes timerPop { 0% { transform: scale(1); } 40% { transform: scale(1.06); } 100% { transform: scale(1); } }
-  .timer-status-text { font-size: 12px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 1.5px; }
+  .timer-status-text { font-size: 13px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; }
   .sound-indicator { font-size: 11px; color: var(--accent); font-weight: 500; letter-spacing: 0.5px; }
   .sound-row { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
   .sound-btn { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; color: var(--text-secondary); background: var(--surface); border: 1px solid var(--border); cursor: pointer; transition: all 0.15s var(--ease); backdrop-filter: blur(var(--glass-blur)); }

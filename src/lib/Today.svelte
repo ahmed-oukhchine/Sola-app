@@ -58,19 +58,19 @@
   let actionTask = $derived(
     currentTask || nextTask || todayTasks.find((t) => !t.completed),
   );
-  let totalEstimatedMinutes = $derived(
-    todayTasks.reduce((s, t) => s + (t.estimatedMinutes || 0), 0),
-  );
-  const AVAILABLE_MINUTES = (END_H - START_H) * 60;
-  let overbooked = $derived(totalEstimatedMinutes > AVAILABLE_MINUTES);
-  let bookRatio = $derived(
-    Math.min(1, totalEstimatedMinutes / AVAILABLE_MINUTES),
-  );
   const START_H = 5,
     END_H = 23,
     HOUR_H = 76;
   const TOTAL_H = (END_H - START_H) * HOUR_H;
   const HOURS = Array.from({ length: END_H - START_H }, (_, i) => START_H + i);
+  const AVAILABLE_MINUTES = (END_H - START_H) * 60;
+  let totalEstimatedMinutes = $derived(
+    todayTasks.reduce((s, t) => s + (t.estimatedMinutes || 0), 0),
+  );
+  let overbooked = $derived(totalEstimatedMinutes > AVAILABLE_MINUTES);
+  let bookRatio = $derived(
+    Math.min(1, totalEstimatedMinutes / AVAILABLE_MINUTES),
+  );
   function taskTop(t) {
     const [sh, sm] = t.startTime.split(":").map(Number);
     return ((sh * 60 + sm - START_H * 60) / 60) * HOUR_H;

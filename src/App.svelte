@@ -17,6 +17,7 @@
   import LifeCoursesView from './lib/LifeCourses.svelte'
   import StatsView from './lib/Stats.svelte'
   import SearchModal from './lib/Search.svelte'
+  import Onboarding from './lib/Onboarding.svelte'
   import { store, addTask, loadAll, exportData, importData, loadPoints, savePoints, computeStreak, requestPermission, scheduleAll } from './lib/taskStore.svelte.js'
 
   let activeView = $state('dashboard')
@@ -42,6 +43,7 @@
   let lockPassword = $state('')
   let lockError = $state('')
   let accentColor = $state(localStorage.getItem('focus-accent') || '')
+  let showOnboarding = $state(!localStorage.getItem('focus-onboarded'))
 
   function isValidHex(c) { return /^#[0-9a-fA-F]{6}$/.test(c) }
 
@@ -242,6 +244,10 @@
     input.click()
   }
 </script>
+
+{#if showOnboarding}
+  <Onboarding onDone={() => showOnboarding = false} />
+{/if}
 
 {#if locked}
   <div class="lock-overlay">

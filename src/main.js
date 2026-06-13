@@ -13,6 +13,7 @@ if (accent && /^#[0-9a-fA-F]{6}$/.test(accent)) {
   }
   const isLight = document.documentElement.getAttribute('data-theme') === 'light'
   root.style.setProperty('--accent', accent)
+  root.style.setProperty('--accent-rgb', `${r},${g},${b}`)
   root.style.setProperty('--accent-hover', shade(accent, 10))
   root.style.setProperty('--accent-subtle', `rgba(${r}, ${g}, ${b}, ${isLight ? 0.08 : 0.12})`)
   root.style.setProperty('--accent-gradient', `linear-gradient(135deg, ${accent}, ${shade(accent, -12)})`)

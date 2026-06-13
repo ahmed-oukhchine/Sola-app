@@ -67,6 +67,7 @@
     const { r, g, b } = hexToRgb(color)
     const root = document.documentElement
     root.style.setProperty('--accent', color)
+    root.style.setProperty('--accent-rgb', `${r},${g},${b}`)
     root.style.setProperty('--accent-hover', shadeColor(color, 10))
     root.style.setProperty('--accent-subtle', `rgba(${r}, ${g}, ${b}, ${theme === 'light' ? 0.08 : 0.12})`)
     root.style.setProperty('--accent-gradient', `linear-gradient(135deg, ${color}, ${shadeColor(color, -12)})`)
@@ -394,7 +395,7 @@
   .hamburger:active { transform: scale(0.92); }
   .logo { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; color: #f0f0f0; flex: 1; text-shadow: 0 0 40px rgba(255,255,255,0.06); }
   .header-actions { display: flex; align-items: center; gap: 8px; }
-  .points-badge { font-size: 12px; font-weight: 600; color: var(--accent); background: var(--accent-subtle); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(212, 165, 116, 0.15); }
+  .points-badge { font-size: 12px; font-weight: 600; color: var(--accent); background: var(--accent-subtle); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(var(--accent-rgb), 0.15); }
   .header-search-btn { width: 34px; height: 34px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); background: var(--surface); border: 1px solid var(--border); padding: 0; transition: all 0.15s var(--ease); flex-shrink: 0; }
   .header-search-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); }
   .review-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
@@ -411,7 +412,7 @@
   .ritual-input { flex: 1; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--text); font-size: 14px; transition: all 0.2s var(--ease); backdrop-filter: blur(var(--glass-blur)); }
   .ritual-input:focus { border-color: var(--accent); box-shadow: var(--glow); }
   .ritual-add-btn { width: 44px; height: 44px; border-radius: var(--radius-md); background: var(--accent-gradient); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: all 0.2s var(--ease); box-shadow: var(--accent-glow); }
-  .ritual-add-btn:hover { transform: scale(1.05); box-shadow: 0 0 40px rgba(212, 165, 116, 0.25); }
+  .ritual-add-btn:hover { transform: scale(1.05); box-shadow: 0 0 40px rgba(var(--accent-rgb), 0.25); }
   .ritual-add-btn:active { transform: scale(0.95); }
   .ritual-add-btn:disabled { opacity: 0.3; box-shadow: none; }
   .ritual-tasks { text-align: left; margin-bottom: 16px; }
@@ -421,7 +422,7 @@
   .ritual-actions { display: flex; flex-direction: column; gap: 8px; }
   .ritual-btn { padding: 12px; border-radius: var(--radius-md); font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.15s var(--ease); }
   .ritual-btn.primary { background: var(--accent-gradient); color: #fff; border: none; box-shadow: var(--accent-glow); }
-  .ritual-btn.primary:hover { box-shadow: 0 0 40px rgba(212, 165, 116, 0.25); transform: translateY(-1px); }
+  .ritual-btn.primary:hover { box-shadow: 0 0 40px rgba(var(--accent-rgb), 0.25); transform: translateY(-1px); }
   .ritual-btn.primary:active { transform: scale(0.98); }
   .ritual-btn.secondary { background: var(--surface); color: var(--text-secondary); border: 1px solid var(--border); font-size: 13px; }
   .ritual-btn.secondary:hover { border-color: var(--accent); color: var(--accent); }

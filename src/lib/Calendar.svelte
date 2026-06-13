@@ -111,7 +111,7 @@
   .cal-day { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 10px; cursor: pointer; background: transparent; transition: all 0.15s var(--ease); gap: 3px; position: relative; border: none; color: var(--text); }
   .cal-day.empty { cursor: default; }
   .cal-day:hover:not(.empty) { background: var(--surface-hover); transform: scale(1.05); }
-  .cal-day.today { background: var(--accent-subtle); border: 1px solid rgba(212, 165, 116, 0.15); }
+  .cal-day.today { background: var(--accent-subtle); border: 1px solid rgba(var(--accent-rgb), 0.15); }
   .cal-day.selected { background: var(--accent-gradient); color: #fff; box-shadow: var(--accent-glow); }
   .cal-day.selected .cal-dot { background: rgba(255,255,255,0.35); color: #fff; }
   .cal-day-num { font-size: 15px; font-weight: 500; line-height: 1; }

@@ -122,7 +122,7 @@
   .ac-input:focus { border-color: var(--accent); box-shadow: var(--glow); outline: none; }
   .ac-btn { width: 100%; padding: 12px; border-radius: var(--radius-md); font-size: 15px; font-weight: 500; cursor: pointer; transition: all 0.15s var(--ease); }
   .ac-btn.primary { background: var(--accent-gradient); color: #fff; border: none; box-shadow: var(--accent-glow); }
-  .ac-btn.primary:hover { box-shadow: 0 0 40px rgba(212, 165, 116, 0.25); transform: translateY(-1px); }
+  .ac-btn.primary:hover { box-shadow: 0 0 40px rgba(var(--accent-rgb), 0.25); transform: translateY(-1px); }
   .ac-btn.primary:active { transform: scale(0.98); }
   .ac-error { font-size: 12px; color: #b06060; margin-top: 4px; }
 </style>

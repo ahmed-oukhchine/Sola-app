@@ -184,9 +184,9 @@
   .ob-colors { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; margin-bottom: 20px; }
   .ob-color-btn { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px 8px 10px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; cursor: pointer; transition: all 0.25s var(--ease); }
   .ob-color-btn:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); }
-  .ob-color-btn.selected { border-color: var(--accent); background: rgba(255,255,255,0.06); box-shadow: 0 0 30px rgba(212,165,116,0.08); }
+  .ob-color-btn.selected { border-color: var(--accent); background: rgba(255,255,255,0.06); box-shadow: 0 0 30px rgba(var(--accent-rgb), 0.08); }
   .ob-color-swatch { width: 32px; height: 32px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.1); transition: transform 0.25s var(--ease-spring); }
-  .ob-color-btn.selected .ob-color-swatch { transform: scale(1.15); border-color: transparent; box-shadow: 0 0 20px rgba(212,165,116,0.25); }
+  .ob-color-btn.selected .ob-color-swatch { transform: scale(1.15); border-color: transparent; box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.25); }
   .ob-color-name { font-size: 12px; font-weight: 600; color: #fff; }
   .ob-color-desc { font-size: 10px; color: rgba(255,255,255,0.35); }
 
@@ -197,8 +197,8 @@
   .ob-preview-tag { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; transition: all 0.3s var(--ease); }
 
   .ob-btn { display: flex; align-items: center; gap: 8px; padding: 14px 28px; border-radius: 12px; font-size: 15px; font-weight: 500; cursor: pointer; transition: all 0.2s var(--ease); border: none; }
-  .ob-btn.primary { background: var(--accent-gradient); color: #fff; box-shadow: 0 0 40px rgba(212,165,116,0.15); }
-  .ob-btn.primary:hover { transform: translateY(-2px); box-shadow: 0 0 60px rgba(212,165,116,0.25); }
+  .ob-btn.primary { background: var(--accent-gradient); color: #fff; box-shadow: 0 0 40px rgba(var(--accent-rgb), 0.15); }
+  .ob-btn.primary:hover { transform: translateY(-2px); box-shadow: 0 0 60px rgba(var(--accent-rgb), 0.25); }
   .ob-btn.primary:active { transform: scale(0.97); }
   .ob-btn.primary:disabled { opacity: 0.3; cursor: default; transform: none; box-shadow: none; }
 

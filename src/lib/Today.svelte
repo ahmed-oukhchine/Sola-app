@@ -876,7 +876,7 @@
     border: none;
   }
   .na-btn:hover {
-    box-shadow: 0 0 50px rgba(212, 165, 116, 0.3);
+    box-shadow: 0 0 50px rgba(var(--accent-rgb), 0.3);
     transform: translateY(-2px);
   }
   .na-btn:active {

@@ -18,6 +18,7 @@
   --text-secondary: rgba(232, 232, 232, 0.55);
   --text-muted: rgba(232, 232, 232, 0.3);
   --accent: #d4a574;
+  --accent-rgb: 212, 165, 116;
   --accent-hover: #deb486;
   --accent-subtle: rgba(212, 165, 116, 0.12);
   --accent-gradient: linear-gradient(135deg, #d4a574, #c17f59);
@@ -57,6 +58,7 @@
   --text-secondary: rgba(34, 34, 34, 0.5);
   --text-muted: rgba(34, 34, 34, 0.25);
   --accent: #b07050;
+  --accent-rgb: 176, 112, 80;
   --accent-hover: #a06040;
   --accent-subtle: rgba(176, 112, 80, 0.08);
   --accent-gradient: linear-gradient(135deg, #c08060, #b07050);

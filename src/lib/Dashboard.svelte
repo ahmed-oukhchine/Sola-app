@@ -97,13 +97,13 @@
 <style>
   .db-card { display: flex; align-items: center; gap: 12px; padding: 18px 20px; background: var(--surface); border-radius: var(--radius-md); border: 1px solid var(--border); margin-bottom: 14px; transition: all 0.2s var(--ease); backdrop-filter: blur(var(--glass-blur)); }
   .db-card:hover { box-shadow: var(--shadow-sm); border-color: var(--accent-subtle); }
-  .db-current { border-left: 4px solid var(--accent); box-shadow: 0 2px 16px rgba(212, 165, 116, 0.08); }
+  .db-current { border-left: 4px solid var(--accent); box-shadow: 0 2px 16px rgba(var(--accent-rgb), 0.08); }
   .db-label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
   .db-value { font-size: 16px; font-weight: 500; color: var(--text); flex: 1; }
   .db-quick-add { display: flex; gap: 10px; margin-bottom: 16px; }
   .db-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px; }
   .db-action-btn { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px; border-radius: var(--radius-md); font-size: 14px; font-weight: 500; color: var(--text-secondary); background: var(--surface); border: 1px solid var(--border); cursor: pointer; transition: all 0.2s var(--ease); backdrop-filter: blur(var(--glass-blur)); }
-  .db-action-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(212, 165, 116, 0.1); }
+  .db-action-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(var(--accent-rgb), 0.1); }
   .db-action-btn:active { transform: scale(0.97); }
   .db-section-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 10px; }
   .db-date { font-size: 12px; color: var(--text-muted); }

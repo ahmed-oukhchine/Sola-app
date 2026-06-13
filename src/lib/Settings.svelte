@@ -152,7 +152,7 @@
   .settings-action-btn { width: 100%; padding: 12px 16px; border-radius: 12px; font-size: 15px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: var(--surface); color: var(--text-secondary); text-align: center; transition: all 0.15s var(--ease); backdrop-filter: blur(var(--glass-blur)); }
   .settings-action-btn:hover { border-color: var(--accent); color: var(--text); box-shadow: var(--glow); }
   .settings-action-btn.primary { background: var(--accent-gradient); color: #fff; border-color: transparent; box-shadow: var(--accent-glow); }
-  .settings-action-btn.primary:hover { box-shadow: 0 0 50px rgba(212, 165, 116, 0.3); }
+  .settings-action-btn.primary:hover { box-shadow: 0 0 50px rgba(var(--accent-rgb), 0.3); }
   .settings-action-btn.danger { color: #b06060; border-color: rgba(176, 96, 96, 0.3); margin-top: 10px; }
   .settings-action-btn.danger:hover { background: rgba(176, 96, 96, 0.1); border-color: #b06060; }
   .settings-action-btn.mini { width: auto; padding: 6px 14px; font-size: 12px; border-radius: 8px; display: inline-block; margin: 0; }

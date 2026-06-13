@@ -273,7 +273,7 @@
   .focus-controls { display: flex; gap: 10px; align-items: center; }
   .focus-btn { padding: 12px 28px; border-radius: 50px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s var(--ease); display: flex; align-items: center; gap: 6px; }
   .focus-btn.primary { background: var(--accent-gradient); color: #fff; border: none; box-shadow: var(--accent-glow); }
-  .focus-btn.primary:hover { box-shadow: 0 0 50px rgba(212, 165, 116, 0.3); transform: translateY(-2px); }
+  .focus-btn.primary:hover { box-shadow: 0 0 50px rgba(var(--accent-rgb), 0.3); transform: translateY(-2px); }
   .focus-btn.primary:active { transform: scale(0.97); }
   .focus-btn.primary:disabled { opacity: 0.2; cursor: default; box-shadow: none; transform: none; }
   .focus-btn.secondary { width: 44px; height: 44px; border-radius: 50%; background: var(--surface); color: var(--text-secondary); border: 1px solid var(--border); justify-content: center; backdrop-filter: blur(var(--glass-blur)); }

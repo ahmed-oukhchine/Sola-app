@@ -104,10 +104,10 @@
   .sb-footer-col { padding: 10px 0; display: flex; flex-direction: column; align-items: center; }
   .sb-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: var(--radius-sm); font-size: 15px; font-weight: 500; color: var(--text-secondary); cursor: pointer; background: transparent; transition: all 0.2s var(--ease); border: none; text-align: left; width: 100%; }
   .sb-item:hover { background: var(--surface-hover); color: var(--text); transform: translateX(2px); }
-  .sb-item.active { background: var(--accent-subtle); color: var(--accent); border: 1px solid rgba(212, 165, 116, 0.15); }
+  .sb-item.active { background: var(--accent-subtle); color: var(--accent); border: 1px solid rgba(var(--accent-rgb), 0.15); }
   .sb-item-col { width: 44px; height: 44px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; color: var(--text-muted); cursor: pointer; background: transparent; transition: all 0.2s var(--ease); border: none; }
   .sb-item-col:hover { background: var(--surface-hover); color: var(--text); }
-  .sb-item-col.active { background: var(--accent-subtle); color: var(--accent); box-shadow: 0 0 20px rgba(212, 165, 116, 0.1); }
+  .sb-item-col.active { background: var(--accent-subtle); color: var(--accent); box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.1); }
   .sb-footer { padding: 14px 18px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; }
   .sb-stats { display: flex; gap: 14px; }
   .sb-stat { font-size: 13px; font-weight: 600; color: var(--text-muted); }

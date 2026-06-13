@@ -98,7 +98,7 @@
   .habit-week { display: flex; gap: 6px; margin-bottom: 12px; }
   .habit-day-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 6px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); cursor: pointer; transition: all 0.15s var(--ease); }
   .habit-day-btn:hover { border-color: var(--accent); transform: translateY(-2px); }
-  .habit-day-btn.done { background: var(--accent-subtle); border-color: var(--accent); box-shadow: 0 2px 12px rgba(212, 165, 116, 0.1); }
+  .habit-day-btn.done { background: var(--accent-subtle); border-color: var(--accent); box-shadow: 0 2px 12px rgba(var(--accent-rgb), 0.1); }
   .habit-day-name { font-size: 10px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
   .habit-day-ind { font-size: 16px; font-weight: 700; color: var(--text-secondary); }
   .habit-day-btn.done .habit-day-ind { color: var(--accent); }

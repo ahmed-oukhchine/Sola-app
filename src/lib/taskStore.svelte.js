@@ -1,4 +1,5 @@
 import Dexie from 'dexie'
+import * as chrono from 'chrono-node'
 
 const db = new Dexie('FocusApp')
 db.version(1).stores({
@@ -187,127 +188,113 @@ export function getTaskOrder(task) {
   return task.order || 0
 }
 
-// --- Full-text Search ---
+// --- Fuzzy Search ---
+
+function fuzzyScore(query, text) {
+  const q = query.toLowerCase(), t = text.toLowerCase()
+  let qi = 0, score = 0
+  for (let ti = 0; ti < t.length && qi < q.length; ti++) {
+    if (t[ti] === q[qi]) {
+      score += 10 + (qi === 0 || ti === 0 ? 5 : 0)
+      if (ti > 0 && t[ti - 1] === ' ') score += 5
+      qi++
+    }
+  }
+  if (qi < q.length) return 0
+  if (t === q) return 999
+  if (t.startsWith(q)) return 500 + score
+  return score
+}
 
 export function searchAll(query) {
   if (!query || !query.trim()) return []
   const q = query.toLowerCase().trim()
-  const results = []
+  const scored = []
 
   for (const t of store.tasks) {
-    if (t.title.toLowerCase().includes(q)) {
-      results.push({ type: 'task', id: t.id, title: t.title, subtitle: `${t.date}${t.completed ? ' ✓' : ''}` })
+    let score = fuzzyScore(q, t.title)
+    if (score) {
+      scored.push({ score, type: 'task', id: t.id, title: t.title, subtitle: `${t.date}${t.completed ? ' ✓' : ''}` })
     } else {
-      const match = t.subtasks.find(s => s.title.toLowerCase().includes(q))
-      if (match) results.push({ type: 'task', id: t.id, title: match.title, subtitle: `subtask of "${t.title}"` })
+      for (const s of t.subtasks) {
+        const ss = fuzzyScore(q, s.title)
+        if (ss) { scored.push({ score: ss - 1, type: 'task', id: t.id, title: s.title, subtitle: `subtask of "${t.title}"` }) }
+      }
     }
   }
   for (const i of inbox.items) {
-    if (i.title.toLowerCase().includes(q)) results.push({ type: 'inbox', id: i.id, title: i.title, subtitle: 'Inbox' })
+    const s = fuzzyScore(q, i.title)
+    if (s) scored.push({ score: s - 2, type: 'inbox', id: i.id, title: i.title, subtitle: 'Inbox' })
   }
   for (const s of someday.items) {
-    if (s.title.toLowerCase().includes(q)) results.push({ type: 'someday', id: s.id, title: s.title, subtitle: 'Someday' })
+    const sc = fuzzyScore(q, s.title)
+    if (sc) scored.push({ score: sc - 3, type: 'someday', id: s.id, title: s.title, subtitle: 'Someday' })
   }
   for (const n of notes.items) {
-    if (n.content && n.content.toLowerCase().includes(q)) {
-      const preview = n.content.substring(0, 80)
-      results.push({ type: 'note', id: n.id, title: `Note ${n.date}`, subtitle: preview })
+    if (n.content) {
+      const sc = fuzzyScore(q, n.content)
+      if (sc) scored.push({ score: sc - 4, type: 'note', id: n.id, title: `Note ${n.date}`, subtitle: n.content.substring(0, 80) })
     }
   }
   for (const g of goals.items) {
-    if (g.title.toLowerCase().includes(q)) results.push({ type: 'goal', id: g.id, title: g.title, subtitle: 'Goal' })
+    const sc = fuzzyScore(q, g.title)
+    if (sc) scored.push({ score: sc - 5, type: 'goal', id: g.id, title: g.title, subtitle: 'Goal' })
   }
   for (const h of habits.items) {
-    if (h.name.toLowerCase().includes(q)) results.push({ type: 'habit', id: h.id, title: h.name, subtitle: 'Habit' })
+    const sc = fuzzyScore(q, h.name)
+    if (sc) scored.push({ score: sc - 6, type: 'habit', id: h.id, title: h.name, subtitle: 'Habit' })
   }
 
-  return results.slice(0, 30)
+  return scored.sort((a, b) => b.score - a.score).slice(0, 30)
 }
 
-// --- Natural Language Date Parsing ---
-
-const DAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
-const SHORT = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
+// --- Natural Language Date Parsing (chrono-node) ---
 
 export function parseNaturalDate(text) {
   if (!text) return null
-  const lower = text.toLowerCase()
-
-  const dateMatch = lower.match(/\b(today|tonight)\b/)
-  if (dateMatch) return new Date().toISOString().split('T')[0]
-
-  const tomorrowMatch = lower.match(/\b(tomorrow)\b/)
-  if (tomorrowMatch) {
-    const d = new Date(); d.setDate(d.getDate() + 1)
-    return d.toISOString().split('T')[0]
-  }
-
-  const inMatch = lower.match(/\bin\s+(\d+)\s+(day|days|hour|hours)\b/)
-  if (inMatch) {
-    const n = parseInt(inMatch[1])
-    const unit = inMatch[2]
-    const d = new Date()
-    if (unit.startsWith('day')) d.setDate(d.getDate() + n)
-    else d.setHours(d.getHours() + n)
-    return d.toISOString().split('T')[0]
-  }
-
-  const nextMatch = lower.match(/\bnext\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday|week|month)\b/)
-  if (nextMatch) {
-    const day = nextMatch[1]
-    if (day === 'week') {
-      const d = new Date(); d.setDate(d.getDate() + (8 - d.getDay()))
-      return d.toISOString().split('T')[0]
-    }
-    if (day === 'month') {
-      const d = new Date(); d.setMonth(d.getMonth() + 1)
-      return d.toISOString().split('T')[0]
-    }
-    const target = DAYS.indexOf(day)
-    const d = new Date()
-    const current = d.getDay()
-    let diff = target - current
-    if (diff <= 0) diff += 7
-    d.setDate(d.getDate() + diff)
-    return d.toISOString().split('T')[0]
-  }
-
-  const dayMatch = lower.match(/\b(on\s+)?(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/)
-  if (dayMatch) {
-    const target = DAYS.indexOf(dayMatch[2])
-    const d = new Date()
-    const current = d.getDay()
-    let diff = target - current
-    if (diff <= 0) diff += 7
-    d.setDate(d.getDate() + diff)
-    return d.toISOString().split('T')[0]
-  }
-
+  const r = chrono.parseDate(text, { instant: new Date(), forwardDate: true })
+  if (r) return r.toISOString().split('T')[0]
   return null
 }
 
-export function extractTime(text) {
-  const m = text.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)\b/i)
-  if (m) {
-    let h = parseInt(m[1])
-    const min = parseInt(m[2]) || 0
-    const suffix = m[3][0].toLowerCase()
-    if (suffix === 'p' && h < 12) h += 12
-    if (suffix === 'a' && h === 12) h = 0
-    return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`
+export function parseTime(text) {
+  if (!text) return null
+  const r = chrono.parse(text, { instant: new Date(), forwardDate: true })
+  for (const ref of r) {
+    if (ref.start && ref.start.isCertain('hour')) {
+      const d = ref.start.date()
+      const h = d.getHours(), m = d.getMinutes()
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+    }
   }
   return null
 }
 
 export function parseTaskFromString(text) {
-  const date = parseNaturalDate(text)
-  const time = extractTime(text)
-  let title = text
-  if (time) {
-    title = title.replace(/\d{1,2}(?::\d{2})?\s*(am|pm|a\.m\.|p\.m\.)/i, '').trim()
+  const r = chrono.parse(text, { instant: new Date(), forwardDate: true })
+  let date = new Date().toISOString().split('T')[0]
+  let time = ''
+  let replaceRanges = []
+
+  for (const ref of r) {
+    const start = ref.start.date()
+    if (ref.start.isCertain('day')) {
+      date = start.toISOString().split('T')[0]
+    }
+    if (ref.start.isCertain('hour')) {
+      const h = start.getHours(), m = start.getMinutes()
+      time = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+    }
+    replaceRanges.push([ref.index, ref.index + ref.text.length])
   }
-  const dateStr = date || new Date().toISOString().split('T')[0]
-  return { title: title.replace(/\b(tomorrow|today|tonight|in\s+\d+\s+(day|days|hour|hours)|next\s+\w+)/gi, '').replace(/\s+/g, ' ').trim() || text, date: dateStr, startTime: time || '', endTime: '' }
+
+  let title = text
+  for (const [from, to] of replaceRanges.reverse()) {
+    title = title.slice(0, from) + title.slice(to)
+  }
+  title = title.replace(/\s+/g, ' ').trim() || text
+
+  return { title, date, startTime: time, endTime: '' }
 }
 
 // --- Inbox ---

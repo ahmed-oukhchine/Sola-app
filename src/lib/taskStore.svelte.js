@@ -412,7 +412,7 @@ export function updateTagColor(id, color) {
 
 export function addHabit(name) {
   if (habits.items.some(h => h.name.toLowerCase() === name.toLowerCase())) return
-  habits.items.push({ id: crypto.randomUUID(), name, createdAt: Date.now() })
+  habits.items.push({ id: crypto.randomUUID(), name, createdAt: Date.now(), targetDays: 41, timeTarget: 5, time: '' })
   persist()
 }
 
@@ -421,18 +421,67 @@ export function removeHabit(id) {
   persist()
 }
 
+export function updateHabitTime(id, time) {
+  const h = habits.items.find(h => h.id === id)
+  if (h) { h.time = time; persist() }
+}
+
 export function toggleHabitLog(habitId, date) {
   const existing = habitLogs.items.find(l => l.habitId === habitId && l.date === date)
   if (existing) {
     habitLogs.items = habitLogs.items.filter(l => l.id !== existing.id)
   } else {
-    habitLogs.items.push({ id: crypto.randomUUID(), habitId, date, createdAt: Date.now() })
+    habitLogs.items.push({ id: crypto.randomUUID(), habitId, date, createdAt: Date.now(), minutes: 0 })
   }
   persist()
 }
 
 export function isHabitDone(habitId, date) {
   return habitLogs.items.some(l => l.habitId === habitId && l.date === date)
+}
+
+export function logHabitMinutes(habitId, date, minutes) {
+  let log = habitLogs.items.find(l => l.habitId === habitId && l.date === date)
+  if (log) {
+    log.minutes = (log.minutes || 0) + minutes
+  } else {
+    habitLogs.items.push({ id: crypto.randomUUID(), habitId, date, createdAt: Date.now(), minutes })
+  }
+  persist()
+}
+
+export function getHabitDayCount(habitId) {
+  const logs = habitLogs.items.filter(l => l.habitId === habitId).map(l => l.date)
+  const done = new Set(logs)
+  const today = new Date()
+  let streak = 0
+  for (let i = 0; i < 366; i++) {
+    const d = new Date(today)
+    d.setDate(d.getDate() - i)
+    const key = d.toISOString().split('T')[0]
+    if (done.has(key)) streak++
+    else break
+  }
+  return streak
+}
+
+export function isHabitComplete(habitId) {
+  const h = habits.items.find(h => h.id === habitId)
+  if (!h) return false
+  return getHabitDayCount(habitId) >= h.targetDays
+}
+
+export function getHabitWeekMinutes(habitId) {
+  let total = 0
+  const today = new Date()
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(today)
+    d.setDate(d.getDate() - i)
+    const key = d.toISOString().split('T')[0]
+    const log = habitLogs.items.find(l => l.habitId === habitId && l.date === key)
+    if (log) total += log.minutes || 0
+  }
+  return total
 }
 
 // --- Focus Sessions ---

@@ -1,6 +1,6 @@
 <script>
   import { fly } from "svelte/transition";
-  import { Plus, Check, X, Info } from 'lucide-svelte';
+  import { Plus, Check, X, Info, Crosshair, Save } from 'lucide-svelte';
   import {
     store,
     addTask,
@@ -12,8 +12,9 @@
     removeSubtask,
     toggleExpand,
     reorderTask,
+    addTemplate,
   } from "./taskStore.svelte.js";
-  let { now, onCompleteTask, onCompleteSubtask } = $props();
+  let { now, onCompleteTask, onCompleteSubtask, onStartFocus } = $props();
   let todayStr = $derived(new Date().toISOString().split("T")[0]);
   let todayTasks = $derived(
     store.tasks
@@ -293,7 +294,7 @@
   ><button
     class="view-btn"
     class:active={hideCompleted}
-    onclick={() => (hideCompleted = !hideCompleted)}>Sola</button
+    onclick={() => (hideCompleted = !hideCompleted)}>Hide done</button
   ><input
     type="search"
     class="search-input"
@@ -561,6 +562,22 @@
                         ? "W"
                         : "7"}</span
                   >{/if}<button
+                  class="tl-focus"
+                  aria-label="Focus"
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    onStartFocus?.(task.id);
+                  }}
+                  ><Crosshair size={11} strokeWidth={1.5} /></button
+                ><button
+                  class="tl-save"
+                  aria-label="Save as template"
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    addTemplate({ title: task.title, items: task.subtasks.map(s => ({ title: s.title })) });
+                  }}
+                  ><Save size={11} strokeWidth={1.5} /></button
+                ><button
                   class="tl-del"
                   aria-label="Delete"
                   onclick={(e) => {
@@ -737,6 +754,22 @@
                         ? "W"
                         : "7"}</span
                   >{/if}<button
+                  class="us-focus"
+                  aria-label="Focus"
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    onStartFocus?.(task.id);
+                  }}
+                  ><Crosshair size={11} strokeWidth={1.5} /></button
+                ><button
+                  class="us-save"
+                  aria-label="Save as template"
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    addTemplate({ title: task.title, items: task.subtasks.map(s => ({ title: s.title })) });
+                  }}
+                  ><Save size={11} strokeWidth={1.5} /></button
+                ><button
                   class="delete"
                   aria-label="Delete"
                   onclick={(e) => {
@@ -1139,6 +1172,28 @@
     background: var(--danger-bg);
     color: var(--danger);
   }
+  .tl-focus {
+    width: 26px; height: 26px; border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text-muted); flex-shrink: 0;
+    background: transparent; padding: 0;
+    transition: all 0.15s var(--ease);
+  }
+  .tl-focus:hover {
+    background: var(--accent-subtle);
+    color: var(--accent);
+  }
+  .tl-save, .us-save {
+    width: 26px; height: 26px; border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text-muted); flex-shrink: 0;
+    background: transparent; padding: 0;
+    transition: all 0.15s var(--ease);
+  }
+  .tl-save:hover, .us-save:hover {
+    background: var(--complete-bg);
+    color: var(--complete);
+  }
   .now-line {
     position: absolute;
     left: 52px;
@@ -1348,45 +1403,6 @@
     z-index: 20;
     cursor: grabbing !important;
   }
-  .summary-bar {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 22px 12px;
-    font-size: 12px;
-    color: var(--text-muted);
-    flex-shrink: 0;
-  }
-  .summary-bar.overbooked {
-    color: var(--danger);
-  }
-  .sb-label {
-    font-weight: 600;
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-  }
-  .sb-track {
-    flex: 1;
-    height: 6px;
-    background: var(--border);
-    border-radius: 3px;
-    overflow: hidden;
-  }
-  .sb-fill {
-    height: 100%;
-    background: var(--accent-gradient);
-    border-radius: 3px;
-    transition: width 0.3s var(--ease);
-  }
-  .summary-bar.overbooked .sb-fill {
-    background: linear-gradient(135deg, #b06060, #d08080);
-  }
-  .sb-text {
-    font-variant-numeric: tabular-nums;
-    min-width: 80px;
-    text-align: right;
-  }
   .tl-est,
   .us-est {
     font-size: 10px;
@@ -1400,5 +1416,16 @@
   .us-task.drag-over {
     border-color: var(--accent);
     box-shadow: 0 0 0 2px var(--accent-subtle);
+  }
+  .us-focus {
+    width: 26px; height: 26px; border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text-muted); flex-shrink: 0;
+    background: transparent; padding: 0;
+    transition: all 0.15s var(--ease);
+  }
+  .us-focus:hover {
+    background: var(--accent-subtle);
+    color: var(--accent);
   }
 </style>

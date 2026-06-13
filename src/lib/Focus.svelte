@@ -1,10 +1,13 @@
 <script>
-  import { Play, Pause, RotateCcw, PlusCircle } from 'lucide-svelte';
+  import { Play, Pause, RotateCcw, PlusCircle, X } from 'lucide-svelte';
+  import { store, logFocusSession } from './taskStore.svelte.js'
   const PRESETS = [5, 15, 25, 45]
   let timerMinutes = $state(25), timerRemaining = $state(25 * 60)
   let timerRunning = $state(false), timerPaused = $state(false), timerStart = $state(0)
   let timerPauseRemaining = $state(0), tickInterval = $state(null), doTick = $state(false), prevSecond = $state(-1)
   let pomodoroActive = $state(false), pomodoroSession = $state('focus'), pomodoroCount = $state(0)
+  let { taskId, onClearTask } = $props()
+  let focusTask = $derived(taskId ? store.tasks.find(t => t.id === taskId) : null)
 
   // Ambient sounds
   let soundType = $state('none')
@@ -167,6 +170,8 @@
     if (remaining <= 0) {
       clearInterval(tickInterval); tickInterval = null; timerRunning = false
       playTimerSound()
+      const sessionMinutes = timerMinutes
+      logFocusSession(sessionMinutes, pomodoroActive ? (pomodoroSession === 'focus' ? 'pomodoro-focus' : 'pomodoro-break') : 'focus')
       if (pomodoroActive) {
         if (pomodoroSession === 'focus') {
           pomodoroSession = 'break'; pomodoroCount++
@@ -179,7 +184,7 @@
           startTimerv()
         }
       }
-      if (localStorage.getItem('focus-ntfy-enabled') === 'true' && 'Notification' in window && Notification.permission === 'granted') new Notification('Sola', { body: 'Focus session complete!' })
+      if (localStorage.getItem('focus-ntfy-enabled') === 'true' && 'Notification' in window && Notification.permission === 'granted') new Notification('Sola', { body: pomodoroActive ? `Pomodoro ${pomodoroSession} complete!` : 'Focus session complete!' })
       if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400])
     }
   }
@@ -195,6 +200,14 @@
   <div class="progress-bar">
     <div class="progress-bar-fill" style="transform: scaleX({progress})"></div>
   </div>
+
+  {#if focusTask}
+    <div class="focus-task-badge">
+      <span class="focus-task-label">Focusing on</span>
+      <span class="focus-task-title">{focusTask.title}</span>
+      <button class="focus-task-clear" onclick={onClearTask} aria-label="Clear task"><X size={12} strokeWidth={1.5} /></button>
+    </div>
+  {/if}
 
   <div class="timer-digits" class:tick={doTick}>{timerDisplay}</div>
   <div class="timer-status-text">
@@ -253,33 +266,38 @@
 
 <style>
   .focus-view { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; gap: 14px; position: relative; }
-  .progress-bar { position: fixed; top: 0; left: 0; right: 0; height: 3px; background: rgba(255,255,255,0.04); z-index: 10; }
+  .progress-bar { position: fixed; top: 0; left: 0; right: 0; height: 3px; background: rgba(255,255,255,0.03); z-index: 10; }
   .progress-bar-fill { height: 100%; background: var(--accent-gradient); transform-origin: left; transition: transform 0.3s var(--ease); border-radius: 0 2px 2px 0; }
-  .timer-digits { font-size: 6rem; font-weight: 700; letter-spacing: 4px; color: var(--text); line-height: 1; font-variant-numeric: tabular-nums; user-select: none; margin-top: 40px; }
+  .timer-digits { font-size: 6.5rem; font-weight: 650; letter-spacing: 4px; color: var(--text); line-height: 1; font-variant-numeric: tabular-nums; user-select: none; margin-top: 40px; }
   .timer-digits.tick { animation: timerPop 0.15s var(--ease-spring); }
   @keyframes timerPop { 0% { transform: scale(1); } 40% { transform: scale(1.06); } 100% { transform: scale(1); } }
-  .timer-status-text { font-size: 13px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; }
+  .timer-status-text { font-size: 13px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 2.5px; margin-bottom: 8px; }
   .sound-indicator { font-size: 11px; color: var(--accent); font-weight: 500; letter-spacing: 0.5px; }
   .sound-row { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
-  .sound-btn { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; color: var(--text-secondary); background: var(--surface); border: 1px solid var(--border); cursor: pointer; transition: all 0.15s var(--ease); backdrop-filter: blur(var(--glass-blur)); }
-  .sound-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .sound-btn { padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 500; color: var(--text-secondary); background: var(--glass-bg); border: 1px solid var(--glass-border); cursor: pointer; transition: all 0.2s var(--ease); backdrop-filter: blur(var(--glass-blur)); }
+  .sound-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); }
   .sound-btn.active { background: var(--accent-gradient); color: #fff; border-color: transparent; box-shadow: var(--accent-glow); }
   .sound-btn:disabled { opacity: 0.2; cursor: default; }
-  .presets { display: flex; gap: 6px; }
-  .preset-btn { width: 48px; height: 48px; border-radius: 50%; font-size: 13px; font-weight: 600; color: var(--text-secondary); background: var(--surface); border: 1px solid var(--border); cursor: pointer; transition: all 0.2s var(--ease); backdrop-filter: blur(var(--glass-blur)); }
-  .preset-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); transform: translateY(-2px); }
+  .presets { display: flex; gap: 8px; }
+  .preset-btn { width: 50px; height: 50px; border-radius: 50%; font-size: 13px; font-weight: 600; color: var(--text-secondary); background: var(--glass-bg); border: 1px solid var(--glass-border); cursor: pointer; transition: all 0.25s var(--ease); backdrop-filter: blur(var(--glass-blur)); }
+  .preset-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
   .preset-btn.active { background: var(--accent-gradient); color: #fff; border-color: transparent; box-shadow: var(--accent-glow); }
-  .preset-btn:disabled { opacity: 0.25; cursor: default; }
-  .focus-controls { display: flex; gap: 10px; align-items: center; }
-  .focus-btn { padding: 12px 28px; border-radius: 50px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s var(--ease); display: flex; align-items: center; gap: 6px; }
+  .preset-btn:disabled { opacity: 0.2; cursor: default; }
+  .focus-controls { display: flex; gap: 12px; align-items: center; }
+  .focus-btn { padding: 14px 32px; border-radius: 50px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.25s var(--ease); display: flex; align-items: center; gap: 8px; }
   .focus-btn.primary { background: var(--accent-gradient); color: #fff; border: none; box-shadow: var(--accent-glow); }
-  .focus-btn.primary:hover { box-shadow: 0 0 50px rgba(var(--accent-rgb), 0.3); transform: translateY(-2px); }
+  .focus-btn.primary:hover { box-shadow: 0 0 60px rgba(var(--accent-rgb), 0.3); transform: translateY(-2px); }
   .focus-btn.primary:active { transform: scale(0.97); }
   .focus-btn.primary:disabled { opacity: 0.2; cursor: default; box-shadow: none; transform: none; }
-  .focus-btn.secondary { width: 44px; height: 44px; border-radius: 50%; background: var(--surface); color: var(--text-secondary); border: 1px solid var(--border); justify-content: center; backdrop-filter: blur(var(--glass-blur)); }
-  .focus-btn.secondary:hover { border-color: var(--accent); color: var(--accent); }
-  .pomo-btn { display: flex; align-items: center; gap: 6px; padding: 8px 18px; border-radius: 20px; font-size: 12px; font-weight: 500; color: var(--text-secondary); background: var(--surface); border: 1px solid var(--border); cursor: pointer; transition: all 0.2s var(--ease); backdrop-filter: blur(var(--glass-blur)); }
-  .pomo-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .focus-btn.secondary { width: 48px; height: 48px; border-radius: 50%; background: var(--glass-bg); color: var(--text-secondary); border: 1px solid var(--glass-border); justify-content: center; backdrop-filter: blur(var(--glass-blur)); }
+  .focus-btn.secondary:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-2px); }
+  .pomo-btn { display: flex; align-items: center; gap: 6px; padding: 8px 20px; border-radius: 20px; font-size: 12px; font-weight: 500; color: var(--text-secondary); background: var(--glass-bg); border: 1px solid var(--glass-border); cursor: pointer; transition: all 0.2s var(--ease); backdrop-filter: blur(var(--glass-blur)); }
+  .pomo-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); }
   .pomo-btn.active { background: var(--accent-subtle); border-color: var(--accent); color: var(--accent); }
   .pomo-icon { font-size: 14px; }
+  .focus-task-badge { display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 50px; max-width: 80%; backdrop-filter: blur(var(--glass-blur)); }
+  .focus-task-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+  .focus-task-title { font-size: 13px; color: var(--text); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .focus-task-clear { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); background: transparent; border: none; padding: 0; flex-shrink: 0; transition: all 0.2s var(--ease); }
+  .focus-task-clear:hover { background: var(--danger-bg); color: var(--danger); }
 </style>

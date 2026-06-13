@@ -6,6 +6,9 @@
 
   let points = $state(loadPoints())
   let streak = $state(computeStreak())
+  let level = $derived(Math.floor(points / 100) + 1)
+  let nextLevel = $derived(level * 100)
+  let levelProgress = $derived(points % 100)
   let title = $state('')
 
   let todayStr = $derived(new Date().toISOString().split('T')[0])
@@ -42,7 +45,7 @@
   <p class="view-sub">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
 
   <div class="stats-grid" style="margin-bottom:16px">
-    <div class="stat-card"><span class="stat-num">✦{points}</span><span class="stat-label">Points</span></div>
+    <div class="stat-card"><span class="stat-num">✦{points}</span><span class="stat-label">Level {level}</span><div class="level-bar"><div class="level-fill" style="width:{levelProgress}%"></div></div></div>
     <div class="stat-card"><span class="stat-num"><Flame size={20} strokeWidth={1.5} />{streak}</span><span class="stat-label">Day streak</span></div>
     <div class="stat-card"><span class="stat-num">{completedCount}/{totalCount}</span><span class="stat-label">Today</span></div>
     <div class="stat-card"><span class="stat-num">{completionRate}%</span><span class="stat-label">Rate</span></div>
@@ -71,7 +74,7 @@
     </button>
     <button class="db-action-btn" onclick={() => onNavigate('focus')}>
       <Crosshair size={16} strokeWidth={1.5} />
-      Sola
+      Focus
     </button>
     <button class="db-action-btn" onclick={() => onNavigate('stats')}>
       <TrendingUp size={16} strokeWidth={1.5} />
@@ -80,8 +83,16 @@
   </div>
 
   <h3 class="db-section-title">Recent</h3>
-  {#if recentCompletions.length === 0}
-    <div class="empty"><p>No completions yet</p></div>
+  {#if recentCompletions.length === 0 && todayTasks.length === 0}
+    <div class="empty">
+      <p>Welcome to Sola</p>
+      <p class="empty-sub">Tap "Add" above to create your first task, or visit the <button class="empty-link" onclick={() => onNavigate('inbox')}>Inbox</button> to dump ideas.</p>
+    </div>
+  {:else if recentCompletions.length === 0}
+    <div class="empty">
+      <p>No completions yet today</p>
+      <p class="empty-sub">You have {todayTasks.length} task{todayTasks.length !== 1 ? 's' : ''} planned. Check them off as you go!</p>
+    </div>
   {:else}
     <div class="inbox-list">
       {#each recentCompletions as t (t.id)}
@@ -107,4 +118,8 @@
   .db-action-btn:active { transform: scale(0.97); }
   .db-section-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 10px; }
   .db-date { font-size: 12px; color: var(--text-muted); }
+  .empty-link { background: none; border: none; color: var(--accent); cursor: pointer; font-size: inherit; font-weight: 500; padding: 0; text-decoration: underline; text-underline-offset: 2px; }
+  .empty-link:hover { color: var(--accent-hover); }
+  .level-bar { width: 100%; height: 3px; background: var(--border); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+  .level-fill { height: 100%; background: var(--accent-gradient); border-radius: 2px; transition: width 0.3s var(--ease); }
 </style>

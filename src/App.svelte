@@ -13,6 +13,7 @@
   import InboxView from './lib/Inbox.svelte'
   import FocusView from './lib/Focus.svelte'
   import RoutinesView from './lib/Routines.svelte'
+  import TemplatesView from './lib/Templates.svelte'
   import SomedayView from './lib/Someday.svelte'
   import LifeCoursesView from './lib/LifeCourses.svelte'
   import StatsView from './lib/Stats.svelte'
@@ -20,7 +21,7 @@
   import Onboarding from './lib/Onboarding.svelte'
   import Account from './lib/Account.svelte'
   import { store, addTask, loadAll, exportData, importData, loadPoints, savePoints, computeStreak, requestPermission, scheduleAll } from './lib/taskStore.svelte.js'
-  import { Menu, Search, CalendarDays, Sunrise, Plus, CircleCheckBig } from 'lucide-svelte'
+  import { Menu, Search, CalendarDays, Sunrise, Plus, CircleCheckBig, Download } from 'lucide-svelte'
 
   let activeView = $state('dashboard')
   let sidebarOpen = $state(false)
@@ -32,6 +33,7 @@
   let showEvening = $state(false)
   let showWeeklyReview = $state(false)
   let showSearch = $state(false)
+  let focusTaskId = $state(null)
   let weeklyReviewData = $state(null)
   let ritualTitle = $state('')
   let theme = $state(localStorage.getItem('focus-theme') || 'system')
@@ -42,11 +44,11 @@
   let completionRate = $derived(store.tasks.length ? Math.round(store.tasks.filter(t => t.completed).length / store.tasks.length * 100) : 0)
   let recentCompletions = $derived(store.tasks.filter(t => t.completed).toReversed().slice(0, 20))
   let showOnboarding = $state(!localStorage.getItem('focus-onboarded'))
-  let hasAccount = $state(!!localStorage.getItem('focus-account-hash'))
-  let sessionValid = $state(hasAccount && (parseInt(localStorage.getItem('focus-session-expiry') || '0') > Date.now()))
-  let showAccount = $state(!showOnboarding && (!sessionValid || !hasAccount))
+  let showAccount = $state(false)
   let userName = $state(localStorage.getItem('focus-account-user') || '')
   let accentColor = $state(localStorage.getItem('focus-accent') || '')
+  let showBackupReminder = $state(false)
+  let autoThemeTime = $state(localStorage.getItem('focus-auto-theme-time') || '')
 
   function isValidHex(c) { return /^#[0-9a-fA-F]{6}$/.test(c) }
 
@@ -94,7 +96,7 @@
 
   function onOnboardingDone() {
     showOnboarding = false
-    showAccount = true
+    showAccount = false
     if (accentColor) {
       applyAccent(accentColor)
     }
@@ -107,21 +109,32 @@
 
   function handleUnlock(user) {
     userName = user
-    const expiry = Date.now() + 30 * 60 * 1000
-    localStorage.setItem('focus-session-expiry', String(expiry))
-    localStorage.setItem('focus-session-activity', String(Date.now()))
     showAccount = false
+  }
+
+  function applyTheme(t) {
+    const root = document.documentElement
+    if (t === 'dark') root.setAttribute('data-theme', 'dark')
+    else if (t === 'light') root.setAttribute('data-theme', 'light')
+    else root.removeAttribute('data-theme')
+    theme = t
+    localStorage.setItem('focus-theme', t)
+    if (accentColor) applyAccent(accentColor)
   }
 
   function cycleTheme() {
     const next = theme === 'system' ? 'light' : theme === 'light' ? 'dark' : 'system'
-    theme = next
-    localStorage.setItem('focus-theme', next)
-    const root = document.documentElement
-    if (next === 'dark') root.setAttribute('data-theme', 'dark')
-    else if (next === 'light') root.setAttribute('data-theme', 'light')
-    else root.removeAttribute('data-theme')
-    if (accentColor) applyAccent(accentColor)
+    applyTheme(next)
+  }
+
+  function checkAutoTheme() {
+    if (!autoThemeTime) return
+    const h = now.getHours(), m = now.getMinutes()
+    const [ah, am] = autoThemeTime.split(':').map(Number)
+    if (h === ah && m === am) {
+      const next = theme === 'dark' ? 'light' : 'dark'
+      applyTheme(next)
+    }
   }
 
   function toggleSidebarCollapse() {
@@ -137,10 +150,12 @@
   function onCompleteTask() {
     addPoints(10)
     streak = computeStreak()
+    if (navigator.vibrate) navigator.vibrate(20)
   }
 
   function onCompleteSubtask() {
     addPoints(3)
+    if (navigator.vibrate) navigator.vibrate(10)
   }
 
   function checkRituals() {
@@ -185,33 +200,30 @@
     if (theme === 'dark') root.setAttribute('data-theme', 'dark')
     else if (theme === 'light') root.setAttribute('data-theme', 'light')
     if (accentColor) applyAccent(accentColor)
-    requestPermission()
     scheduleAll()
     checkRituals()
     checkWeeklyReview()
+    checkBackupReminder()
     setInterval(() => {
       now = new Date()
       streak = computeStreak()
+      checkAutoTheme()
     }, 30000)
     document.addEventListener('keydown', handleKeydown)
 
-    function slideSession() {
-      localStorage.setItem('focus-session-expiry', String(Date.now() + 30 * 60 * 1000))
-      localStorage.setItem('focus-session-activity', String(Date.now()))
-    }
-    document.addEventListener('click', slideSession)
-    document.addEventListener('keydown', slideSession)
-    document.addEventListener('touchstart', slideSession)
     return () => {
       document.removeEventListener('keydown', handleKeydown)
-      document.removeEventListener('click', slideSession)
-      document.removeEventListener('keydown', slideSession)
-      document.removeEventListener('touchstart', slideSession)
     }
   })
 
+  const SHORTCUT_VIEWS = { d: 'dashboard', t: 'today', i: 'inbox', f: 'focus', c: 'calendar', r: 'routines', g: 'goals', s: 'stats' }
+
   function handleKeydown(e) {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); showSearch = true }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); showSearch = true; return }
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
+    const key = e.key.toLowerCase()
+    if (key === 'n') { e.preventDefault(); activeView = 'today'; sidebarOpen = false; return }
+    if (key in SHORTCUT_VIEWS) { e.preventDefault(); activeView = SHORTCUT_VIEWS[key]; sidebarOpen = false }
   }
 
   function checkWeeklyReview() {
@@ -240,6 +252,14 @@
   function dismissWeeklyReview() {
     localStorage.setItem('focus-weekly-review', todayStr)
     showWeeklyReview = false
+  }
+
+  function checkBackupReminder() {
+    const lastBackup = localStorage.getItem('focus-backup-reminder')
+    if (lastBackup === todayStr) return
+    const day = new Date().getDay()
+    if (day !== 0) return
+    showBackupReminder = true
   }
 
   async function handleExport() {
@@ -293,12 +313,13 @@
   {#if activeView === 'calendar'}<div in:fade={{ duration: 200 }}><CalendarView /></div>{/if}
   {#if activeView === 'goals'}<div in:fade={{ duration: 200 }}><GoalsView /></div>{/if}
   {#if activeView === 'kanban'}<div in:fade={{ duration: 200 }}><KanbanView /></div>{/if}
-  {#if activeView === 'settings'}<div in:fade={{ duration: 200 }}><SettingsView {theme} onThemeCycle={cycleTheme} {accentColor} onAccentChange={setAccent} /></div>{/if}
+  {#if activeView === 'settings'}<div in:fade={{ duration: 200 }}><SettingsView {theme} onThemeCycle={cycleTheme} {accentColor} onAccentChange={setAccent} {autoThemeTime} onAutoThemeChange={(t) => autoThemeTime = t} /></div>{/if}
   {#if activeView === 'habits'}<div in:fade={{ duration: 200 }}><HabitsView /></div>{/if}
   {#if activeView === 'tags'}<div in:fade={{ duration: 200 }}><TagsView /></div>{/if}
-  {#if activeView === 'today'}<div in:fade={{ duration: 200 }}><TodayView {now} onCompleteTask={onCompleteTask} onCompleteSubtask={onCompleteSubtask} /></div>{/if}
+  {#if activeView === 'today'}<div in:fade={{ duration: 200 }}><TodayView {now} onCompleteTask={onCompleteTask} onCompleteSubtask={onCompleteSubtask} onStartFocus={(id) => { focusTaskId = id; activeView = 'focus' }} /></div>{/if}
   {#if activeView === 'inbox'}<div in:fade={{ duration: 200 }}><InboxView /></div>{/if}
-  {#if activeView === 'focus'}<div in:fade={{ duration: 200 }}><FocusView /></div>{/if}
+  {#if activeView === 'focus'}<div in:fade={{ duration: 200 }}><FocusView taskId={focusTaskId} onClearTask={() => focusTaskId = null} /></div>{/if}
+  {#if activeView === 'templates'}<div in:fade={{ duration: 200 }}><TemplatesView /></div>{/if}
   {#if activeView === 'routines'}<div in:fade={{ duration: 200 }}><RoutinesView /></div>{/if}
   {#if activeView === 'someday'}<div in:fade={{ duration: 200 }}><SomedayView /></div>{/if}
   {#if activeView === 'life-courses'}<div in:fade={{ duration: 200 }}><LifeCoursesView /></div>{/if}
@@ -308,20 +329,19 @@
 <SearchModal open={showSearch} onClose={() => showSearch = false} onNavigate={(v) => activeView = v} />
 
 {#if showWeeklyReview && weeklyReviewData}
-  <div class="ritual-overlay" transition:fly={{ y: 20, duration: 250, opacity: 0 }}>
-    <div class="ritual-card">
-      <div class="ritual-icon">
-        <CalendarDays size={32} strokeWidth={1.5} color="var(--accent)" />
+  <div class="ritual-overlay" onclick={dismissWeeklyReview} role="dialog">
+    <div class="ritual-card" onclick={(e) => e.stopPropagation()}>
+      <div class="ritual-header">
+        <CalendarDays size={20} strokeWidth={1.5} color="var(--accent)" />
+        <span class="ritual-title">Weekly Review</span>
       </div>
-      <h2 class="ritual-title">Weekly Review</h2>
-      <p class="ritual-sub">Here's how this week went</p>
       <div class="review-grid">
         <div class="review-item"><span class="review-num">{weeklyReviewData.totalCompleted}</span><span class="review-label">Total done</span></div>
         <div class="review-item"><span class="review-num">{weeklyReviewData.weekCompleted}</span><span class="review-label">This week</span></div>
         <div class="review-item"><span class="review-num">🔥{weeklyReviewData.streak}</span><span class="review-label">Streak</span></div>
         <div class="review-item"><span class="review-num" style="font-size:12px">{weeklyReviewData.bestDay}</span><span class="review-label">Best day</span></div>
       </div>
-      <div class="ritual-actions">
+      <div class="ritual-footer">
         <button class="ritual-btn primary" onclick={dismissWeeklyReview}>Got it</button>
       </div>
     </div>
@@ -329,27 +349,17 @@
 {/if}
 
 {#if showMorning}
-  <div class="ritual-overlay" transition:fly={{ y: 20, duration: 250, opacity: 0 }}>
-    <div class="ritual-card">
-      <div class="ritual-icon">
-        <Sunrise size={32} strokeWidth={1.5} color="var(--accent)" />
+  <div class="ritual-overlay" onclick={skipMorning} role="dialog">
+    <div class="ritual-card" onclick={(e) => e.stopPropagation()}>
+      <div class="ritual-header">
+        <Sunrise size={20} strokeWidth={1.5} color="var(--accent)" />
+        <span class="ritual-title">Good morning</span>
       </div>
-      <h2 class="ritual-title">Good morning</h2>
-      <p class="ritual-sub">What are you focusing on today?</p>
-      <div class="ritual-input-row">
-        <input type="text" class="ritual-input" placeholder="Add a task..." bind:value={ritualTitle} onkeydown={(e) => { if (e.key === 'Enter') handleRitualSubmit() }} />
-        <button class="ritual-add-btn" aria-label="Add task" onclick={handleRitualSubmit} disabled={!ritualTitle.trim()}>
-          <Plus size={16} strokeWidth={1.5} />
-        </button>
+      <div class="ritual-body">
+        <input type="text" class="ritual-input" placeholder="What are you focusing on today?" bind:value={ritualTitle} onkeydown={(e) => { if (e.key === 'Enter') handleRitualSubmit() }} />
+        <button class="ritual-add-btn" onclick={handleRitualSubmit} disabled={!ritualTitle.trim()} aria-label="Add"><Plus size={16} strokeWidth={1.5} /></button>
       </div>
-      {#if todayTasks.length > 0}
-        <div class="ritual-tasks">
-          {#each todayTasks as t}
-            <div class="ritual-task" class:rt-done={t.completed}><span>{t.title}</span>{#if t.completed}<span class="rt-check">&#10003;</span>{/if}</div>
-          {/each}
-        </div>
-      {/if}
-      <div class="ritual-actions">
+      <div class="ritual-footer">
         <button class="ritual-btn primary" onclick={completeMorning}>Start the day</button>
         <button class="ritual-btn secondary" onclick={skipMorning}>Skip</button>
       </div>
@@ -358,29 +368,38 @@
 {/if}
 
 {#if showEvening}
-  <div class="ritual-overlay" transition:fly={{ y: 20, duration: 250, opacity: 0 }}>
-    <div class="ritual-card">
-      <div class="ritual-icon">
-        <CircleCheckBig size={32} strokeWidth={1.5} color="var(--accent)" />
+  <div class="ritual-overlay" onclick={skipEvening} role="dialog">
+    <div class="ritual-card" onclick={(e) => e.stopPropagation()}>
+      <div class="ritual-header">
+        <CircleCheckBig size={20} strokeWidth={1.5} color="var(--complete)" />
+        <span class="ritual-title">End of day</span>
+        <span class="ritual-stat">{completedCount}/{todayTasks.length} tasks done</span>
       </div>
-      <h2 class="ritual-title">End of day</h2>
-      <p class="ritual-sub">You completed <strong>{completedCount}</strong> of <strong>{todayTasks.length}</strong> tasks today</p>
-      {#if todayTasks.length > 0}
-        <div class="ritual-tasks">
-          {#each todayTasks as t}
-            <div class="ritual-task" class:rt-done={t.completed}><span>{t.title}</span>{#if t.completed}<span class="rt-check">&#10003;</span>{/if}</div>
-          {/each}
-        </div>
-      {/if}
-      <div class="ritual-input-row">
-        <input type="text" class="ritual-input" placeholder="Add a task for tomorrow..." bind:value={ritualTitle} onkeydown={(e) => { if (e.key === 'Enter') handleRitualSubmit() }} />
-        <button class="ritual-add-btn" aria-label="Add task" onclick={handleRitualSubmit} disabled={!ritualTitle.trim()}>
-          <Plus size={16} strokeWidth={1.5} />
-        </button>
+      <div class="ritual-body">
+        <input type="text" class="ritual-input" placeholder="Task for tomorrow..." bind:value={ritualTitle} onkeydown={(e) => { if (e.key === 'Enter') handleRitualSubmit() }} />
+        <button class="ritual-add-btn" onclick={handleRitualSubmit} disabled={!ritualTitle.trim()} aria-label="Add"><Plus size={16} strokeWidth={1.5} /></button>
       </div>
-      <div class="ritual-actions">
+      <div class="ritual-footer">
         <button class="ritual-btn primary" onclick={completeEvening}>Close the day</button>
         <button class="ritual-btn secondary" onclick={skipEvening}>Skip</button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+{#if showBackupReminder}
+  <div class="ritual-overlay" onclick={() => showBackupReminder = false} role="dialog">
+    <div class="ritual-card" onclick={(e) => e.stopPropagation()}>
+      <div class="ritual-header">
+        <Download size={20} strokeWidth={1.5} color="var(--accent)" />
+        <span class="ritual-title">Backup reminder</span>
+      </div>
+      <div class="ritual-body" style="flex-direction:column;gap:4px;padding-bottom:4px">
+        <p style="font-size:14px;color:var(--text-secondary);line-height:1.5">It's Sunday — consider exporting your data to keep a safe backup.</p>
+      </div>
+      <div class="ritual-footer">
+        <button class="ritual-btn primary" onclick={() => { handleExport(); showBackupReminder = false; localStorage.setItem('focus-backup-reminder', todayStr) }}>Export now</button>
+        <button class="ritual-btn secondary" onclick={() => { showBackupReminder = false; localStorage.setItem('focus-backup-reminder', todayStr) }}>Later</button>
       </div>
     </div>
   </div>
@@ -393,37 +412,31 @@
   .hamburger { width: 38px; height: 38px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); background: var(--surface); border: 1px solid var(--border); padding: 0; transition: all 0.2s var(--ease); flex-shrink: 0; backdrop-filter: blur(var(--glass-blur)); }
   .hamburger:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); }
   .hamburger:active { transform: scale(0.92); }
-  .logo { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; color: #f0f0f0; flex: 1; text-shadow: 0 0 40px rgba(255,255,255,0.06); }
+  .logo { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; color: var(--text); flex: 1; }
   .header-actions { display: flex; align-items: center; gap: 8px; }
   .points-badge { font-size: 12px; font-weight: 600; color: var(--accent); background: var(--accent-subtle); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(var(--accent-rgb), 0.15); }
   .header-search-btn { width: 34px; height: 34px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); background: var(--surface); border: 1px solid var(--border); padding: 0; transition: all 0.15s var(--ease); flex-shrink: 0; }
   .header-search-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); }
-  .review-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-  .review-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px; text-align: center; }
-  .review-num { display: block; font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
-  .review-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .review-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 16px 22px; }
+  .review-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px; text-align: center; }
+  .review-num { display: block; font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+  .review-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; }
   .date { font-size: 12px; color: var(--text-muted); font-weight: 500; letter-spacing: 0.3px; }
-  .ritual-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; padding: 24px; z-index: 100; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
-  .ritual-card { background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 36px 28px 28px; width: 100%; max-width: 340px; box-shadow: var(--shadow-xl); text-align: center; animation: scaleIn 0.3s var(--ease-out); backdrop-filter: blur(var(--glass-blur)); }
-  .ritual-icon { margin-bottom: 16px; display: flex; justify-content: center; animation: float 3s ease-in-out infinite; }
-  .ritual-title { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 4px; letter-spacing: -0.3px; }
-  .ritual-sub { font-size: 14px; color: var(--text-secondary); margin-bottom: 20px; }
-  .ritual-input-row { display: flex; gap: 8px; margin-bottom: 16px; }
-  .ritual-input { flex: 1; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--text); font-size: 14px; transition: all 0.2s var(--ease); backdrop-filter: blur(var(--glass-blur)); }
+  .ritual-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: flex-start; justify-content: center; padding: 60px 24px; z-index: 100; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); animation: fadeIn 0.2s var(--ease-out); }
+  .ritual-card { background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-xl); width: 100%; max-width: 420px; box-shadow: var(--shadow-xl); overflow: hidden; animation: fadeIn 0.15s var(--ease-out); }
+  .ritual-header { display: flex; align-items: center; gap: 10px; padding: 18px 22px; border-bottom: 1px solid var(--border); }
+  .ritual-title { font-size: 15px; font-weight: 600; color: var(--text); }
+  .ritual-stat { font-size: 13px; color: var(--text-secondary); margin-left: auto; }
+  .ritual-body { display: flex; gap: 8px; padding: 14px 22px; }
+  .ritual-input { flex: 1; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--text); font-size: 15px; outline: none; }
   .ritual-input:focus { border-color: var(--accent); box-shadow: var(--glow); }
-  .ritual-add-btn { width: 44px; height: 44px; border-radius: var(--radius-md); background: var(--accent-gradient); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: all 0.2s var(--ease); box-shadow: var(--accent-glow); }
-  .ritual-add-btn:hover { transform: scale(1.05); box-shadow: 0 0 40px rgba(var(--accent-rgb), 0.25); }
-  .ritual-add-btn:active { transform: scale(0.95); }
-  .ritual-add-btn:disabled { opacity: 0.3; box-shadow: none; }
-  .ritual-tasks { text-align: left; margin-bottom: 16px; }
-  .ritual-task { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; font-size: 13px; color: var(--text); border-radius: var(--radius-sm); background: var(--surface); border: 1px solid var(--border); margin-bottom: 4px; }
-  .ritual-task.rt-done { opacity: 0.5; text-decoration: line-through; color: var(--text-secondary); }
-  .rt-check { color: var(--complete); font-size: 13px; font-weight: 700; }
-  .ritual-actions { display: flex; flex-direction: column; gap: 8px; }
-  .ritual-btn { padding: 12px; border-radius: var(--radius-md); font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.15s var(--ease); }
-  .ritual-btn.primary { background: var(--accent-gradient); color: #fff; border: none; box-shadow: var(--accent-glow); }
-  .ritual-btn.primary:hover { box-shadow: 0 0 40px rgba(var(--accent-rgb), 0.25); transform: translateY(-1px); }
-  .ritual-btn.primary:active { transform: scale(0.98); }
-  .ritual-btn.secondary { background: var(--surface); color: var(--text-secondary); border: 1px solid var(--border); font-size: 13px; }
+  .ritual-add-btn { width: 40px; height: 40px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; background: var(--accent-gradient); color: #fff; border: none; cursor: pointer; flex-shrink: 0; box-shadow: var(--accent-glow); }
+  .ritual-add-btn:hover { box-shadow: 0 0 30px rgba(var(--accent-rgb), 0.25); }
+  .ritual-add-btn:disabled { opacity: 0.25; box-shadow: none; }
+  .ritual-footer { display: flex; gap: 8px; padding: 8px 22px 18px; }
+  .ritual-btn { padding: 9px 20px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s var(--ease); }
+  .ritual-btn.primary { background: var(--accent-gradient); color: #fff; border: none; }
+  .ritual-btn.primary:hover { box-shadow: 0 0 30px rgba(var(--accent-rgb), 0.2); }
+  .ritual-btn.secondary { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
   .ritual-btn.secondary:hover { border-color: var(--accent); color: var(--accent); }
 </style>

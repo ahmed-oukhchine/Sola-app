@@ -1,5 +1,5 @@
 <script>
-  import { store } from './taskStore.svelte.js'
+  import { store, toggleTask } from './taskStore.svelte.js'
   import { ChevronLeft, ChevronRight } from 'lucide-svelte'
 
   let month = $state(new Date().getMonth())
@@ -88,7 +88,7 @@
   {:else}
     <div class="inbox-list">
       {#each selectedTasks as t (t.id)}
-        <div class="inbox-item" class:cal-completed={t.completed}>
+        <div class="inbox-item" class:cal-completed={t.completed} onclick={() => toggleTask(t.id)}>
           <span class="inbox-text">{t.title}</span>
           {#if t.startTime}
             <span class="date">{t.startTime}{t.endTime ? `-${t.endTime}` : ''}</span>

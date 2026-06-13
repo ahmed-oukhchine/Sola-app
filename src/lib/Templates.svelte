@@ -14,7 +14,7 @@
   }
 
   function useTemplate(t) {
-    addTask(t.title)
+    addTask(t.title, '', '', null, null, null, null, [], null, t.items || [])
   }
 
   function confirmDelete(id) {

@@ -6,6 +6,7 @@
   let timerRunning = $state(false), timerPaused = $state(false), timerStart = $state(0)
   let timerPauseRemaining = $state(0), tickInterval = $state(null), doTick = $state(false), prevSecond = $state(-1)
   let pomodoroActive = $state(false), pomodoroSession = $state('focus'), pomodoroCount = $state(0)
+  let showCelebration = $state(false)
   let { taskId, onClearTask } = $props()
   let focusTask = $derived(taskId ? store.tasks.find(t => t.id === taskId) : null)
 
@@ -172,6 +173,7 @@
       playTimerSound()
       const sessionMinutes = timerMinutes
       logFocusSession(sessionMinutes, pomodoroActive ? (pomodoroSession === 'focus' ? 'pomodoro-focus' : 'pomodoro-break') : 'focus')
+      if (!pomodoroActive) { showCelebration = true; setTimeout(() => showCelebration = false, 3000) }
       if (pomodoroActive) {
         if (pomodoroSession === 'focus') {
           pomodoroSession = 'break'; pomodoroCount++
@@ -264,6 +266,16 @@
   </button>
 </main>
 
+{#if showCelebration}
+  <div class="celebration-overlay" onclick={() => showCelebration = false}>
+    <div class="celebration-card">
+      <div class="celebration-icon">🎉</div>
+      <div class="celebration-title">Session Complete!</div>
+      <div class="celebration-sub">{timerMinutes} minute{timerMinutes !== 1 ? 's' : ''} focused</div>
+    </div>
+  </div>
+{/if}
+
 <style>
   .focus-view { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; gap: 14px; position: relative; }
   .progress-bar { position: fixed; top: 0; left: 0; right: 0; height: 3px; background: rgba(255,255,255,0.03); z-index: 10; }
@@ -300,4 +312,11 @@
   .focus-task-title { font-size: 13px; color: var(--text); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .focus-task-clear { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); background: transparent; border: none; padding: 0; flex-shrink: 0; transition: all 0.2s var(--ease); }
   .focus-task-clear:hover { background: var(--danger-bg); color: var(--danger); }
+  .celebration-overlay { position: fixed; inset: 0; z-index: 300; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); animation: fadeIn 0.3s ease; }
+  .celebration-card { background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border); padding: 40px 48px; text-align: center; animation: scaleIn 0.35s var(--ease-spring); box-shadow: 0 0 80px rgba(var(--accent-rgb), 0.15); }
+  .celebration-icon { font-size: 56px; margin-bottom: 12px; }
+  .celebration-title { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+  .celebration-sub { font-size: 14px; color: var(--text-secondary); }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes scaleIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 </style>

@@ -1,7 +1,7 @@
 <script>
   import { LayoutDashboard, CalendarDays, Inbox, Crosshair, ListChecks, Clock, Calendar, Target, Columns3, SquareCheck, Tags, BookOpen, TrendingUp, Settings, ChevronLeft, ChevronRight, Moon, Sun, Circle, ChevronDown, Briefcase } from 'lucide-svelte'
 
-  let { open, activeView, streak, points, theme, collapsed, onNavigate, onClose, onThemeCycle, onExport, onImport, onCollapse } = $props()
+  let { open, activeView, streak, points, theme, collapsed, onNavigate, onClose, onThemeCycle, onExport, onImport, onCollapse, inboxCount = 0, somedayCount = 0 } = $props()
 
   const GROUPS = [
     {
@@ -9,7 +9,7 @@
       views: [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { id: 'today', label: 'Today', icon: CalendarDays },
-        { id: 'inbox', label: 'Inbox', icon: Inbox },
+        { id: 'inbox', label: 'Inbox', icon: Inbox, badge: inboxCount },
         { id: 'focus', label: 'Focus', icon: Crosshair },
         { id: 'calendar', label: 'Calendar', icon: Calendar },
       ]
@@ -18,7 +18,7 @@
       label: 'Organize',
       views: [
         { id: 'routines', label: 'Routines', icon: ListChecks },
-        { id: 'someday', label: 'Someday', icon: Clock },
+        { id: 'someday', label: 'Someday', icon: Clock, badge: somedayCount },
         { id: 'templates', label: 'Templates', icon: Briefcase },
         { id: 'goals', label: 'Goals', icon: Target },
         { id: 'kanban', label: 'Kanban', icon: Columns3 },
@@ -92,6 +92,9 @@
                   <button class="sb-item" class:active={activeView === v.id} onclick={() => { onNavigate(v.id); onClose() }}>
                     <v.icon size={18} strokeWidth={1.5} />
                     <span>{v.label}</span>
+                    {#if v.badge && v.badge > 0}
+                      <span class="sb-badge">{v.badge}</span>
+                    {/if}
                   </button>
                 {/each}
               {/if}
@@ -160,4 +163,5 @@
   .sb-group-col { display: flex; flex-direction: column; align-items: center; padding: 6px 0; }
   .sb-group-col:not(:last-child) { border-bottom: 1px solid var(--border-light); margin-bottom: 6px; }
   .sb-group-label-col { font-size: 8px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; pointer-events: none; }
+  .sb-badge { margin-left: auto; background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; min-width: 18px; height: 18px; border-radius: 9px; display: flex; align-items: center; justify-content: center; padding: 0 5px; line-height: 1; }
 </style>

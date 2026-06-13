@@ -20,8 +20,9 @@
   import SearchModal from './lib/Search.svelte'
   import Onboarding from './lib/Onboarding.svelte'
   import Account from './lib/Account.svelte'
-  import { store, addTask, loadAll, exportData, importData, loadPoints, savePoints, computeStreak, requestPermission, scheduleAll } from './lib/taskStore.svelte.js'
+  import { store, addTask, loadAll, exportData, importData, loadPoints, savePoints, computeStreak, requestPermission, scheduleAll, removeTask } from './lib/taskStore.svelte.js'
   import { Menu, Search, CalendarDays, Sunrise, Plus, CircleCheckBig, Download } from 'lucide-svelte'
+  import Toast from './lib/Toast.svelte'
 
   let activeView = $state('dashboard')
   let sidebarOpen = $state(false)
@@ -49,6 +50,33 @@
   let accentColor = $state(localStorage.getItem('focus-accent') || '')
   let showBackupReminder = $state(false)
   let autoThemeTime = $state(localStorage.getItem('focus-auto-theme-time') || '')
+  let inboxCount = $derived(store.tasks.filter(t => !t.date || (t.date === todayStr && !t.startTime && !t.completed)).length)
+  let somedayCount = $derived(store.someday.length)
+  let toasts = $state([])
+  let toastId = $state(0)
+  let deferredInstall = $state(null)
+
+  function toast(message, type = 'success', undo = null) {
+    const id = ++toastId
+    toasts = [...toasts, { id, message, type, undo: !!undo, undoData: undo }]
+    setTimeout(() => { toasts = toasts.filter(t => t.id !== id) }, 4000)
+  }
+
+  function dismissToast(id) {
+    toasts = toasts.filter(t => t.id !== id)
+  }
+
+  function handleUndo(id) {
+    const t = toasts.find(t => t.id === id)
+    if (t?.undoData) t.undoData()
+    dismissToast(id)
+  }
+
+  function handleInstall() {
+    if (!deferredInstall) return
+    deferredInstall.prompt()
+    deferredInstall.userChoice.then(() => { deferredInstall = null })
+  }
 
   function isValidHex(c) { return /^#[0-9a-fA-F]{6}$/.test(c) }
 
@@ -151,11 +179,13 @@
     addPoints(10)
     streak = computeStreak()
     if (navigator.vibrate) navigator.vibrate(20)
+    toast('Task completed! +10 pts', 'success')
   }
 
   function onCompleteSubtask() {
     addPoints(3)
     if (navigator.vibrate) navigator.vibrate(10)
+    toast('Subtask done! +3 pts', 'success')
   }
 
   function checkRituals() {
@@ -210,6 +240,7 @@
       checkAutoTheme()
     }, 30000)
     document.addEventListener('keydown', handleKeydown)
+    window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstall = e; setTimeout(() => deferredInstall = null, 30000) })
 
     return () => {
       document.removeEventListener('keydown', handleKeydown)
@@ -269,6 +300,7 @@
     const a = document.createElement('a')
     a.href = url; a.download = `focus-backup-${todayStr}.json`; a.click()
     URL.revokeObjectURL(url)
+    toast('Data exported successfully', 'success')
   }
 
   function handleImport() {
@@ -279,7 +311,8 @@
         const text = await input.files[0].text()
         await importData(text)
         points = loadPoints(); streak = computeStreak()
-      } catch (e) { alert('Invalid backup file') }
+        toast('Data imported successfully', 'success')
+      } catch (e) { toast('Invalid backup file', 'error') }
     }
     input.click()
   }
@@ -293,7 +326,7 @@
   <Account onUnlock={handleUnlock} />
 {/if}
 
-<Sidebar open={sidebarOpen} {activeView} {streak} {points} {theme} collapsed={sidebarCollapsed} onNavigate={(v) => activeView = v} onClose={() => sidebarOpen = false} onThemeCycle={cycleTheme} onCollapse={toggleSidebarCollapse} onExport={handleExport} onImport={handleImport} />
+<Sidebar open={sidebarOpen} {activeView} {streak} {points} {theme} collapsed={sidebarCollapsed} onNavigate={(v) => activeView = v} onClose={() => sidebarOpen = false} onThemeCycle={cycleTheme} onCollapse={toggleSidebarCollapse} onExport={handleExport} onImport={handleImport} {inboxCount} {somedayCount} />
 <div class="app">
   <header class="header">
     <button class="hamburger" onclick={() => sidebarOpen = true} aria-label="Menu">
@@ -301,6 +334,11 @@
     </button>
     <h1 class="logo">Sola</h1>
     <div class="header-actions">
+      {#if deferredInstall}
+        <button class="install-btn" onclick={handleInstall} title="Install app">
+          <Download size={14} strokeWidth={1.5} />
+        </button>
+      {/if}
       <button class="header-search-btn" onclick={() => showSearch = true} aria-label="Search (Ctrl+K)">
         <Search size={16} strokeWidth={1.5} />
       </button>
@@ -405,6 +443,8 @@
   </div>
 {/if}
 
+<Toast {toasts} onDismiss={dismissToast} onUndo={handleUndo} />
+
 <style>
   .app { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
   .header { display: flex; align-items: center; gap: 10px; padding: 16px 20px 8px; flex-shrink: 0; position: relative; }
@@ -417,6 +457,8 @@
   .points-badge { font-size: 12px; font-weight: 600; color: var(--accent); background: var(--accent-subtle); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(var(--accent-rgb), 0.15); }
   .header-search-btn { width: 34px; height: 34px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); background: var(--surface); border: 1px solid var(--border); padding: 0; transition: all 0.15s var(--ease); flex-shrink: 0; }
   .header-search-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); }
+  .install-btn { width: 34px; height: 34px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--complete); background: rgba(138,154,122,0.1); border: 1px solid rgba(138,154,122,0.25); padding: 0; transition: all 0.15s var(--ease); flex-shrink: 0; }
+  .install-btn:hover { background: rgba(138,154,122,0.2); border-color: var(--complete); }
   .review-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 16px 22px; }
   .review-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px; text-align: center; }
   .review-num { display: block; font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 2px; }

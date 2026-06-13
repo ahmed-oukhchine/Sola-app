@@ -84,7 +84,7 @@ export async function loadAll() {
 
 // --- Tasks ---
 
-export function addTask(title, startTime = '', endTime = '', energy = null, repeat = null, priority = null, date = null, tagsList = [], estimatedMinutes = null) {
+export function addTask(title, startTime = '', endTime = '', energy = null, repeat = null, priority = null, date = null, tagsList = [], estimatedMinutes = null, subtasks = []) {
   if (!date && !startTime) {
     const parsed = parseTaskFromString(title)
     if (parsed.date || parsed.startTime) {
@@ -107,7 +107,7 @@ export function addTask(title, startTime = '', endTime = '', energy = null, repe
     endTime,
     completed: false,
     unscheduled: !startTime,
-    subtasks: [],
+    subtasks: subtasks.map(s => ({ id: crypto.randomUUID(), title: s.title, completed: false })),
     expanded: false,
     energy,
     repeat,

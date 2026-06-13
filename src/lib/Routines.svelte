@@ -4,6 +4,20 @@
 
   let title = $state(''), type = $state('morning'), itemInput = $state({})
 
+  function resetRoutines() {
+    const today = new Date().toISOString().split('T')[0]
+    const lastReset = localStorage.getItem('focus-routine-reset')
+    if (lastReset === today) return
+    for (const r of routines.items) {
+      for (const item of r.items) {
+        if (item.completed) item.completed = false
+      }
+    }
+    localStorage.setItem('focus-routine-reset', today)
+  }
+
+  resetRoutines()
+
   function handleAdd() {
     if (!title.trim()) return
     addRoutine(title.trim(), type)

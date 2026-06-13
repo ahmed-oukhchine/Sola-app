@@ -180,7 +180,7 @@
           startTimerv()
         }
       }
-      if (localStorage.getItem('focus-ntfy-enabled') === 'true' && 'Notification' in window && Notification.permission === 'granted') new Notification('Focus', { body: 'Focus session complete!' })
+      if (localStorage.getItem('focus-ntfy-enabled') === 'true' && 'Notification' in window && Notification.permission === 'granted') new Notification('Sola', { body: 'Focus session complete!' })
       if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400])
     }
   }

@@ -1,4 +1,4 @@
-# Focus App
+# Sola
 
 A personal focus and task management app — runs entirely in the browser with IndexedDB for storage. No backend, no database setup, no env vars.
 

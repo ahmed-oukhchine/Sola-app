@@ -46,7 +46,7 @@
         </div>
       {:else}
         <div class="sb-header">
-          <h2 class="sb-logo">focus</h2>
+          <h2 class="sb-logo">Sola</h2>
           <button class="sb-toggle" onclick={onCollapse} aria-label="Collapse sidebar">
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M6 4l6 5-6 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>

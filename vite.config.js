@@ -9,9 +9,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg'],
       manifest: {
-        name: 'Focus',
-        short_name: 'Focus',
-        description: 'ADHD-friendly focus app',
+        name: 'Sola',
+        short_name: 'Sola',
+        description: 'Personal focus and task management',
         theme_color: '#181818',
         background_color: '#181818',
         display: 'standalone',

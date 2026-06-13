@@ -56,7 +56,7 @@
         </svg>
       </div>
       <h1 class="ob-title">
-        {#each 'Focus' as char, i}
+        {#each 'Sola' as char, i}
           <span class="ob-char" style="animation-delay: {i * 80}ms">{char}</span>
         {/each}
       </h1>
@@ -147,7 +147,7 @@
         </div>
       </div>
       <button class="ob-btn primary" in:fade={{ duration: 500, delay: 900 }} onclick={finish}>
-        <span>Start using Focus</span>
+        <span>Start using Sola</span>
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
     </div>

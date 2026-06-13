@@ -1,5 +1,6 @@
 <script>
   import { fly } from "svelte/transition";
+  import { Plus, Check, X, Info } from 'lucide-svelte';
   import {
     store,
     addTask,
@@ -416,14 +417,7 @@
         >
       </div>
     </form>{:else}<button class="add-trigger" onclick={openForm}
-      ><svg width="18" height="18" viewBox="0 0 18 18" fill="none"
-        ><path
-          d="M9 3v12M3 9h12"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-        /></svg
-      >Add task</button
+      ><Plus size={18} strokeWidth={1.5} />Add task</button
     >{/if}
   <main class="task-list">
     {#if timedTasks.length > 0}<div
@@ -479,19 +473,7 @@
                     onCompleteTask();
                   }
                 }}
-                >{#if task.completed}<svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 12 12"
-                    fill="none"
-                    ><path
-                      d="M2.5 6l3 3 4-5"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    /></svg
-                  >{/if}</button
+                >{#if task.completed}<Check size={12} strokeWidth={1.5} />{/if}</button
               >{#if editTask === task.id}<div class="tl-body">
                   <input
                     type="text"
@@ -585,14 +567,7 @@
                     e.stopPropagation();
                     removeTask(task.id);
                   }}
-                  ><svg width="12" height="12" viewBox="0 0 12 12" fill="none"
-                    ><path
-                      d="M3 3l6 6M9 3l-6 6"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="round"
-                    /></svg
-                  ></button
+                  ><X size={12} strokeWidth={1.5} /></button
                 >{/if}
             </div>
             {#if task.expanded}<div
@@ -612,19 +587,7 @@
                         toggleSubtask(task.id, st.id);
                         if (!swas) onCompleteSubtask();
                       }}
-                      >{#if st.completed}<svg
-                          width="10"
-                          height="10"
-                          viewBox="0 0 10 10"
-                          fill="none"
-                          ><path
-                            d="M2 5l2 2 4-4"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                          /></svg
-                        >{/if}</button
+                      >{#if st.completed}<Check size={10} strokeWidth={1.5} />{/if}</button
                     ><span class="st-title">{st.title}</span><button
                       class="st-del"
                       aria-label="Remove"
@@ -632,18 +595,7 @@
                         e.stopPropagation();
                         removeSubtask(task.id, st.id);
                       }}
-                      ><svg
-                        width="10"
-                        height="10"
-                        viewBox="0 0 10 10"
-                        fill="none"
-                        ><path
-                          d="M2 2l6 6M8 2l-6 6"
-                          stroke="currentColor"
-                          stroke-width="1.5"
-                          stroke-linecap="round"
-                        /></svg
-                      ></button
+                      ><X size={10} strokeWidth={1.5} /></button
                     >
                   </div>{/each}
                 <div class="st-add">
@@ -662,20 +614,7 @@
         <p class="empty-sub">Tap "Add task" to get started</p>
       </div>{/if}{#if unscheduledTasks.length > 0}<div class="unscheduled">
         <div class="us-header">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"
-            ><circle
-              cx="7"
-              cy="7"
-              r="5.5"
-              stroke="currentColor"
-              stroke-width="1.5"
-            /><path
-              d="M7 4v4M7 9.5v.5"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-            /></svg
-          >Unscheduled
+          <Info size={14} strokeWidth={1.5} />Unscheduled
         </div>
         {#each unscheduledTasks as task (task.id)}<div
             class="us-task"
@@ -713,19 +652,7 @@
                     onCompleteTask();
                   }
                 }}
-                >{#if task.completed}<svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 12 12"
-                    fill="none"
-                    ><path
-                      d="M2.5 6l3 3 4-5"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    /></svg
-                  >{/if}</button
+                >{#if task.completed}<Check size={12} strokeWidth={1.5} />{/if}</button
               >{#if editTask === task.id}<div class="us-body">
                   <input
                     type="text"
@@ -816,14 +743,7 @@
                     e.stopPropagation();
                     removeTask(task.id);
                   }}
-                  ><svg width="12" height="12" viewBox="0 0 12 12" fill="none"
-                    ><path
-                      d="M3 3l6 6M9 3l-6 6"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="round"
-                    /></svg
-                  ></button
+                  ><X size={12} strokeWidth={1.5} /></button
                 >{/if}
             </div>
             {#if task.expanded}<div
@@ -843,19 +763,7 @@
                         toggleSubtask(task.id, st.id);
                         if (!swas) onCompleteSubtask();
                       }}
-                      >{#if st.completed}<svg
-                          width="10"
-                          height="10"
-                          viewBox="0 0 10 10"
-                          fill="none"
-                          ><path
-                            d="M2 5l2 2 4-4"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                          /></svg
-                        >{/if}</button
+                      >{#if st.completed}<Check size={10} strokeWidth={1.5} />{/if}</button
                     ><span class="st-title">{st.title}</span><button
                       class="st-del"
                       aria-label="Remove"
@@ -863,18 +771,7 @@
                         e.stopPropagation();
                         removeSubtask(task.id, st.id);
                       }}
-                      ><svg
-                        width="10"
-                        height="10"
-                        viewBox="0 0 10 10"
-                        fill="none"
-                        ><path
-                          d="M2 2l6 6M8 2l-6 6"
-                          stroke="currentColor"
-                          stroke-width="1.5"
-                          stroke-linecap="round"
-                        /></svg
-                      ></button
+                      ><X size={10} strokeWidth={1.5} /></button
                     >
                   </div>{/each}
                 <div class="st-add">

@@ -1,5 +1,6 @@
 <script>
   import { store } from './taskStore.svelte.js'
+  import { ChevronLeft, ChevronRight } from 'lucide-svelte'
 
   let month = $state(new Date().getMonth())
   let year = $state(new Date().getFullYear())
@@ -52,11 +53,11 @@
 <div class="view-content">
   <div class="cal-header">
     <button class="cal-nav" onclick={prevMonth} aria-label="Previous month">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 3l-4 4 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <ChevronLeft size={14} strokeWidth={1.5} />
     </button>
     <h2 class="cal-month">{MONTHS[month]} {year}</h2>
     <button class="cal-nav" onclick={nextMonth} aria-label="Next month">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 3l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <ChevronRight size={14} strokeWidth={1.5} />
     </button>
   </div>
   <button class="cal-today" onclick={goToday}>Today</button>

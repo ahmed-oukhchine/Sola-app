@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "chrono-node": "^2.9.1",
-    "dexie": "^4.4.3"
+    "dexie": "^4.4.3",
+    "lucide-svelte": "^1.0.1"
   }
 }

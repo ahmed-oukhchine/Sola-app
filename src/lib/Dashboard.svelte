@@ -1,4 +1,5 @@
 <script>
+  import { CalendarDays, Inbox, Crosshair, TrendingUp } from 'lucide-svelte'
   import { store, addTask, loadPoints, computeStreak } from './taskStore.svelte.js'
 
   let { onNavigate } = $props()
@@ -61,19 +62,19 @@
 
   <div class="db-actions">
     <button class="db-action-btn" onclick={() => onNavigate('today')}>
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2 6h12M5 1v3M11 1v3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <CalendarDays size={16} strokeWidth={1.5} />
       Today
     </button>
     <button class="db-action-btn" onclick={() => onNavigate('inbox')}>
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1 8l3-5h8l3 5-3 4H4l-3-4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+      <Inbox size={16} strokeWidth={1.5} />
       Inbox
     </button>
     <button class="db-action-btn" onclick={() => onNavigate('focus')}>
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="2" fill="currentColor"/></svg>
+      <Crosshair size={16} strokeWidth={1.5} />
       Focus
     </button>
     <button class="db-action-btn" onclick={() => onNavigate('stats')}>
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 12h12M4 10l2-4 2 2 4-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <TrendingUp size={16} strokeWidth={1.5} />
       Stats
     </button>
   </div>

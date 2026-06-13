@@ -1,5 +1,6 @@
 <script>
   import { searchAll, notes, store, inbox, someday, goals, habits } from './taskStore.svelte.js'
+  import { Search, X } from 'lucide-svelte'
 
   let { open, onClose, onNavigate } = $props()
   let query = $state('')
@@ -38,10 +39,10 @@
   <div class="search-overlay" role="dialog" aria-label="Search" onclick={onClose} onkeydown={(e) => { if (e.key === 'Escape') onClose() }} tabindex="0">
     <div class="search-modal" onclick={(e) => e.stopPropagation()} role="document">
       <div class="search-input-row">
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" class="search-icon"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M12.5 12.5l3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <Search size={18} strokeWidth={1.5} class="search-icon" />
         <input id="search-input" type="text" class="search-input" placeholder="Search tasks, notes, inbox..." bind:value={query} oninput={handleInput} onkeydown={handleKeydown} />
         <button class="search-close-btn" onclick={onClose} aria-label="Close search">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <X size={16} strokeWidth={1.5} />
         </button>
       </div>
       {#if query && results.length > 0}

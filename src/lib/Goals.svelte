@@ -1,4 +1,5 @@
 <script>
+  import { Plus } from 'lucide-svelte'
   import { goals, addGoal, removeGoal, updateGoal, getGoalProgress } from './taskStore.svelte.js'
 
   let title = $state('')
@@ -38,7 +39,7 @@
 
   {#if !showForm}
     <button class="add-trigger" onclick={() => showForm = true}>
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 3v12M3 9h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <Plus size={18} strokeWidth={1.5} />
       Add goal
     </button>
   {:else}

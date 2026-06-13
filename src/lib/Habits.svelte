@@ -1,4 +1,5 @@
 <script>
+  import { X } from 'lucide-svelte'
   import { habits, addHabit, removeHabit, toggleHabitLog, isHabitDone, habitLogs } from './taskStore.svelte.js'
 
   let name = $state('')
@@ -62,7 +63,7 @@
             <div class="habit-meta">
               <span class="habit-streak">🔥 {streak}</span>
               <button class="habit-del" onclick={() => removeHabit(h.id)} aria-label="Delete habit">
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                <X size={12} strokeWidth={1.5} />
               </button>
             </div>
           </div>

@@ -20,6 +20,7 @@
   import Onboarding from './lib/Onboarding.svelte'
   import Account from './lib/Account.svelte'
   import { store, addTask, loadAll, exportData, importData, loadPoints, savePoints, computeStreak, requestPermission, scheduleAll } from './lib/taskStore.svelte.js'
+  import { Menu, Search, CalendarDays, Sunrise, Plus, CircleCheckBig } from 'lucide-svelte'
 
   let activeView = $state('dashboard')
   let sidebarOpen = $state(false)
@@ -257,12 +258,12 @@
 <div class="app">
   <header class="header">
     <button class="hamburger" onclick={() => sidebarOpen = true} aria-label="Menu">
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
+        <Menu size={20} strokeWidth={1.5} />
     </button>
     <h1 class="logo">focus</h1>
     <div class="header-actions">
       <button class="header-search-btn" onclick={() => showSearch = true} aria-label="Search (Ctrl+K)">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5"/><path d="M11 11l3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <Search size={16} strokeWidth={1.5} />
       </button>
       <span class="points-badge">✦ {points}</span>
       <span class="date">{dayStr}</span>
@@ -291,7 +292,7 @@
   <div class="ritual-overlay" transition:fly={{ y: 20, duration: 250, opacity: 0 }}>
     <div class="ritual-card">
       <div class="ritual-icon">
-        <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><rect x="4" y="6" width="24" height="20" rx="3" stroke="var(--accent)" stroke-width="2" fill="none"/><path d="M4 12h24M12 6v4M20 6v4" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"/><circle cx="11" cy="18" r="1.5" fill="var(--accent)"/><circle cx="16" cy="18" r="1.5" fill="var(--accent)"/><circle cx="21" cy="18" r="1.5" fill="var(--accent)"/><circle cx="11" cy="23" r="1.5" fill="var(--accent)"/><circle cx="16" cy="23" r="1.5" fill="var(--accent)"/></svg>
+        <CalendarDays size={32} strokeWidth={1.5} color="var(--accent)" />
       </div>
       <h2 class="ritual-title">Weekly Review</h2>
       <p class="ritual-sub">Here's how this week went</p>
@@ -312,14 +313,14 @@
   <div class="ritual-overlay" transition:fly={{ y: 20, duration: 250, opacity: 0 }}>
     <div class="ritual-card">
       <div class="ritual-icon">
-        <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="8" fill="var(--accent)" opacity="0.15" /><circle cx="16" cy="16" r="4" fill="var(--accent)" /><path d="M16 2v3M16 27v3M2 16h3M27 16h3M5.6 5.6l2.1 2.1M24.3 24.3l2.1 2.1M5.6 26.4l2.1-2.1M24.3 7.7l2.1-2.1" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" /></svg>
+        <Sunrise size={32} strokeWidth={1.5} color="var(--accent)" />
       </div>
       <h2 class="ritual-title">Good morning</h2>
       <p class="ritual-sub">What are you focusing on today?</p>
       <div class="ritual-input-row">
         <input type="text" class="ritual-input" placeholder="Add a task..." bind:value={ritualTitle} onkeydown={(e) => { if (e.key === 'Enter') handleRitualSubmit() }} />
         <button class="ritual-add-btn" aria-label="Add task" onclick={handleRitualSubmit} disabled={!ritualTitle.trim()}>
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
+          <Plus size={16} strokeWidth={1.5} />
         </button>
       </div>
       {#if todayTasks.length > 0}
@@ -341,7 +342,7 @@
   <div class="ritual-overlay" transition:fly={{ y: 20, duration: 250, opacity: 0 }}>
     <div class="ritual-card">
       <div class="ritual-icon">
-        <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="10" fill="var(--accent)" opacity="0.1" /><path d="M24 16A8 8 0 1116 8a8 8 0 008 8z" fill="var(--accent)" opacity="0.2" /><path d="M20 12l-6 6-3-3" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+        <CircleCheckBig size={32} strokeWidth={1.5} color="var(--accent)" />
       </div>
       <h2 class="ritual-title">End of day</h2>
       <p class="ritual-sub">You completed <strong>{completedCount}</strong> of <strong>{todayTasks.length}</strong> tasks today</p>
@@ -355,7 +356,7 @@
       <div class="ritual-input-row">
         <input type="text" class="ritual-input" placeholder="Add a task for tomorrow..." bind:value={ritualTitle} onkeydown={(e) => { if (e.key === 'Enter') handleRitualSubmit() }} />
         <button class="ritual-add-btn" aria-label="Add task" onclick={handleRitualSubmit} disabled={!ritualTitle.trim()}>
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
+          <Plus size={16} strokeWidth={1.5} />
         </button>
       </div>
       <div class="ritual-actions">

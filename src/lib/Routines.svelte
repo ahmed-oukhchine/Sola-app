@@ -1,4 +1,5 @@
 <script>
+  import { X, Check } from 'lucide-svelte'
   import { routines, addRoutine, removeRoutine, addRoutineItem, toggleRoutineItem, removeRoutineItem } from './taskStore.svelte.js'
 
   let title = $state(''), type = $state('morning'), itemInput = $state({})
@@ -41,18 +42,18 @@
             <div class="routine-header">
               <span class="routine-title">{routine.title}</span>
               <button class="routine-del" aria-label="Delete routine" onclick={() => removeRoutine(routine.id)}>
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                <X size={12} strokeWidth={1.5} />
               </button>
             </div>
             <div class="routine-items">
               {#each routine.items as item}
                 <div class="routine-item">
                   <button class="rg-check" class:checked={item.completed} onclick={() => toggleRoutineItem(routine.id, item.id)}>
-                    {#if item.completed}<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>{/if}
+                    {#if item.completed}<Check size={10} strokeWidth={1.5} />{/if}
                   </button>
                   <span class="rg-title" class:rg-done={item.completed}>{item.title}</span>
                   <button class="rg-del" aria-label="Remove" onclick={() => removeRoutineItem(routine.id, item.id)}>
-                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                    <X size={10} strokeWidth={1.5} />
                   </button>
                 </div>
               {/each}

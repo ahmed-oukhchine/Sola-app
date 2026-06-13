@@ -1,5 +1,6 @@
 <script>
   import { fade, fly } from 'svelte/transition'
+  import { Crosshair, ChevronRight, CalendarDays, Timer, MapPin, CircleCheckBig, ChevronLeft } from 'lucide-svelte'
 
   let { onDone, onAccentChange } = $props()
 
@@ -49,11 +50,7 @@
   {#if step === 0}
     <div class="ob-step" in:fly={{ y: 30, duration: 600, opacity: 0 }}>
       <div class="ob-welcome-icon">
-        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-          <circle cx="24" cy="24" r="20" stroke="var(--accent)" stroke-width="2" fill="none" opacity="0.3"/>
-          <circle cx="24" cy="24" r="12" stroke="var(--accent)" stroke-width="2" fill="none"/>
-          <circle cx="24" cy="24" r="4" fill="var(--accent)"/>
-        </svg>
+        <Crosshair size={48} strokeWidth={1.5} />
       </div>
       <h1 class="ob-title">
         {#each 'Sola' as char, i}
@@ -64,7 +61,7 @@
       <p class="ob-desc" in:fade={{ duration: 800, delay: 900 }}>Plan your day, track tasks, and stay in the zone — all offline, entirely yours.</p>
       <button class="ob-btn primary" in:fade={{ duration: 500, delay: 1300 }} onclick={next}>
         <span>Get started</span>
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <ChevronRight size={16} strokeWidth={1.5} />
       </button>
     </div>
 
@@ -74,21 +71,21 @@
       <div class="ob-features">
         <div class="ob-feat" in:fly={{ y: 30, duration: 500, delay: 100, opacity: 0 }}>
           <div class="ob-feat-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="2" stroke="var(--accent)" stroke-width="1.5" fill="none"/><path d="M3 10h18M9 4v4M15 4v4" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round"/><circle cx="9" cy="15" r="1" fill="var(--accent)"/><circle cx="15" cy="15" r="1" fill="var(--accent)"/></svg>
+            <CalendarDays size={24} strokeWidth={1.5} />
           </div>
           <span class="ob-feat-title">Daily timeline</span>
           <span class="ob-feat-text">Schedule tasks with time blocks. Drag to reorder, swipe to complete.</span>
         </div>
         <div class="ob-feat" in:fly={{ y: 30, duration: 500, delay: 250, opacity: 0 }}>
           <div class="ob-feat-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="var(--accent)" stroke-width="1.5" fill="none"/><circle cx="12" cy="12" r="4" stroke="var(--accent)" stroke-width="1.5" fill="none"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round"/></svg>
+            <Timer size={24} strokeWidth={1.5} />
           </div>
           <span class="ob-feat-title">Focus timer</span>
           <span class="ob-feat-text">Built-in timer with ambient sounds. Pomodoro mode keeps you in flow.</span>
         </div>
         <div class="ob-feat" in:fly={{ y: 30, duration: 500, delay: 400, opacity: 0 }}>
           <div class="ob-feat-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 4c-3 0-5 2-5 5 0 4 5 9 5 9s5-5 5-9c0-3-2-5-5-5z" stroke="var(--accent)" stroke-width="1.5" fill="none"/><circle cx="12" cy="9" r="2" stroke="var(--accent)" stroke-width="1.5" fill="none"/></svg>
+            <MapPin size={24} strokeWidth={1.5} />
           </div>
           <span class="ob-feat-title">100% offline</span>
           <span class="ob-feat-text">Everything stored locally. No accounts, no servers, no tracking.</span>
@@ -96,7 +93,7 @@
       </div>
       <button class="ob-btn primary" in:fade={{ duration: 400, delay: 600 }} onclick={next}>
         <span>Choose your theme</span>
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <ChevronRight size={16} strokeWidth={1.5} />
       </button>
     </div>
 
@@ -122,17 +119,14 @@
       </div>
       <button class="ob-btn primary" in:fade={{ duration: 400, delay: 700 }} onclick={next} disabled={!chosenColor}>
         <span>Continue</span>
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <ChevronRight size={16} strokeWidth={1.5} />
       </button>
     </div>
 
   {:else if step === 3}
     <div class="ob-step">
       <div class="ob-ready-icon" in:fly={{ y: 20, duration: 500, opacity: 0 }}>
-        <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
-          <circle cx="28" cy="28" r="24" stroke="var(--accent)" stroke-width="2" fill="none" opacity="0.2"/>
-          <path d="M20 28l6 6 10-10" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+        <CircleCheckBig size={56} strokeWidth={1.5} />
       </div>
       <h2 class="ob-heading" in:fly={{ y: 20, duration: 400, delay: 200, opacity: 0 }}>You're all set</h2>
       <p class="ob-desc" in:fade={{ duration: 600, delay: 400 }}>Your preferences are saved. Everything stays on your device — no accounts, no servers.</p>
@@ -148,14 +142,14 @@
       </div>
       <button class="ob-btn primary" in:fade={{ duration: 500, delay: 900 }} onclick={finish}>
         <span>Start using Sola</span>
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <ChevronRight size={16} strokeWidth={1.5} />
       </button>
     </div>
   {/if}
 
   {#if step > 0 && step < 3}
     <button class="ob-back" onclick={() => { step--; stepKey++ }}>
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 11L5 7l4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <ChevronLeft size={14} strokeWidth={1.5} />
       Back
     </button>
   {/if}
@@ -209,7 +203,7 @@
   .ob-btn.primary:disabled { opacity: 0.3; cursor: default; transform: none; box-shadow: none; }
 
   .ob-ready-icon { margin-bottom: 16px; }
-  .ob-ready-icon svg { animation: scaleIn 0.5s var(--ease-out); }
+  .ob-ready-icon :global(svg) { animation: scaleIn 0.5s var(--ease-out); }
   .ob-summary { width: 100%; padding: 14px 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; margin-bottom: 28px; }
   .ob-summary-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 14px; color: rgba(255,255,255,0.6); }
   .ob-summary-row span:last-child { font-weight: 500; color: #fff; }

@@ -3,6 +3,7 @@
 
   let locale = $state(getLocale())
   import { exportData, importData, loadPoints, computeStreak, requestNotificationPermission } from './taskStore.svelte.js'
+  import { Moon, Sun, Circle, X } from 'lucide-svelte'
 
   let { theme, onThemeCycle, accentColor, onAccentChange } = $props()
 
@@ -57,15 +58,13 @@
     <div class="settings-row">
       <span class="settings-label">Theme</span>
       <button class="settings-theme-btn" onclick={onThemeCycle}>
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          {#if theme === 'dark'}
-            <path d="M12.5 9.7A5.5 5.5 0 016.3 3.5 5.5 5.5 0 1012.5 9.7z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-          {:else if theme === 'light'}
-            <circle cx="8" cy="8" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3 3l1 1M12 12l1 1M3 13l1-1M12 4l1-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          {:else}
-            <circle cx="8" cy="8" r="5.5" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="2" fill="currentColor"/>
-          {/if}
-        </svg>
+        {#if theme === 'dark'}
+          <Moon size={16} strokeWidth={1.5} />
+        {:else if theme === 'light'}
+          <Sun size={16} strokeWidth={1.5} />
+        {:else}
+          <Circle size={16} strokeWidth={1.5} />
+        {/if}
         <span>{theme}</span>
       </button>
     </div>
@@ -85,7 +84,7 @@
         <input type="text" class="accent-input" placeholder="#d4a574" bind:value={colorInput} onkeydown={(e) => { if (e.key === 'Enter' && /^#[0-9a-fA-F]{6}$/.test(colorInput)) onAccentChange(colorInput) }} />
         {#if accentColor}
           <button class="accent-reset" onclick={() => { colorInput = ''; onAccentChange('') }} aria-label="Reset accent">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2l-10 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            <X size={14} strokeWidth={1.5} />
           </button>
         {/if}
       </div>

@@ -1,5 +1,6 @@
 <script>
   import { store, updateTask, addTask } from './taskStore.svelte.js'
+  import { Plus, Check, Undo2 } from 'lucide-svelte'
 
   let title = $state('')
   let showForm = $state(false)
@@ -28,7 +29,7 @@
 
   {#if !showForm}
     <button class="add-trigger" onclick={() => showForm = true}>
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 3v12M3 9h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <Plus size={18} strokeWidth={1.5} />
       Add task
     </button>
   {:else}
@@ -52,7 +53,7 @@
           <div class="kanban-item">
             <span class="kanban-item-text">{t.title}</span>
             <button class="kanban-move" onclick={() => moveToDone(t.id)} title="Done">
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6l3 3 4-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <Check size={12} strokeWidth={1.5} />
             </button>
           </div>
         {:else}
@@ -71,7 +72,7 @@
           <div class="kanban-item done">
             <span class="kanban-item-text">{t.title}</span>
             <button class="kanban-move" onclick={() => moveToTodo(t.id)} title="Undo">
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2L1 5l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <Undo2 size={12} strokeWidth={1.5} />
             </button>
           </div>
         {:else}

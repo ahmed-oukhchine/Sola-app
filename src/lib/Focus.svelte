@@ -1,4 +1,5 @@
 <script>
+  import { Play, Pause, RotateCcw, PlusCircle } from 'lucide-svelte';
   const PRESETS = [5, 15, 25, 45]
   let timerMinutes = $state(25), timerRemaining = $state(25 * 60)
   let timerRunning = $state(false), timerPaused = $state(false), timerStart = $state(0)
@@ -233,25 +234,25 @@
   <div class="focus-controls">
     {#if timerStatus === 'ready'}
       <button class="focus-btn primary" onclick={startTimerv} disabled={timerMinutes <= 0}>
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M5 3l8 5-8 5V3z" fill="currentColor"/></svg>
+        <Play size={16} strokeWidth={1.5} />
         Start
       </button>
     {:else if timerStatus === 'running'}
       <button class="focus-btn" onclick={pauseTimer}>
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="3" y="1" width="3.2" height="12" rx="1" fill="currentColor"/><rect x="7.8" y="1" width="3.2" height="12" rx="1" fill="currentColor"/></svg>
+        <Pause size={14} strokeWidth={1.5} />
       </button>
       <button class="focus-btn secondary" onclick={resetTimer}>
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 3l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 7H5M5 7v5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <RotateCcw size={14} strokeWidth={1.5} />
       </button>
     {:else if timerStatus === 'paused'}
       <button class="focus-btn primary" onclick={resumeTimer}>
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M5 3l8 5-8 5V3z" fill="currentColor"/></svg>
+        <Play size={16} strokeWidth={1.5} />
         Resume
       </button>
       <button class="focus-btn secondary" onclick={resetTimer}>Reset</button>
     {:else}
       <button class="focus-btn primary" onclick={resetTimer}>
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4l3-3 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 1v8a4 4 0 004 4h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <PlusCircle size={16} strokeWidth={1.5} />
         New session
       </button>
     {/if}

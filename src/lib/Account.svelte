@@ -1,5 +1,6 @@
 <script>
   import { fade, fly } from 'svelte/transition'
+  import { UserRound, LockKeyhole } from 'lucide-svelte'
   let { onUnlock } = $props()
   let hasLegacy = !!localStorage.getItem('focus-lock-hash') && !localStorage.getItem('focus-account-hash')
   let hasAccount = $state(!!localStorage.getItem('focus-account-hash') || hasLegacy)
@@ -71,11 +72,7 @@
       {#if mode === 'signin'}
         <div class="ac-body" in:fly={{ y: 12, duration: 350, opacity: 0 }}>
           <div class="ac-icon">
-            <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-              <circle cx="20" cy="20" r="16" stroke="var(--accent)" stroke-width="2" fill="none"/>
-              <circle cx="20" cy="16" r="5" stroke="var(--accent)" stroke-width="2" fill="none"/>
-              <path d="M10 30c0-5 4.5-7 10-7s10 2 10 7" stroke="var(--accent)" stroke-width="2" fill="none" stroke-linecap="round"/>
-            </svg>
+            <UserRound size={40} strokeWidth={1.5} color="var(--accent)" />
           </div>
           <h2 class="ac-title">Welcome back</h2>
           <p class="ac-sub">Sign in to your account</p>
@@ -88,12 +85,7 @@
       {:else}
         <div class="ac-body" in:fly={{ y: 12, duration: 350, opacity: 0 }}>
           <div class="ac-icon">
-            <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-              <rect x="8" y="16" width="24" height="18" rx="3" stroke="var(--accent)" stroke-width="2" fill="none"/>
-              <path d="M14 16v-4a6 6 0 0112 0v4" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" fill="none"/>
-              <circle cx="20" cy="25" r="2" fill="var(--accent)"/>
-              <path d="M20 27v3" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"/>
-            </svg>
+            <LockKeyhole size={40} strokeWidth={1.5} color="var(--accent)" />
           </div>
           <h2 class="ac-title">Create account</h2>
           <p class="ac-sub">All data stays on your device</p>

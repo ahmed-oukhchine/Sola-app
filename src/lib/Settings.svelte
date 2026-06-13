@@ -13,6 +13,7 @@
   let lockPassword = $state('')
   let lockConfirm = $state('')
   let lockError = $state('')
+  let showLockForm = $state(false)
   let removingLock = $state(false)
 
   let ntfyEnabled = $state(localStorage.getItem('focus-ntfy-enabled') === 'true')
@@ -121,12 +122,12 @@
     <div class="settings-row">
       <span class="settings-label">App lock</span>
       {#if !lockEnabled}
-        <button class="settings-action-btn mini" onclick={() => document.getElementById('lock-setup').classList.toggle('open')}>Set password</button>
+        <button class="settings-action-btn mini" onclick={() => showLockForm = !showLockForm}>{showLockForm ? 'Cancel' : 'Set password'}</button>
       {:else}
         <span class="settings-value">Enabled</span>
       {/if}
     </div>
-    <div id="lock-setup" class="lock-form">
+    <div id="lock-setup" class="lock-form" class:open={showLockForm}>
       {#if !lockEnabled}
         <input type="password" class="lock-input" placeholder="New password" bind:value={lockPassword} onkeydown={(e) => { if (e.key === 'Enter') setLock() }} />
         <input type="password" class="lock-input" placeholder="Confirm password" bind:value={lockConfirm} onkeydown={(e) => { if (e.key === 'Enter') setLock() }} />

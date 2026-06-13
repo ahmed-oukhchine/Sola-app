@@ -91,6 +91,14 @@
   function onOnboardingDone() {
     showOnboarding = false
     showAccount = true
+    if (accentColor) {
+      applyAccent(accentColor)
+    }
+  }
+
+  function onOnboardingAccent(hex) {
+    accentColor = hex
+    applyAccent(hex)
   }
 
   function handleUnlock(user) {
@@ -238,7 +246,7 @@
 </script>
 
 {#if showOnboarding}
-  <Onboarding onDone={onOnboardingDone} />
+  <Onboarding onDone={onOnboardingDone} onAccentChange={onOnboardingAccent} />
 {/if}
 
 {#if showAccount}

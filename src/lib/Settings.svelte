@@ -11,46 +11,7 @@
   let points = $state(loadPoints())
   let streak = $state(computeStreak())
 
-  let lockEnabled = $state(!!localStorage.getItem('focus-lock-hash'))
-  let lockPassword = $state('')
-  let lockConfirm = $state('')
-  let lockError = $state('')
-  let showLockForm = $state(false)
-  let removingLock = $state(false)
-
   let ntfyEnabled = $state(localStorage.getItem('focus-ntfy-enabled') === 'true')
-
-  async function hashPassword(pw) {
-    const enc = new TextEncoder().encode(pw)
-    const buf = await crypto.subtle.digest('SHA-256', enc)
-    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
-  }
-
-  async function setLock() {
-    lockError = ''
-    if (lockPassword.length < 3) { lockError = 'Password must be at least 3 characters'; return }
-    if (lockPassword !== lockConfirm) { lockError = 'Passwords do not match'; return }
-    const hash = await hashPassword(lockPassword)
-    localStorage.setItem('focus-lock-hash', hash)
-    lockEnabled = true
-    lockPassword = ''
-    lockConfirm = ''
-  }
-
-  function startRemoveLock() { removingLock = true; lockError = ''; lockPassword = '' }
-
-  async function confirmRemoveLock() {
-    lockError = ''
-    if (!lockPassword) { lockError = 'Enter your current password'; return }
-    const hash = await hashPassword(lockPassword)
-    if (hash !== localStorage.getItem('focus-lock-hash')) { lockError = 'Wrong password'; return }
-    localStorage.removeItem('focus-lock-hash')
-    lockEnabled = false
-    removingLock = false
-    lockPassword = ''
-  }
-
-  function cancelRemoveLock() { removingLock = false; lockPassword = ''; lockError = '' }
 
   function toggleNtfy() {
     ntfyEnabled = !ntfyEnabled
@@ -132,31 +93,17 @@
   </div>
 
   <div class="settings-section">
-    <h3 class="settings-section-title">Security</h3>
+    <h3 class="settings-section-title">Account</h3>
     <div class="settings-row">
-      <span class="settings-label">App lock</span>
-      {#if !lockEnabled}
-        <button class="settings-action-btn mini" onclick={() => showLockForm = !showLockForm}>{showLockForm ? 'Cancel' : 'Set password'}</button>
-      {:else}
-        <span class="settings-value">Enabled</span>
-      {/if}
+      <span class="settings-label">Signed in as</span>
+      <span class="settings-value">{localStorage.getItem('focus-account-user') || '—'}</span>
     </div>
-    <div id="lock-setup" class="lock-form" class:open={showLockForm}>
-      {#if !lockEnabled}
-        <input type="password" class="lock-input" placeholder="New password" bind:value={lockPassword} onkeydown={(e) => { if (e.key === 'Enter') setLock() }} />
-        <input type="password" class="lock-input" placeholder="Confirm password" bind:value={lockConfirm} onkeydown={(e) => { if (e.key === 'Enter') setLock() }} />
-        <button class="settings-action-btn primary mini" onclick={setLock}>Set</button>
-      {:else if !removingLock}
-        <button class="settings-action-btn danger mini" onclick={startRemoveLock}>Remove password</button>
-      {:else}
-        <input type="password" class="lock-input" placeholder="Current password" bind:value={lockPassword} onkeydown={(e) => { if (e.key === 'Enter') confirmRemoveLock() }} />
-        <div class="lock-btn-row">
-          <button class="settings-action-btn danger mini" onclick={confirmRemoveLock}>Remove</button>
-          <button class="settings-action-btn mini" onclick={cancelRemoveLock}>Cancel</button>
-        </div>
-      {/if}
-      {#if lockError}<p class="lock-error">{lockError}</p>{/if}
-    </div>
+    <button class="settings-action-btn danger" onclick={() => {
+      if (!confirm('Sign out? You will need your password to sign back in.')) return
+      localStorage.removeItem('focus-account-hash')
+      localStorage.removeItem('focus-account-user')
+      window.location.reload()
+    }}>Sign out</button>
   </div>
 
   <div class="settings-section">
@@ -210,12 +157,6 @@
   .settings-action-btn.mini { width: auto; padding: 6px 14px; font-size: 12px; border-radius: 8px; display: inline-block; margin: 0; }
   .settings-action-btn.danger.mini { margin-top: 0; }
   .settings-hint { font-size: 11px; color: var(--text-muted); margin-top: -8px; margin-bottom: 16px; line-height: 1.4; }
-  .lock-form { display: none; flex-direction: column; gap: 8px; padding: 4px 0 12px; }
-  .lock-form.open { display: flex; }
-  .lock-form .lock-input { width: 100%; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--text); font-size: 13px; box-sizing: border-box; }
-  .lock-form .lock-input:focus { border-color: var(--accent); box-shadow: var(--glow); outline: none; }
-  .lock-error { font-size: 12px; color: #b06060; margin: 0; }
-  .lock-btn-row { display: flex; gap: 8px; }
   .toggle-btn { width: 44px; height: 24px; border-radius: 12px; background: var(--border); border: none; cursor: pointer; position: relative; transition: background 0.2s var(--ease); flex-shrink: 0; padding: 0; }
   .toggle-btn.on { background: var(--accent); }
   .toggle-knob { width: 18px; height: 18px; border-radius: 50%; background: #fff; position: absolute; top: 3px; left: 3px; transition: left 0.2s var(--ease); box-shadow: 0 1px 3px rgba(0,0,0,0.2); }

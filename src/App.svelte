@@ -38,6 +38,23 @@
   let completedCount = $derived(todayTasks.filter(t => t.completed).length)
   let completionRate = $derived(store.tasks.length ? Math.round(store.tasks.filter(t => t.completed).length / store.tasks.length * 100) : 0)
   let recentCompletions = $derived(store.tasks.filter(t => t.completed).toReversed().slice(0, 20))
+  let locked = $state(!!localStorage.getItem('focus-lock-hash'))
+  let lockPassword = $state('')
+  let lockError = $state('')
+
+  async function unlock() {
+    lockError = ''
+    if (!lockPassword) { lockError = 'Enter your password'; return }
+    const enc = new TextEncoder().encode(lockPassword)
+    const buf = await crypto.subtle.digest('SHA-256', enc)
+    const hash = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
+    if (hash === localStorage.getItem('focus-lock-hash')) {
+      locked = false
+      lockPassword = ''
+    } else {
+      lockError = 'Wrong password'
+    }
+  }
 
   function cycleTheme() {
     const next = theme === 'system' ? 'light' : theme === 'light' ? 'dark' : 'system'
@@ -176,6 +193,27 @@
   }
 </script>
 
+{#if locked}
+  <div class="lock-overlay">
+    <div class="lock-card">
+      <div class="lock-icon">
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+          <rect x="8" y="16" width="20" height="14" rx="2" stroke="var(--accent)" stroke-width="2" fill="none"/>
+          <path d="M12 16v-4a6 6 0 0112 0v4" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" fill="none"/>
+          <circle cx="18" cy="23" r="1.5" fill="var(--accent)"/>
+        </svg>
+      </div>
+      <h2 class="lock-title">App locked</h2>
+      <p class="lock-sub">Enter your password to continue</p>
+      <div class="lock-input-row">
+        <input type="password" class="lock-input" placeholder="Password" bind:value={lockPassword} onkeydown={(e) => { if (e.key === 'Enter') unlock() }} autofocus />
+      </div>
+      {#if lockError}<p class="lock-error">{lockError}</p>{/if}
+      <button class="lock-btn" onclick={unlock}>Unlock</button>
+    </div>
+  </div>
+{/if}
+
 <Sidebar open={sidebarOpen} {activeView} {streak} {points} {theme} collapsed={sidebarCollapsed} onNavigate={(v) => activeView = v} onClose={() => sidebarOpen = false} onThemeCycle={cycleTheme} onCollapse={toggleSidebarCollapse} onExport={handleExport} onImport={handleImport} />
 <div class="app">
   <header class="header">
@@ -308,6 +346,18 @@
   .date { font-size: 12px; color: var(--text-muted); font-weight: 500; letter-spacing: 0.3px; }
   .ritual-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; padding: 24px; z-index: 100; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
   .ritual-card { background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 36px 28px 28px; width: 100%; max-width: 340px; box-shadow: var(--shadow-xl); text-align: center; animation: scaleIn 0.3s var(--ease-out); backdrop-filter: blur(var(--glass-blur)); }
+  .lock-overlay { position: fixed; inset: 0; background: var(--bg, #1a1614); display: flex; align-items: center; justify-content: center; padding: 24px; z-index: 200; }
+  .lock-card { background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 40px 28px 28px; width: 100%; max-width: 320px; box-shadow: var(--shadow-xl); text-align: center; backdrop-filter: blur(var(--glass-blur)); }
+  .lock-icon { margin-bottom: 16px; }
+  .lock-title { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 4px; letter-spacing: -0.3px; }
+  .lock-sub { font-size: 14px; color: var(--text-secondary); margin-bottom: 20px; }
+  .lock-input-row { margin-bottom: 12px; }
+  .lock-input { width: 100%; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--text); font-size: 14px; text-align: center; transition: all 0.2s var(--ease); box-sizing: border-box; }
+  .lock-input:focus { border-color: var(--accent); box-shadow: var(--glow); outline: none; }
+  .lock-error { font-size: 12px; color: #b06060; margin-bottom: 8px; }
+  .lock-btn { width: 100%; padding: 12px; border-radius: var(--radius-md); font-size: 14px; font-weight: 500; cursor: pointer; background: var(--accent-gradient); color: #fff; border: none; box-shadow: var(--accent-glow); transition: all 0.15s var(--ease); }
+  .lock-btn:hover { box-shadow: 0 0 40px rgba(212, 165, 116, 0.25); transform: translateY(-1px); }
+  .lock-btn:active { transform: scale(0.98); }
   .ritual-icon { margin-bottom: 16px; display: flex; justify-content: center; animation: float 3s ease-in-out infinite; }
   .ritual-title { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 4px; letter-spacing: -0.3px; }
   .ritual-sub { font-size: 14px; color: var(--text-secondary); margin-bottom: 20px; }

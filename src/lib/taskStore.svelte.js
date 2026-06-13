@@ -557,6 +557,7 @@ export function computeStreak() {
 const scheduledTimeouts = new Map()
 
 function scheduleNotifications(task) {
+  if (localStorage.getItem('focus-ntfy-enabled') !== 'true') return
   const today = new Date().toISOString().split('T')[0]
   if (task.date !== today || task.completed || !task.startTime) return
   const now = Date.now()
@@ -575,6 +576,7 @@ function scheduleNotifications(task) {
 }
 
 function notify(msg) {
+  if (localStorage.getItem('focus-ntfy-enabled') !== 'true') return
   if ('Notification' in window && Notification.permission === 'granted') {
     new Notification('Focus', { body: msg })
   }
@@ -583,6 +585,15 @@ function notify(msg) {
 export function requestPermission() {
   if ('Notification' in window && Notification.permission === 'default') {
     Notification.requestPermission()
+  }
+}
+
+export function requestNotificationPermission() {
+  if ('Notification' in window) {
+    if (Notification.permission === 'default') Notification.requestPermission()
+    else if (Notification.permission === 'denied') {
+      console.warn('Notifications are blocked. Enable them in browser settings.')
+    }
   }
 }
 

@@ -359,21 +359,21 @@
     </div>
   </header>
 
-  {#if activeView === 'dashboard'}<div in:fade={{ duration: 200 }}><Dashboard onNavigate={(v) => activeView = v} /></div>{/if}
-  {#if activeView === 'calendar'}<div in:fade={{ duration: 200 }}><CalendarView /></div>{/if}
-  {#if activeView === 'goals'}<div in:fade={{ duration: 200 }}><GoalsView /></div>{/if}
-  {#if activeView === 'kanban'}<div in:fade={{ duration: 200 }}><KanbanView /></div>{/if}
-  {#if activeView === 'settings'}<div in:fade={{ duration: 200 }}><SettingsView {theme} onThemeCycle={cycleTheme} {accentColor} onAccentChange={setAccent} {autoThemeTime} onAutoThemeChange={(t) => autoThemeTime = t} /></div>{/if}
-  {#if activeView === 'habits'}<div in:fade={{ duration: 200 }}><HabitsView /></div>{/if}
-  {#if activeView === 'tags'}<div in:fade={{ duration: 200 }}><TagsView /></div>{/if}
-  {#if activeView === 'today'}<div in:fade={{ duration: 200 }}><TodayView {now} onCompleteTask={onCompleteTask} onCompleteSubtask={onCompleteSubtask} onStartFocus={(id) => { focusTaskId = id; activeView = 'focus' }} /></div>{/if}
-  {#if activeView === 'inbox'}<div in:fade={{ duration: 200 }}><InboxView /></div>{/if}
-  {#if activeView === 'focus'}<div in:fade={{ duration: 200 }}><FocusView taskId={focusTaskId} onClearTask={() => focusTaskId = null} /></div>{/if}
-  {#if activeView === 'templates'}<div in:fade={{ duration: 200 }}><TemplatesView /></div>{/if}
-  {#if activeView === 'routines'}<div in:fade={{ duration: 200 }}><RoutinesView /></div>{/if}
-  {#if activeView === 'someday'}<div in:fade={{ duration: 200 }}><SomedayView /></div>{/if}
-  {#if activeView === 'life-courses'}<div in:fade={{ duration: 200 }}><LifeCoursesView /></div>{/if}
-  {#if activeView === 'stats'}<div in:fade={{ duration: 200 }}><StatsView {points} {streak} {completedCount} todayTotal={todayTasks.length} {completionRate} {recentCompletions} /></div>{/if}
+  {#if activeView === 'dashboard'}<div in:fade={{ duration: 200 }} class="view-wrap"><Dashboard onNavigate={(v) => activeView = v} /></div>{/if}
+  {#if activeView === 'calendar'}<div in:fade={{ duration: 200 }} class="view-wrap"><CalendarView /></div>{/if}
+  {#if activeView === 'goals'}<div in:fade={{ duration: 200 }} class="view-wrap"><GoalsView /></div>{/if}
+  {#if activeView === 'kanban'}<div in:fade={{ duration: 200 }} class="view-wrap"><KanbanView /></div>{/if}
+  {#if activeView === 'settings'}<div in:fade={{ duration: 200 }} class="view-wrap"><SettingsView {theme} onThemeCycle={cycleTheme} {accentColor} onAccentChange={setAccent} {autoThemeTime} onAutoThemeChange={(t) => autoThemeTime = t} /></div>{/if}
+  {#if activeView === 'habits'}<div in:fade={{ duration: 200 }} class="view-wrap"><HabitsView /></div>{/if}
+  {#if activeView === 'tags'}<div in:fade={{ duration: 200 }} class="view-wrap"><TagsView /></div>{/if}
+  {#if activeView === 'today'}<div in:fade={{ duration: 200 }} class="view-wrap"><TodayView {now} onCompleteTask={onCompleteTask} onCompleteSubtask={onCompleteSubtask} onStartFocus={(id) => { focusTaskId = id; activeView = 'focus' }} /></div>{/if}
+  {#if activeView === 'inbox'}<div in:fade={{ duration: 200 }} class="view-wrap"><InboxView /></div>{/if}
+  {#if activeView === 'focus'}<div in:fade={{ duration: 200 }} class="view-wrap"><FocusView taskId={focusTaskId} onClearTask={() => focusTaskId = null} /></div>{/if}
+  {#if activeView === 'templates'}<div in:fade={{ duration: 200 }} class="view-wrap"><TemplatesView /></div>{/if}
+  {#if activeView === 'routines'}<div in:fade={{ duration: 200 }} class="view-wrap"><RoutinesView /></div>{/if}
+  {#if activeView === 'someday'}<div in:fade={{ duration: 200 }} class="view-wrap"><SomedayView /></div>{/if}
+  {#if activeView === 'life-courses'}<div in:fade={{ duration: 200 }} class="view-wrap"><LifeCoursesView /></div>{/if}
+  {#if activeView === 'stats'}<div in:fade={{ duration: 200 }} class="view-wrap"><StatsView {points} {streak} {completedCount} todayTotal={todayTasks.length} {completionRate} {recentCompletions} /></div>{/if}
 </div>
 
 <SearchModal open={showSearch} onClose={() => showSearch = false} onNavigate={(v) => activeView = v} />
@@ -459,6 +459,7 @@
 
 <style>
   .app { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+  .view-wrap { flex: 1; min-height: 0; display: flex; flex-direction: column; }
   .header { display: flex; align-items: center; gap: 10px; padding: 16px 20px 8px; flex-shrink: 0; position: relative; }
   .header::after { content: ''; position: absolute; bottom: 0; left: 20px; right: 20px; height: 1px; background: linear-gradient(90deg, transparent, var(--border), transparent); }
   .hamburger { width: 38px; height: 38px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); background: var(--surface); border: 1px solid var(--border); padding: 0; transition: all 0.2s var(--ease); flex-shrink: 0; backdrop-filter: blur(var(--glass-blur)); }

@@ -44,8 +44,8 @@
   }
 </script>
 
-{#if open}
-  <div class="backdrop" out:fade={{ duration: 200 }} onclick={onClose} onkeydown={(e) => { if (e.key === 'Escape') onClose() }} tabindex="0" role="dialog" aria-label="Navigation">
+<div class="backdrop" class:visible={open} onclick={onClose} onkeydown={(e) => { if (e.key === 'Escape') onClose() }} tabindex={open ? 0 : -1} role="dialog" aria-label="Navigation">
+  {#if open}
     <div class="sidebar" class:collapsed class:expanded={!collapsed} out:fly={{ x: -300, duration: 250 }} tabindex="0" onclick={(e) => e.stopPropagation()} onkeydown={(e) => { if (e.key === 'Escape') onClose() }} role="dialog" aria-label="Sidebar">
       {#if collapsed}
         <div class="sb-header-col">
@@ -124,11 +124,12 @@
         </div>
       {/if}
     </div>
-  </div>
-{/if}
+  {/if}
+</div>
 
 <style>
-  .backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; display: flex; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+  .backdrop { position: fixed; inset: 0; z-index: 200; display: flex; pointer-events: none; opacity: 0; background: rgba(0,0,0,0); backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px); transition: opacity 0.2s var(--ease), background 0.2s var(--ease); }
+  .backdrop.visible { pointer-events: auto; opacity: 1; background: rgba(0,0,0,0.4); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
   .sidebar { height: 100%; background: var(--glass-bg); backdrop-filter: blur(var(--glass-blur)); border-right: 1px solid var(--glass-border); display: flex; flex-direction: column; box-shadow: 4px 0 60px rgba(0,0,0,0.3); animation: slideIn 0.35s var(--ease-out); }
   .sidebar.expanded { width: 280px; max-width: 80vw; padding: 0; }
   .sidebar.collapsed { width: 72px; align-items: center; padding: 0; }

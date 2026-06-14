@@ -217,7 +217,7 @@ input::placeholder, textarea::placeholder {
 }
 .inbox-add-btn:hover { box-shadow: 0 0 70px rgba(var(--accent-rgb), 0.3); transform: translateY(-2px); }
 .inbox-add-btn:active { transform: scale(0.97); }
-.inbox-add-btn:disabled { opacity: 0.35; cursor: default; box-shadow: none; transform: none; }
+.inbox-add-btn:disabled { background: var(--surface); color: var(--text-muted); cursor: default; box-shadow: none; transform: none; }
 .inbox-list { display: flex; flex-direction: column; gap: 10px; }
 .inbox-item {
   display: flex; align-items: center; gap: 14px; padding: 16px 22px;

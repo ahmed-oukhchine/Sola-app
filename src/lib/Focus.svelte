@@ -244,15 +244,13 @@
       <button class="focus-btn" onclick={pauseTimer}>
         <Pause size={14} strokeWidth={1.5} />
       </button>
-      <button class="focus-btn secondary" onclick={resetTimer}>
-        <RotateCcw size={14} strokeWidth={1.5} />
-      </button>
+      <button class="focus-btn secondary" onclick={resetTimer}>Reset</button>
     {:else if timerStatus === 'paused'}
       <button class="focus-btn primary" onclick={resumeTimer}>
         <Play size={16} strokeWidth={1.5} />
         Resume
       </button>
-      <button class="focus-btn secondary" onclick={resetTimer}>Reset</button>
+      <button class="focus-btn" onclick={resetTimer}>Reset</button>
     {:else}
       <button class="focus-btn primary" onclick={resetTimer}>
         <PlusCircle size={16} strokeWidth={1.5} />
@@ -302,8 +300,8 @@
   .focus-btn.primary:hover { box-shadow: 0 0 60px rgba(var(--accent-rgb), 0.3); transform: translateY(-2px); }
   .focus-btn.primary:active { transform: scale(0.97); }
   .focus-btn.primary:disabled { opacity: 0.2; cursor: default; box-shadow: none; transform: none; }
-  .focus-btn.secondary { width: 48px; height: 48px; border-radius: 50%; background: var(--glass-bg); color: var(--text-secondary); border: 1px solid var(--glass-border); justify-content: center; backdrop-filter: blur(var(--glass-blur)); }
-  .focus-btn.secondary:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-2px); }
+  .focus-btn.secondary { width: 48px; height: 48px; border-radius: 50%; background: var(--surface); color: var(--text); border: 1px solid var(--border); justify-content: center; }
+  .focus-btn.secondary:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); transform: translateY(-2px); }
   .pomo-btn { display: flex; align-items: center; gap: 6px; padding: 8px 20px; border-radius: 20px; font-size: 12px; font-weight: 500; color: var(--text-secondary); background: var(--glass-bg); border: 1px solid var(--glass-border); cursor: pointer; transition: all 0.2s var(--ease); backdrop-filter: blur(var(--glass-blur)); }
   .pomo-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); }
   .pomo-btn.active { background: var(--accent-subtle); border-color: var(--accent); color: var(--accent); }

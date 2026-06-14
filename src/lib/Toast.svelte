@@ -1,4 +1,5 @@
 <script>
+  import { fly } from 'svelte/transition'
   import { X } from 'lucide-svelte'
 
   let { toasts, onDismiss, onUndo } = $props()
@@ -7,6 +8,7 @@
 <div class="toast-container">
   {#each toasts as t (t.id)}
     <div class="toast" class:success={t.type === 'success'} class:error={t.type === 'error'} class:info={t.type === 'info'}
+      out:fly={{ y: 16, duration: 200 }}
       style="animation: slideUp 0.25s var(--ease-out)"
     >
       <span class="toast-msg">{t.message}</span>

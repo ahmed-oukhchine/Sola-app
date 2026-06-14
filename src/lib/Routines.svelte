@@ -1,5 +1,5 @@
 <script>
-  import { X, Check } from 'lucide-svelte'
+  import { X, Check, Sun, Moon } from 'lucide-svelte'
   import { routines, addRoutine, removeRoutine, addRoutineItem, toggleRoutineItem, removeRoutineItem } from './taskStore.svelte.js'
 
   let title = $state(''), type = $state('morning'), itemInput = $state({})
@@ -50,7 +50,7 @@
     {#each ['morning', 'evening'] as routineType}
       {@const filtered = routines.items.filter(r => r.type === routineType)}
       {#if filtered.length > 0}
-        <h3 class="routine-type-heading">{routineType === 'morning' ? '☀️ Morning' : '🌙 Evening'}</h3>
+        <h3 class="routine-type-heading">{#if routineType === 'morning'}<Sun size={16} strokeWidth={1.5} /> Morning{:else}<Moon size={16} strokeWidth={1.5} /> Evening{/if}</h3>
         {#each filtered as routine (routine.id)}
           <div class="routine-card">
             <div class="routine-header">

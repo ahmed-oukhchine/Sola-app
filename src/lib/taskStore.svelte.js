@@ -214,7 +214,7 @@ export function searchAll(query) {
   for (const t of store.tasks) {
     let score = fuzzyScore(q, t.title)
     if (score) {
-      scored.push({ score, type: 'task', id: t.id, title: t.title, subtitle: `${t.date}${t.completed ? ' ✓' : ''}` })
+      scored.push({ score, type: 'task', id: t.id, title: t.title, subtitle: `${t.date}${t.completed ? ' +' : ''}` })
     } else {
       for (const s of t.subtasks) {
         const ss = fuzzyScore(q, s.title)

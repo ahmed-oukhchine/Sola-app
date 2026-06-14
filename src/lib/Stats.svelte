@@ -1,4 +1,5 @@
 <script>
+  import { Star, Flame } from 'lucide-svelte'
   import { focusSessions } from './taskStore.svelte.js'
   let { points, streak, completedCount, todayTotal, completionRate, recentCompletions } = $props()
 
@@ -42,8 +43,8 @@
   <p class="view-sub">Your progress at a glance</p>
 
   <div class="stats-grid">
-    <div class="stat-card"><span class="stat-num">✦{points}</span><span class="stat-label">Points</span></div>
-    <div class="stat-card"><span class="stat-num">🔥{streak}</span><span class="stat-label">Day streak</span></div>
+    <div class="stat-card"><span class="stat-num"><Star size={16} strokeWidth={1.5} />{points}</span><span class="stat-label">Points</span></div>
+    <div class="stat-card"><span class="stat-num"><Flame size={16} strokeWidth={1.5} />{streak}</span><span class="stat-label">Day streak</span></div>
     <div class="stat-card"><span class="stat-num">{completedCount}/{todayTotal}</span><span class="stat-label">Today</span></div>
     <div class="stat-card"><span class="stat-num">{Math.round(completionRate)}%</span><span class="stat-label">All time</span></div>
   </div>

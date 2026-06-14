@@ -20,8 +20,8 @@
   import SearchModal from './lib/Search.svelte'
   import Onboarding from './lib/Onboarding.svelte'
   import Account from './lib/Account.svelte'
-  import { store, addTask, loadAll, exportData, importData, loadPoints, savePoints, computeStreak, requestPermission, scheduleAll, removeTask } from './lib/taskStore.svelte.js'
-  import { Menu, Search, CalendarDays, Sunrise, Plus, CircleCheckBig, Download } from 'lucide-svelte'
+  import { store, someday, addTask, loadAll, exportData, importData, loadPoints, savePoints, computeStreak, requestPermission, scheduleAll, removeTask } from './lib/taskStore.svelte.js'
+  import { Menu, Search, CalendarDays, Sunrise, Plus, CircleCheckBig, Download, Star, Flame } from 'lucide-svelte'
   import Toast from './lib/Toast.svelte'
 
   let activeView = $state('dashboard')
@@ -45,13 +45,16 @@
   let completionRate = $derived(store.tasks.length ? Math.round(store.tasks.filter(t => t.completed).length / store.tasks.length * 100) : 0)
   let recentCompletions = $derived(store.tasks.filter(t => t.completed).toReversed().slice(0, 20))
   let showOnboarding = $state(!localStorage.getItem('focus-onboarded'))
-  let showAccount = $state(false)
+  const hasAccount = !!localStorage.getItem('focus-account-user')
+  const expiry = localStorage.getItem('focus-session-expiry')
+  const sessionExpired = !expiry || parseInt(expiry) < Date.now()
+  let showAccount = $state(hasAccount && sessionExpired)
   let userName = $state(localStorage.getItem('focus-account-user') || '')
   let accentColor = $state(localStorage.getItem('focus-accent') || '')
   let showBackupReminder = $state(false)
   let autoThemeTime = $state(localStorage.getItem('focus-auto-theme-time') || '')
   let inboxCount = $derived(store.tasks.filter(t => !t.date || (t.date === todayStr && !t.startTime && !t.completed)).length)
-  let somedayCount = $derived(store.someday.length)
+  let somedayCount = $derived(someday.items.length)
   let toasts = $state([])
   let toastId = $state(0)
   let deferredInstall = $state(null)
@@ -128,6 +131,10 @@
     if (accentColor) {
       applyAccent(accentColor)
     }
+    userName = localStorage.getItem('focus-account-user') || ''
+    checkRituals()
+    checkWeeklyReview()
+    checkBackupReminder()
   }
 
   function onOnboardingAccent(hex) {
@@ -138,6 +145,9 @@
   function handleUnlock(user) {
     userName = user
     showAccount = false
+    checkRituals()
+    checkWeeklyReview()
+    checkBackupReminder()
   }
 
   function applyTheme(t) {
@@ -231,9 +241,11 @@
     else if (theme === 'light') root.setAttribute('data-theme', 'light')
     if (accentColor) applyAccent(accentColor)
     scheduleAll()
-    checkRituals()
-    checkWeeklyReview()
-    checkBackupReminder()
+    if (!showOnboarding && !showAccount) {
+      checkRituals()
+      checkWeeklyReview()
+      checkBackupReminder()
+    }
     setInterval(() => {
       now = new Date()
       streak = computeStreak()
@@ -342,7 +354,7 @@
       <button class="header-search-btn" onclick={() => showSearch = true} aria-label="Search (Ctrl+K)">
         <Search size={16} strokeWidth={1.5} />
       </button>
-      <span class="points-badge">✦ {points}</span>
+      <span class="points-badge"><Star size={14} strokeWidth={1.5} /> {points}</span>
       <span class="date">{dayStr}</span>
     </div>
   </header>
@@ -367,8 +379,8 @@
 <SearchModal open={showSearch} onClose={() => showSearch = false} onNavigate={(v) => activeView = v} />
 
 {#if showWeeklyReview && weeklyReviewData}
-  <div class="ritual-overlay" onclick={dismissWeeklyReview} role="dialog">
-    <div class="ritual-card" onclick={(e) => e.stopPropagation()}>
+  <div class="ritual-overlay" out:fade={{ duration: 200 }} onclick={dismissWeeklyReview} role="dialog">
+    <div class="ritual-card" out:fade={{ duration: 150 }} onclick={(e) => e.stopPropagation()}>
       <div class="ritual-header">
         <CalendarDays size={20} strokeWidth={1.5} color="var(--accent)" />
         <span class="ritual-title">Weekly Review</span>
@@ -376,7 +388,7 @@
       <div class="review-grid">
         <div class="review-item"><span class="review-num">{weeklyReviewData.totalCompleted}</span><span class="review-label">Total done</span></div>
         <div class="review-item"><span class="review-num">{weeklyReviewData.weekCompleted}</span><span class="review-label">This week</span></div>
-        <div class="review-item"><span class="review-num">🔥{weeklyReviewData.streak}</span><span class="review-label">Streak</span></div>
+        <div class="review-item"><span class="review-num"><Flame size={14} strokeWidth={1.5} />{weeklyReviewData.streak}</span><span class="review-label">Streak</span></div>
         <div class="review-item"><span class="review-num" style="font-size:12px">{weeklyReviewData.bestDay}</span><span class="review-label">Best day</span></div>
       </div>
       <div class="ritual-footer">
@@ -387,8 +399,8 @@
 {/if}
 
 {#if showMorning}
-  <div class="ritual-overlay" onclick={skipMorning} role="dialog">
-    <div class="ritual-card" onclick={(e) => e.stopPropagation()}>
+  <div class="ritual-overlay" out:fade={{ duration: 200 }} onclick={skipMorning} role="dialog">
+    <div class="ritual-card" out:fade={{ duration: 150 }} onclick={(e) => e.stopPropagation()}>
       <div class="ritual-header">
         <Sunrise size={20} strokeWidth={1.5} color="var(--accent)" />
         <span class="ritual-title">Good morning</span>
@@ -406,8 +418,8 @@
 {/if}
 
 {#if showEvening}
-  <div class="ritual-overlay" onclick={skipEvening} role="dialog">
-    <div class="ritual-card" onclick={(e) => e.stopPropagation()}>
+  <div class="ritual-overlay" out:fade={{ duration: 200 }} onclick={skipEvening} role="dialog">
+    <div class="ritual-card" out:fade={{ duration: 150 }} onclick={(e) => e.stopPropagation()}>
       <div class="ritual-header">
         <CircleCheckBig size={20} strokeWidth={1.5} color="var(--complete)" />
         <span class="ritual-title">End of day</span>
@@ -426,8 +438,8 @@
 {/if}
 
 {#if showBackupReminder}
-  <div class="ritual-overlay" onclick={() => showBackupReminder = false} role="dialog">
-    <div class="ritual-card" onclick={(e) => e.stopPropagation()}>
+  <div class="ritual-overlay" out:fade={{ duration: 200 }} onclick={() => showBackupReminder = false} role="dialog">
+    <div class="ritual-card" out:fade={{ duration: 150 }} onclick={(e) => e.stopPropagation()}>
       <div class="ritual-header">
         <Download size={20} strokeWidth={1.5} color="var(--accent)" />
         <span class="ritual-title">Backup reminder</span>

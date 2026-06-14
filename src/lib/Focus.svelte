@@ -1,5 +1,6 @@
 <script>
-  import { Play, Pause, RotateCcw, PlusCircle, X } from 'lucide-svelte';
+  import { fade } from 'svelte/transition'
+  import { Play, Pause, RotateCcw, PlusCircle, X, Timer, PartyPopper } from 'lucide-svelte';
   import { store, logFocusSession } from './taskStore.svelte.js'
   const PRESETS = [5, 15, 25, 45]
   let timerMinutes = $state(25), timerRemaining = $state(25 * 60)
@@ -199,8 +200,8 @@
 </script>
 
 <main class="focus-view">
-  <div class="progress-bar">
-    <div class="progress-bar-fill" style="transform: scaleX({progress})"></div>
+    <div class="progress-bar">
+    <div class="progress-bar-fill" style="width: {progress * 100}%"></div>
   </div>
 
   {#if focusTask}
@@ -261,15 +262,15 @@
   </div>
 
   <button class="pomo-btn" class:active={pomodoroActive} onclick={() => { pomodoroActive = !pomodoroActive; if (!pomodoroActive) resetTimer() }}>
-    <span class="pomo-icon">🍅</span>
+      <Timer size={14} strokeWidth={1.5} />
     <span>{pomodoroActive ? `${pomodoroSession} ${pomodoroCount > 0 ? `(${pomodoroCount})` : ''}` : 'Pomodoro'}</span>
   </button>
 </main>
 
 {#if showCelebration}
-  <div class="celebration-overlay" onclick={() => showCelebration = false}>
-    <div class="celebration-card">
-      <div class="celebration-icon">🎉</div>
+  <div class="celebration-overlay" out:fade={{ duration: 200 }} onclick={() => showCelebration = false}>
+    <div class="celebration-card" out:fade={{ duration: 150 }}>
+      <PartyPopper size={56} strokeWidth={1.5} />
       <div class="celebration-title">Session Complete!</div>
       <div class="celebration-sub">{timerMinutes} minute{timerMinutes !== 1 ? 's' : ''} focused</div>
     </div>
@@ -279,7 +280,7 @@
 <style>
   .focus-view { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; gap: 14px; position: relative; }
   .progress-bar { position: fixed; top: 0; left: 0; right: 0; height: 3px; background: rgba(255,255,255,0.03); z-index: 10; }
-  .progress-bar-fill { height: 100%; background: var(--accent-gradient); transform-origin: left; transition: transform 0.3s var(--ease); border-radius: 0 2px 2px 0; }
+  .progress-bar-fill { height: 100%; background: var(--accent-gradient); transition: width 0.3s var(--ease); border-radius: 0 2px 2px 0; }
   .timer-digits { font-size: 6.5rem; font-weight: 650; letter-spacing: 4px; color: var(--text); line-height: 1; font-variant-numeric: tabular-nums; user-select: none; margin-top: 40px; }
   .timer-digits.tick { animation: timerPop 0.15s var(--ease-spring); }
   @keyframes timerPop { 0% { transform: scale(1); } 40% { transform: scale(1.06); } 100% { transform: scale(1); } }
@@ -306,7 +307,6 @@
   .pomo-btn { display: flex; align-items: center; gap: 6px; padding: 8px 20px; border-radius: 20px; font-size: 12px; font-weight: 500; color: var(--text-secondary); background: var(--glass-bg); border: 1px solid var(--glass-border); cursor: pointer; transition: all 0.2s var(--ease); backdrop-filter: blur(var(--glass-blur)); }
   .pomo-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); }
   .pomo-btn.active { background: var(--accent-subtle); border-color: var(--accent); color: var(--accent); }
-  .pomo-icon { font-size: 14px; }
   .focus-task-badge { display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 50px; max-width: 80%; backdrop-filter: blur(var(--glass-blur)); }
   .focus-task-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
   .focus-task-title { font-size: 13px; color: var(--text); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -314,7 +314,6 @@
   .focus-task-clear:hover { background: var(--danger-bg); color: var(--danger); }
   .celebration-overlay { position: fixed; inset: 0; z-index: 300; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); animation: fadeIn 0.3s ease; }
   .celebration-card { background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border); padding: 40px 48px; text-align: center; animation: scaleIn 0.35s var(--ease-spring); box-shadow: 0 0 80px rgba(var(--accent-rgb), 0.15); }
-  .celebration-icon { font-size: 56px; margin-bottom: 12px; }
   .celebration-title { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
   .celebration-sub { font-size: 14px; color: var(--text-secondary); }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }

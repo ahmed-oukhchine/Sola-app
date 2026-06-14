@@ -4,7 +4,7 @@
 
   let locale = $state(getLocale())
   import { exportData, importData, loadPoints, computeStreak, requestNotificationPermission } from './taskStore.svelte.js'
-  import { Moon, Sun, Circle, X } from 'lucide-svelte'
+  import { Moon, Sun, Circle, X, Star, Flame } from 'lucide-svelte'
 
   let { theme, onThemeCycle, accentColor, onAccentChange, autoThemeTime, onAutoThemeChange } = $props()
 
@@ -103,8 +103,8 @@
     <div class="settings-row">
       <span class="settings-label">Accent color</span>
       <div class="accent-row">
-        <input type="color" class="accent-picker" value={accentColor || (theme === 'light' ? '#b07050' : '#d4a574')} oninput={(e) => { const v = e.target.value; colorInput = v; onAccentChange(v) }} />
-        <input type="text" class="accent-input" placeholder="#d4a574" bind:value={colorInput} onkeydown={(e) => { if (e.key === 'Enter' && /^#[0-9a-fA-F]{6}$/.test(colorInput)) onAccentChange(colorInput) }} />
+        <input type="color" class="accent-picker" value={accentColor || '#5a9a9a'} oninput={(e) => { const v = e.target.value; colorInput = v; onAccentChange(v) }} />
+        <input type="text" class="accent-input" placeholder="#5a9a9a" bind:value={colorInput} onkeydown={(e) => { if (e.key === 'Enter' && /^#[0-9a-fA-F]{6}$/.test(colorInput)) onAccentChange(colorInput) }} />
         {#if accentColor}
           <button class="accent-reset" onclick={() => { colorInput = ''; onAccentChange('') }} aria-label="Reset accent">
             <X size={14} strokeWidth={1.5} />
@@ -138,11 +138,11 @@
     <h3 class="settings-section-title">Progress</h3>
     <div class="settings-row">
       <span class="settings-label">Points</span>
-      <span class="settings-value">✦ {points}</span>
+      <span class="settings-value"><Star size={14} strokeWidth={1.5} /> {points}</span>
     </div>
     <div class="settings-row">
       <span class="settings-label">Streak</span>
-      <span class="settings-value">🔥 {streak} day{streak !== 1 ? 's' : ''}</span>
+      <span class="settings-value"><Flame size={14} strokeWidth={1.5} /> {streak} day{streak !== 1 ? 's' : ''}</span>
     </div>
   </div>
 

@@ -1,5 +1,5 @@
 <script>
-  import { CalendarDays, Inbox, Crosshair, TrendingUp, Flame } from 'lucide-svelte'
+  import { CalendarDays, Inbox, Crosshair, TrendingUp, Flame, Star, Check } from 'lucide-svelte'
   import { store, addTask, loadPoints, computeStreak } from './taskStore.svelte.js'
 
   let { onNavigate } = $props()
@@ -45,7 +45,7 @@
   <p class="view-sub">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
 
   <div class="stats-grid" style="margin-bottom:16px">
-    <div class="stat-card"><span class="stat-num">✦{points}</span><span class="stat-label">Level {level}</span><div class="level-bar"><div class="level-fill" style="width:{levelProgress}%"></div></div></div>
+    <div class="stat-card"><span class="stat-num"><Star size={20} strokeWidth={1.5} />{points}</span><span class="stat-label">Level {level}</span><div class="level-bar"><div class="level-fill" style="width:{levelProgress}%"></div></div></div>
     <div class="stat-card"><span class="stat-num"><Flame size={20} strokeWidth={1.5} />{streak}</span><span class="stat-label">Day streak</span></div>
     <div class="stat-card"><span class="stat-num">{completedCount}/{totalCount}</span><span class="stat-label">Today</span></div>
     <div class="stat-card"><span class="stat-num">{completionRate}%</span><span class="stat-label">Rate</span></div>
@@ -97,7 +97,7 @@
     <div class="inbox-list">
       {#each recentCompletions as t (t.id)}
         <div class="inbox-item">
-          <span class="inbox-text">&#10003; {t.title}</span>
+          <span class="inbox-text"><Check size={12} strokeWidth={1.5} /> {t.title}</span>
           <span class="date db-date">{t.date}</span>
         </div>
       {/each}

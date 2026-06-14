@@ -1,5 +1,6 @@
 <script>
-  import { LayoutDashboard, CalendarDays, Inbox, Crosshair, ListChecks, Clock, Calendar, Target, Columns3, SquareCheck, Tags, BookOpen, TrendingUp, Settings, ChevronLeft, ChevronRight, Moon, Sun, Circle, ChevronDown, Briefcase } from 'lucide-svelte'
+  import { fly } from 'svelte/transition'
+  import { LayoutDashboard, CalendarDays, Inbox, Crosshair, ListChecks, Clock, Calendar, Target, Columns3, SquareCheck, Tags, BookOpen, TrendingUp, Settings, ChevronLeft, ChevronRight, Moon, Sun, Circle, ChevronDown, Briefcase, Star, Flame } from 'lucide-svelte'
 
   let { open, activeView, streak, points, theme, collapsed, onNavigate, onClose, onThemeCycle, onExport, onImport, onCollapse, inboxCount = 0, somedayCount = 0 } = $props()
 
@@ -44,8 +45,8 @@
 </script>
 
 {#if open}
-  <div class="backdrop" onclick={onClose} onkeydown={(e) => { if (e.key === 'Escape') onClose() }} tabindex="0" role="dialog" aria-label="Navigation">
-    <div class="sidebar" class:collapsed class:expanded={!collapsed} tabindex="0" onclick={(e) => e.stopPropagation()} onkeydown={(e) => { if (e.key === 'Escape') onClose() }} role="dialog" aria-label="Sidebar">
+  <div class="backdrop" out:fade={{ duration: 200 }} onclick={onClose} onkeydown={(e) => { if (e.key === 'Escape') onClose() }} tabindex="0" role="dialog" aria-label="Navigation">
+    <div class="sidebar" class:collapsed class:expanded={!collapsed} out:fly={{ x: -300, duration: 250 }} tabindex="0" onclick={(e) => e.stopPropagation()} onkeydown={(e) => { if (e.key === 'Escape') onClose() }} role="dialog" aria-label="Sidebar">
       {#if collapsed}
         <div class="sb-header-col">
           <button class="sb-toggle" onclick={onCollapse} aria-label="Expand sidebar">
@@ -103,8 +104,8 @@
         </div>
         <div class="sb-footer">
           <div class="sb-stats">
-            <span class="sb-stat">✦ {points}</span>
-            <span class="sb-stat">🔥 {streak} day{streak !== 1 ? 's' : ''}</span>
+            <span class="sb-stat"><Star size={14} strokeWidth={1.5} /> {points}</span>
+            <span class="sb-stat"><Flame size={14} strokeWidth={1.5} /> {streak} day{streak !== 1 ? 's' : ''}</span>
           </div>
           <button class="sb-theme" onclick={onThemeCycle}>
             {#if theme === 'dark'}
@@ -162,6 +163,7 @@
   .sb-group-label { pointer-events: none; }
   .sb-group-col { display: flex; flex-direction: column; align-items: center; padding: 6px 0; }
   .sb-group-col:not(:last-child) { border-bottom: 1px solid var(--border-light); margin-bottom: 6px; }
-  .sb-group-label-col { font-size: 8px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; pointer-events: none; }
+  .collapsed .sb-group-label-col { display: none; }
+  .sb-group-label-col { font-size: 10px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 6px; pointer-events: none; }
   .sb-badge { margin-left: auto; background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; min-width: 18px; height: 18px; border-radius: 9px; display: flex; align-items: center; justify-content: center; padding: 0 5px; line-height: 1; }
 </style>

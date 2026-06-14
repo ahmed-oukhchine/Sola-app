@@ -1,5 +1,5 @@
 <script>
-  import { X, Play, Pause, Trophy, Clock, Check } from 'lucide-svelte'
+  import { X, Play, Pause, Trophy, Clock, Check, Flame } from 'lucide-svelte'
   import { habits, addHabit, removeHabit, toggleHabitLog, isHabitDone, getHabitDayCount, isHabitComplete, logHabitMinutes, getHabitWeekMinutes, updateHabitTime } from './taskStore.svelte.js'
 
   let name = $state('')
@@ -148,7 +148,7 @@
                 </button>
               </div>
               <div class="habit-stats">
-                <span class="habit-stat">🔥 {streak}d</span>
+                <span class="habit-stat"><Flame size={14} strokeWidth={1.5} /> {streak}d</span>
                 <span class="habit-stat">{dayCount}/{h.targetDays}d</span>
               </div>
             </div>
@@ -172,7 +172,7 @@
               {#each week as day}
                 <button class="habit-day-btn" class:done={day.done} onclick={() => toggleHabitLog(h.id, day.date)} title={day.date}>
                   <span class="habit-day-name">{day.dayName}</span>
-                  <span class="habit-day-ind">{day.done ? '✓' : '·'}</span>
+                  <span class="habit-day-ind">{#if day.done}<Check size={14} strokeWidth={1.5} />{:else}·{/if}</span>
                 </button>
               {/each}
             </div>

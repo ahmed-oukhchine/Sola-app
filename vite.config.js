@@ -12,7 +12,7 @@ export default defineConfig({
     svelte(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg'],
+      includeAssets: ['favicon.svg', 'fonts/*.woff2'],
       manifest: {
         name: 'Sola',
         short_name: 'Sola',
@@ -27,7 +27,7 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg}']
+        globPatterns: ['**/*.{js,css,html,svg,woff2}']
       }
     })
   ],

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Sola</string>
+    <string name="title_activity_main">Sola</string>
+    <string name="package_name">com.sola.app</string>
+    <string name="custom_url_scheme">com.sola.app</string>
+</resources>

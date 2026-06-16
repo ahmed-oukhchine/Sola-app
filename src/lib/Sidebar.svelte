@@ -2,7 +2,7 @@
   import { fly } from 'svelte/transition'
   import { LayoutDashboard, CalendarDays, Inbox, Crosshair, ListChecks, Clock, Calendar, Target, Columns3, SquareCheck, Tags, BookOpen, TrendingUp, Settings, ChevronLeft, ChevronRight, Moon, Sun, Circle, ChevronDown, Briefcase, Star, Flame } from 'lucide-svelte'
 
-  let { open, activeView, streak, points, theme, collapsed, onNavigate, onClose, onThemeCycle, onExport, onImport, onCollapse, inboxCount = 0, somedayCount = 0 } = $props()
+  let { open, activeView, streak, points, theme, effectiveTheme, collapsed, onNavigate, onClose, onThemeCycle, onExport, onImport, onCollapse, inboxCount = 0, somedayCount = 0 } = $props()
 
   const GROUPS = [
     {
@@ -65,12 +65,10 @@
         {/each}
         <div class="sb-footer-col">
           <button class="sb-item-col" onclick={onThemeCycle} title="Theme">
-            {#if theme === 'dark'}
+            {#if effectiveTheme === 'dark'}
               <Moon size={18} strokeWidth={1.5} />
-            {:else if theme === 'light'}
-              <Sun size={18} strokeWidth={1.5} />
             {:else}
-              <Circle size={18} strokeWidth={1.5} />
+              <Sun size={18} strokeWidth={1.5} />
             {/if}
           </button>
         </div>
@@ -108,12 +106,10 @@
             <span class="sb-stat"><Flame size={14} strokeWidth={1.5} /> {streak} day{streak !== 1 ? 's' : ''}</span>
           </div>
           <button class="sb-theme" onclick={onThemeCycle}>
-            {#if theme === 'dark'}
+            {#if effectiveTheme === 'dark'}
               <Moon size={14} strokeWidth={1.5} />
-            {:else if theme === 'light'}
-              <Sun size={14} strokeWidth={1.5} />
             {:else}
-              <Circle size={14} strokeWidth={1.5} />
+              <Sun size={14} strokeWidth={1.5} />
             {/if}
             <span>{theme}</span>
           </button>

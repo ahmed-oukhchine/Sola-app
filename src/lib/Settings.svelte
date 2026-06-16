@@ -1,12 +1,13 @@
 <script>
   import ConfirmDialog from './ConfirmDialog.svelte'
+  import SetPassword from './SetPassword.svelte'
   import { loadLocale, setLocale, getLocale, LANGUAGES } from './i18n.svelte.js'
 
   let locale = $state(getLocale())
   import { exportData, importData, loadPoints, computeStreak, requestNotificationPermission } from './taskStore.svelte.js'
   import { Moon, Sun, Circle, X, Star, Flame } from 'lucide-svelte'
 
-  let { theme, onThemeCycle, accentColor, onAccentChange, autoThemeTime, onAutoThemeChange } = $props()
+  let { theme, effectiveTheme, onThemeCycle, accentColor, onAccentChange, autoThemeTime, onAutoThemeChange } = $props()
 
   let colorInput = $state(accentColor || '')
 
@@ -61,6 +62,7 @@
       localStorage.removeItem('focus-account-user')
       localStorage.removeItem('focus-session-expiry')
       localStorage.removeItem('focus-session-activity')
+      localStorage.removeItem('focus-onboarded')
       window.location.reload()
     }
     confirmAction = null
@@ -76,12 +78,10 @@
     <div class="settings-row">
       <span class="settings-label">Theme</span>
       <button class="settings-theme-btn" onclick={onThemeCycle}>
-        {#if theme === 'dark'}
+        {#if effectiveTheme === 'dark'}
           <Moon size={16} strokeWidth={1.5} />
-        {:else if theme === 'light'}
-          <Sun size={16} strokeWidth={1.5} />
         {:else}
-          <Circle size={16} strokeWidth={1.5} />
+          <Sun size={16} strokeWidth={1.5} />
         {/if}
         <span>{theme}</span>
       </button>
@@ -120,6 +120,14 @@
       <span class="settings-label">Signed in as</span>
       <span class="settings-value">{localStorage.getItem('focus-account-user') || '—'}</span>
     </div>
+    {#if !localStorage.getItem('focus-account-hash')}
+      <SetPassword onSet={() => window.location.reload()} />
+    {:else}
+      <div class="settings-row">
+        <span class="settings-label">Password</span>
+        <span class="settings-value">&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;</span>
+      </div>
+    {/if}
     <button class="settings-action-btn danger" onclick={requestSignOut}>Sign out</button>
   </div>
 

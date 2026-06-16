@@ -1,0 +1,14 @@
+{
+  "appId": "com.sola.app",
+  "appName": "Sola",
+  "webDir": "dist",
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": true,
+      "backgroundColor": "#121212",
+      "androidScaleType": "CENTER_CROP",
+      "showSpinner": false,
+      "splashFullScreen": true
+    }
+  }
+}

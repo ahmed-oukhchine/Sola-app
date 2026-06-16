@@ -1,10 +1,4 @@
-import Dexie from 'dexie'
 import * as chrono from 'chrono-node'
-
-const db = new Dexie('FocusApp')
-db.version(1).stores({
-  data: 'key'
-})
 
 export const store = $state({ tasks: [] })
 export const inbox = $state({ items: [] })
@@ -58,22 +52,22 @@ function setSource(key, data) {
   if (obj) obj.items = data?.items || []
 }
 
-async function persist() {
-  const records = []
+function persist() {
   for (const [key] of Object.entries(KEYS)) {
     if (key === 'points') continue
     const fn = DATA_SOURCES[key]
-    records.push({ key, value: fn ? fn() : [] })
+    try { localStorage.setItem(KEYS[key], JSON.stringify(fn ? fn() : [])) } catch {}
   }
-  records.push({ key: 'points', value: _points })
-  try { await db.data.bulkPut(records) } catch {}
+  try { localStorage.setItem(KEYS.points, String(_points)) } catch {}
 }
 
-export async function loadAll() {
+export function loadAll() {
   try {
-    const records = await db.data.toArray()
-    for (const { key, value } of records) {
-      if (key === 'points') { _points = value; continue }
+    for (const [key, lsKey] of Object.entries(KEYS)) {
+      const raw = localStorage.getItem(lsKey)
+      if (!raw) continue
+      if (key === 'points') { _points = Number(raw); continue }
+      const value = JSON.parse(raw)
       if (key === 'tasks') { store.tasks = value; continue }
       setSource(key, { items: value })
     }
@@ -579,7 +573,7 @@ export function loadPoints() { return _points }
 
 export function savePoints(p) {
   _points = p
-  db.data.put({ key: 'points', value: p })
+  try { localStorage.setItem(KEYS.points, String(p)) } catch {}
 }
 
 // --- Streak ---
@@ -673,24 +667,22 @@ export function generateRecurringTasks() {
 
 // --- Export / Import ---
 
-export async function exportData() {
-  const records = await db.data.toArray()
+export function exportData() {
   const data = {}
-  for (const { key, value } of records) {
-    data[key] = value
+  for (const [key, lsKey] of Object.entries(KEYS)) {
+    const raw = localStorage.getItem(lsKey)
+    if (raw) data[key] = key === 'points' ? Number(raw) : JSON.parse(raw)
   }
   return JSON.stringify(data, null, 2)
 }
 
-export async function importData(json) {
+export function importData(json) {
   const d = JSON.parse(json)
-  const records = []
   for (const [key, value] of Object.entries(d)) {
-    records.push({ key, value })
-  }
-  await db.data.bulkPut(records)
-  for (const { key, value } of records) {
-    if (key === 'points') { _points = value; continue }
+    const lsKey = KEYS[key]
+    if (!lsKey) continue
+    localStorage.setItem(lsKey, key === 'points' ? String(value) : JSON.stringify(value))
+    if (key === 'points') { _points = Number(value); continue }
     if (key === 'tasks') { store.tasks = value; continue }
     setSource(key, { items: value })
   }

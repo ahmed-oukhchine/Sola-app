@@ -3,6 +3,11 @@ import { svelte } from '@sveltejs/vite-plugin-svelte'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  build: {
+    rolldownOptions: {
+      external: ['@capacitor/app', '@capacitor/splash-screen']
+    }
+  },
   plugins: [
     svelte(),
     VitePWA({

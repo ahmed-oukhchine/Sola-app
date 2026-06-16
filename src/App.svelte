@@ -38,6 +38,8 @@
   let weeklyReviewData = $state(null)
   let ritualTitle = $state('')
   let theme = $state(localStorage.getItem('focus-theme') || 'system')
+  let systemDark = $state(false)
+  let effectiveTheme = $derived(theme === 'system' ? (systemDark ? 'dark' : 'light') : theme)
   let todayStr = $derived(new Date().toISOString().split('T')[0])
   let dayStr = $derived(new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }))
   let todayTasks = $derived(store.tasks.filter(t => t.date === todayStr))
@@ -58,6 +60,14 @@
   let toasts = $state([])
   let toastId = $state(0)
   let deferredInstall = $state(null)
+  const IDLE_TIMEOUT = 5 * 60 * 1000
+  let lastActivity = $state(Date.now())
+  let showLock = $state(false)
+
+  function refreshActivity() {
+    lastActivity = Date.now()
+    if (showLock) showLock = false
+  }
 
   function toast(message, type = 'success', undo = null) {
     const id = ++toastId
@@ -152,11 +162,15 @@
 
   function applyTheme(t) {
     const root = document.documentElement
-    if (t === 'dark') root.setAttribute('data-theme', 'dark')
-    else if (t === 'light') root.setAttribute('data-theme', 'light')
-    else root.removeAttribute('data-theme')
     theme = t
     localStorage.setItem('focus-theme', t)
+    applyEffectiveTheme()
+  }
+
+  function applyEffectiveTheme() {
+    const root = document.documentElement
+    if (effectiveTheme === 'dark') root.setAttribute('data-theme', 'dark')
+    else root.removeAttribute('data-theme')
     if (accentColor) applyAccent(accentColor)
   }
 
@@ -236,10 +250,11 @@
     await loadAll()
     points = loadPoints()
     streak = computeStreak()
-    const root = document.documentElement
-    if (theme === 'dark') root.setAttribute('data-theme', 'dark')
-    else if (theme === 'light') root.setAttribute('data-theme', 'light')
-    if (accentColor) applyAccent(accentColor)
+    try { const { SplashScreen } = await import('@capacitor/splash-screen'); SplashScreen.hide() } catch {}
+    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    systemDark = mq.matches
+    mq.addEventListener('change', (e) => { systemDark = e.matches; applyEffectiveTheme() })
+    applyEffectiveTheme()
     scheduleAll()
     if (!showOnboarding && !showAccount) {
       checkRituals()
@@ -250,12 +265,31 @@
       now = new Date()
       streak = computeStreak()
       checkAutoTheme()
-    }, 30000)
+      if (hasAccount && !showOnboarding && !showAccount && Date.now() - lastActivity > IDLE_TIMEOUT) {
+        showLock = true
+      }
+    }, 5000)
     document.addEventListener('keydown', handleKeydown)
+    const evts = ['mousedown', 'mousemove', 'touchstart', 'touchmove', 'keydown', 'scroll', 'wheel']
+    for (const evt of evts) document.addEventListener(evt, refreshActivity, { passive: true })
     window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstall = e; setTimeout(() => deferredInstall = null, 30000) })
-
+    try {
+      const { App } = await import('@capacitor/app')
+      App.addListener('backButton', () => {
+        if (showLock || showOnboarding || showAccount) return
+        if (sidebarOpen) { sidebarOpen = false; return }
+        if (showSearch) { showSearch = false; return }
+        if (showMorning) { showMorning = false; return }
+        if (showEvening) { showEvening = false; return }
+        if (showWeeklyReview) { showWeeklyReview = false; return }
+        if (showBackupReminder) { showBackupReminder = false; return }
+        if (activeView !== 'dashboard') { activeView = 'dashboard'; return }
+        App.exitApp()
+      })
+    } catch {}
     return () => {
       document.removeEventListener('keydown', handleKeydown)
+      for (const evt of evts) document.removeEventListener(evt, refreshActivity)
     }
   })
 
@@ -306,7 +340,7 @@
   }
 
   async function handleExport() {
-    const json = await exportData()
+    const json = exportData()
     const blob = new Blob([json], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -321,7 +355,7 @@
     input.onchange = async () => {
       try {
         const text = await input.files[0].text()
-        await importData(text)
+        importData(text)
         points = loadPoints(); streak = computeStreak()
         toast('Data imported successfully', 'success')
       } catch (e) { toast('Invalid backup file', 'error') }
@@ -338,7 +372,11 @@
   <Account onUnlock={handleUnlock} />
 {/if}
 
-<Sidebar open={sidebarOpen} {activeView} {streak} {points} {theme} collapsed={sidebarCollapsed} onNavigate={(v) => activeView = v} onClose={() => sidebarOpen = false} onThemeCycle={cycleTheme} onCollapse={toggleSidebarCollapse} onExport={handleExport} onImport={handleImport} {inboxCount} {somedayCount} />
+{#if showLock}
+  <LockScreen username={userName} onUnlock={() => { refreshActivity(); handleUnlock(userName) }} />
+{/if}
+
+<Sidebar open={sidebarOpen} {activeView} {streak} {points} {theme} {effectiveTheme} collapsed={sidebarCollapsed} onNavigate={(v) => activeView = v} onClose={() => sidebarOpen = false} onThemeCycle={cycleTheme} onCollapse={toggleSidebarCollapse} onExport={handleExport} onImport={handleImport} {inboxCount} {somedayCount} />
 <div class="app">
   <header class="header">
     <button class="hamburger" onclick={() => sidebarOpen = true} aria-label="Menu">
@@ -363,7 +401,7 @@
   {#if activeView === 'calendar'}<div in:fade={{ duration: 200 }} class="view-wrap"><CalendarView /></div>{/if}
   {#if activeView === 'goals'}<div in:fade={{ duration: 200 }} class="view-wrap"><GoalsView /></div>{/if}
   {#if activeView === 'kanban'}<div in:fade={{ duration: 200 }} class="view-wrap"><KanbanView /></div>{/if}
-  {#if activeView === 'settings'}<div in:fade={{ duration: 200 }} class="view-wrap"><SettingsView {theme} onThemeCycle={cycleTheme} {accentColor} onAccentChange={setAccent} {autoThemeTime} onAutoThemeChange={(t) => autoThemeTime = t} /></div>{/if}
+  {#if activeView === 'settings'}<div in:fade={{ duration: 200 }} class="view-wrap"><SettingsView {theme} {effectiveTheme} onThemeCycle={cycleTheme} {accentColor} onAccentChange={setAccent} {autoThemeTime} onAutoThemeChange={(t) => autoThemeTime = t} /></div>{/if}
   {#if activeView === 'habits'}<div in:fade={{ duration: 200 }} class="view-wrap"><HabitsView /></div>{/if}
   {#if activeView === 'tags'}<div in:fade={{ duration: 200 }} class="view-wrap"><TagsView /></div>{/if}
   {#if activeView === 'today'}<div in:fade={{ duration: 200 }} class="view-wrap"><TodayView {now} onCompleteTask={onCompleteTask} onCompleteSubtask={onCompleteSubtask} onStartFocus={(id) => { focusTaskId = id; activeView = 'focus' }} /></div>{/if}
@@ -460,7 +498,7 @@
 <style>
   .app { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
   .view-wrap { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-  .header { display: flex; align-items: center; gap: 10px; padding: 16px 20px 8px; flex-shrink: 0; position: relative; }
+  .header { display: flex; align-items: center; gap: 10px; padding: 16px 20px 8px; padding-top: calc(16px + env(safe-area-inset-top, 0px)); flex-shrink: 0; position: relative; }
   .header::after { content: ''; position: absolute; bottom: 0; left: 20px; right: 20px; height: 1px; background: linear-gradient(90deg, transparent, var(--border), transparent); }
   .hamburger { width: 38px; height: 38px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); background: var(--surface); border: 1px solid var(--border); padding: 0; transition: all 0.2s var(--ease); flex-shrink: 0; backdrop-filter: blur(var(--glass-blur)); }
   .hamburger:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); }

@@ -112,9 +112,9 @@
     root.style.setProperty('--accent', color)
     root.style.setProperty('--accent-rgb', `${r},${g},${b}`)
     root.style.setProperty('--accent-hover', shadeColor(color, 10))
-    root.style.setProperty('--accent-subtle', `rgba(${r}, ${g}, ${b}, ${theme === 'light' ? 0.08 : 0.12})`)
+    root.style.setProperty('--accent-subtle', `rgba(${r}, ${g}, ${b}, ${effectiveTheme === 'light' ? 0.08 : 0.12})`)
     root.style.setProperty('--accent-gradient', `linear-gradient(135deg, ${color}, ${shadeColor(color, -12)})`)
-    root.style.setProperty('--accent-glow', `0 0 30px rgba(${r}, ${g}, ${b}, ${theme === 'light' ? 0.08 : 0.15})`)
+    root.style.setProperty('--accent-glow', `0 0 30px rgba(${r}, ${g}, ${b}, ${effectiveTheme === 'light' ? 0.08 : 0.15})`)
     root.style.setProperty('--glow', `0 0 0 2px rgba(${r}, ${g}, ${b}, 0.25)`)
   }
 
@@ -169,7 +169,7 @@
 
   function applyEffectiveTheme() {
     const root = document.documentElement
-    if (effectiveTheme === 'dark') root.setAttribute('data-theme', 'dark')
+    if (effectiveTheme === 'light') root.setAttribute('data-theme', 'light')
     else root.removeAttribute('data-theme')
     if (accentColor) applyAccent(accentColor)
   }

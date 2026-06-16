@@ -498,14 +498,14 @@
 <style>
   .app { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
   .view-wrap { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-  .header { display: flex; align-items: center; gap: 10px; padding: 16px 20px 8px; padding-top: calc(16px + env(safe-area-inset-top, 0px)); flex-shrink: 0; position: relative; }
-  .header::after { content: ''; position: absolute; bottom: 0; left: 20px; right: 20px; height: 1px; background: linear-gradient(90deg, transparent, var(--border), transparent); }
+  .header { display: flex; align-items: center; gap: 10px; padding: 16px 20px 10px; padding-top: calc(16px + env(safe-area-inset-top, 0px)); flex-shrink: 0; position: relative; }
+  .header::after { content: ''; position: absolute; bottom: 0; left: 16px; right: 16px; height: 1px; background: linear-gradient(90deg, transparent, var(--border), rgba(var(--accent-rgb), 0.15), var(--border), transparent); }
   .hamburger { width: 38px; height: 38px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); background: var(--surface); border: 1px solid var(--border); padding: 0; transition: all 0.2s var(--ease); flex-shrink: 0; backdrop-filter: blur(var(--glass-blur)); }
   .hamburger:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); }
   .hamburger:active { transform: scale(0.92); }
-  .logo { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; color: var(--text); flex: 1; }
+  .logo { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; color: var(--text); flex: 1; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
   .header-actions { display: flex; align-items: center; gap: 8px; }
-  .points-badge { font-size: 12px; font-weight: 600; color: var(--accent); background: var(--accent-subtle); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(var(--accent-rgb), 0.15); }
+  .points-badge { font-size: 12px; font-weight: 600; color: var(--accent); background: var(--accent-subtle); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(var(--accent-rgb), 0.15); display: flex; align-items: center; gap: 4px; }
   .header-search-btn { width: 34px; height: 34px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); background: var(--surface); border: 1px solid var(--border); padding: 0; transition: all 0.15s var(--ease); flex-shrink: 0; }
   .header-search-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); }
   .install-btn { width: 34px; height: 34px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--complete); background: rgba(138,154,122,0.1); border: 1px solid rgba(138,154,122,0.25); padding: 0; transition: all 0.15s var(--ease); flex-shrink: 0; }

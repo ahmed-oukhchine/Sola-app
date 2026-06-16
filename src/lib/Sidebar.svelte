@@ -124,15 +124,15 @@
 </div>
 
 <style>
-  .backdrop { position: fixed; inset: 0; z-index: 200; display: flex; pointer-events: none; opacity: 0; background: rgba(0,0,0,0); backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px); transition: opacity 0.2s var(--ease), background 0.2s var(--ease); }
-  .backdrop.visible { pointer-events: auto; opacity: 1; background: rgba(0,0,0,0.4); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+  .backdrop { position: fixed; inset: 0; z-index: 200; display: flex; pointer-events: none; opacity: 0; background: rgba(0,0,0,0); backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px); transition: opacity 0.25s var(--ease), background 0.25s var(--ease); }
+  .backdrop.visible { pointer-events: auto; opacity: 1; background: rgba(0,0,0,0.5); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
   .sidebar { height: 100%; background: var(--glass-bg); backdrop-filter: blur(var(--glass-blur)); border-right: 1px solid var(--glass-border); display: flex; flex-direction: column; box-shadow: 4px 0 60px rgba(0,0,0,0.3); animation: slideIn 0.35s var(--ease-out); }
   .sidebar.expanded { width: 280px; max-width: 80vw; padding: 0; }
   .sidebar.collapsed { width: 72px; align-items: center; padding: 0; }
   @keyframes slideIn { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
   .sb-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 20px 14px; border-bottom: 1px solid var(--glass-border); }
   .sb-header-col { padding: 20px 0; }
-  .sb-logo { font-size: 22px; font-weight: 700; color: var(--text); letter-spacing: -0.5px; }
+  .sb-logo { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
   .sb-toggle { width: 34px; height: 34px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); background: transparent; transition: all 0.2s var(--ease); }
   .sb-toggle:hover { background: var(--surface-hover); color: var(--text); }
   .sb-items { flex: 1; padding: 12px 10px; display: flex; flex-direction: column; gap: 2px; overflow-y: auto; }
@@ -162,5 +162,5 @@
   .sb-group-col:not(:last-child) { border-bottom: 1px solid var(--border-light); margin-bottom: 6px; }
   .collapsed .sb-group-label-col { display: none; }
   .sb-group-label-col { font-size: 10px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 6px; pointer-events: none; }
-  .sb-badge { margin-left: auto; background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; min-width: 18px; height: 18px; border-radius: 9px; display: flex; align-items: center; justify-content: center; padding: 0 5px; line-height: 1; }
+  .sb-badge { margin-left: auto; background: var(--accent-gradient); color: #fff; font-size: 10px; font-weight: 700; min-width: 18px; height: 18px; border-radius: 9px; display: flex; align-items: center; justify-content: center; padding: 0 5px; line-height: 1; }
 </style>

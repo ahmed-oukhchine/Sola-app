@@ -200,9 +200,17 @@
 </script>
 
 <main class="focus-view">
-    <div class="progress-bar">
-    <div class="progress-bar-fill" style="width: {progress * 100}%"></div>
-  </div>
+  <svg class="time-timer" viewBox="0 0 280 280">
+    <circle class="tt-bg" cx="140" cy="140" r="120" />
+    <circle class="tt-fill" cx="140" cy="140" r="120"
+      style="stroke-dasharray: {2 * Math.PI * 120}; stroke-dashoffset: {2 * Math.PI * 120 * (1 - progress)}"
+      transform="rotate(-90 140 140)"
+    />
+    <text class="tt-digits" x="140" y="140" text-anchor="middle" dominant-baseline="central">{timerDisplay}</text>
+    <text class="tt-label" x="140" y="176" text-anchor="middle">
+      {timerStatus === 'ready' ? (pomodoroActive ? `Ready for ${pomodoroSession}` : 'Ready') : timerStatus === 'running' ? (pomodoroActive ? `${pomodoroSession}` : 'Focusing') : timerStatus === 'paused' ? 'Paused' : 'Complete!'}
+    </text>
+  </svg>
 
   {#if focusTask}
     <div class="focus-task-badge">
@@ -212,10 +220,6 @@
     </div>
   {/if}
 
-  <div class="timer-digits" class:tick={doTick}>{timerDisplay}</div>
-  <div class="timer-status-text">
-    {timerStatus === 'ready' ? (pomodoroActive ? `Ready for ${pomodoroSession}` : 'Ready') : timerStatus === 'running' ? (pomodoroActive ? `${pomodoroSession}` : 'Focusing') : timerStatus === 'paused' ? 'Paused' : 'Complete!'}
-  </div>
   {#if soundType !== 'none'}
     <div class="sound-indicator">{SOUNDS.find(s => s.id === soundType)?.label}</div>
   {/if}
@@ -277,12 +281,11 @@
 
 <style>
   .focus-view { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; gap: 14px; position: relative; }
-  .progress-bar { position: fixed; top: 0; left: 0; right: 0; height: 3px; background: rgba(255,255,255,0.03); z-index: 10; }
-  .progress-bar-fill { height: 100%; background: var(--accent-gradient); transition: width 0.3s var(--ease); border-radius: 0 2px 2px 0; }
-  .timer-digits { font-size: 6.5rem; font-weight: 650; letter-spacing: 4px; color: var(--text); line-height: 1; font-variant-numeric: tabular-nums; user-select: none; margin-top: 40px; }
-  .timer-digits.tick { animation: timerPop 0.15s var(--ease-spring); }
-  @keyframes timerPop { 0% { transform: scale(1); } 40% { transform: scale(1.06); } 100% { transform: scale(1); } }
-  .timer-status-text { font-size: 13px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 2.5px; margin-bottom: 8px; }
+  .time-timer { width: 260px; height: 260px; overflow: visible; margin-top: 10px; }
+  .tt-bg { fill: none; stroke: rgba(255,255,255,0.04); stroke-width: 10px; }
+  .tt-fill { fill: none; stroke: var(--accent); stroke-width: 10px; stroke-linecap: round; transition: stroke-dashoffset 0.4s var(--ease); filter: drop-shadow(0 0 20px rgba(var(--accent-rgb), 0.2)); }
+  .tt-digits { font-size: 56px; font-weight: 650; fill: var(--text); font-variant-numeric: tabular-nums; letter-spacing: 2px; }
+  .tt-label { font-size: 13px; fill: var(--text-muted); font-weight: 500; letter-spacing: 2px; text-transform: uppercase; }
   .sound-indicator { font-size: 11px; color: var(--accent); font-weight: 500; letter-spacing: 0.5px; }
   .sound-row { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
   .sound-btn { padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 500; color: var(--text-secondary); background: var(--glass-bg); border: 1px solid var(--glass-border); cursor: pointer; transition: all 0.2s var(--ease); backdrop-filter: blur(var(--glass-blur)); }

@@ -521,15 +521,15 @@ import DopamineMenu from './lib/DopamineMenu.svelte'
   .header::after { content: ''; position: absolute; bottom: 0; left: 16px; right: 16px; height: 0.5px; background: var(--border); }
   .header.desktop::after { left: 0; right: 0; }
   .desktop-ham { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); background: transparent; padding: 0; transition: all 0.15s var(--ease); flex-shrink: 0; }
-  .desktop-ham:hover { color: var(--text); background: var(--surface-hover); }
+  .desktop-ham:hover { color: var(--text); background: var(--surface); }
   .hamburger { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); background: transparent; padding: 0; transition: all 0.2s var(--ease); flex-shrink: 0; }
-  .hamburger:hover { color: var(--text); background: var(--surface-hover); }
+  .hamburger:hover { color: var(--text); background: var(--surface); }
   .hamburger:active { transform: scale(0.92); }
   .logo { font-size: 20px; font-weight: 650; letter-spacing: -0.3px; color: var(--text); flex: 1; }
   .header-actions { display: flex; align-items: center; gap: 6px; }
   .points-badge { font-size: 11px; font-weight: 600; color: var(--accent); background: var(--accent-subtle); padding: 4px 10px; border-radius: 20px; display: flex; align-items: center; gap: 4px; }
   .header-search-btn { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); background: transparent; border: none; padding: 0; transition: all 0.15s var(--ease); flex-shrink: 0; }
-  .header-search-btn:hover { color: var(--text); background: var(--surface-hover); }
+  .header-search-btn:hover { color: var(--text); background: var(--surface); }
   .install-btn { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--complete); background: transparent; border: none; padding: 0; transition: all 0.15s var(--ease); flex-shrink: 0; }
   .install-btn:hover { background: rgba(122,154,106,0.1); }
   .dm-btn { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--accent); background: transparent; border: none; padding: 0; transition: all 0.15s var(--ease); flex-shrink: 0; }

@@ -102,5 +102,5 @@
   .rg-add { padding: 6px 0; }
   .rg-input { width: 100%; padding: 9px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-size: 13px; transition: border-color 0.15s var(--ease); }
   .rg-input::placeholder { color: var(--text-muted); }
-  .rg-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12); }
+  .rg-input:focus { border-color: var(--accent); }
 </style>

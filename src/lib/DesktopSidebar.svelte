@@ -70,13 +70,11 @@
   </nav>
 
   <div class="ds-footer">
-    <button class="ds-theme-btn" onclick={onThemeCycle}>
+    <button class="ds-footer-btn" onclick={onThemeCycle}>
       {effectiveTheme === 'dark' ? 'Dark' : 'Light'} mode
     </button>
-    <div class="ds-io">
-      <button class="ds-io-btn" onclick={onExport}>Export</button>
-      <button class="ds-io-btn" onclick={onImport}>Import</button>
-    </div>
+    <button class="ds-footer-btn" onclick={onExport}>Export</button>
+    <button class="ds-footer-btn" onclick={onImport}>Import</button>
   </div>
 </div>
 
@@ -192,37 +190,21 @@
     padding: 0 4px;
   }
   .ds-footer {
-    padding: 8px 12px 16px;
+    padding: 10px 12px 16px;
     padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
     border-top: 0.5px solid var(--border);
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     flex-shrink: 0;
   }
-  .ds-theme-btn {
-    padding: 6px 12px;
-    border-radius: 8px;
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text-secondary);
-    background: var(--surface);
-    cursor: pointer;
+  .ds-footer-btn {
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px;
+    padding: 8px 10px; border-radius: 8px; font-size: 12px; font-weight: 500;
+    color: var(--text-secondary); background: var(--surface);
+    border: 1px solid var(--border); cursor: pointer;
     transition: all 0.15s var(--ease);
-    border: none;
   }
-  .ds-theme-btn:hover { color: var(--text); background: var(--surface-hover); }
-  .ds-io { display: flex; gap: 4px; margin-left: auto; }
-  .ds-io-btn {
-    padding: 6px 12px;
-    border-radius: 8px;
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text-secondary);
-    background: var(--surface);
-    cursor: pointer;
-    transition: all 0.15s var(--ease);
-    border: none;
-  }
-  .ds-io-btn:hover { color: var(--text); background: var(--surface-hover); }
+  .ds-footer-btn:hover { color: var(--text); background: var(--surface-hover); border-color: var(--accent-subtle); }
+  .ds-footer-btn:active { transform: scale(0.97); }
 </style>

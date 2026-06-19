@@ -66,13 +66,11 @@
         {/each}
       </div>
       <div class="ios-sheet-footer">
-        <button class="ios-theme-btn" onclick={onThemeCycle}>
+        <button class="ios-footer-btn" onclick={onThemeCycle}>
           {effectiveTheme === 'dark' ? 'Dark' : 'Light'} mode
         </button>
-        <div class="ios-io">
-          <button class="ios-io-btn" onclick={onExport}>Export</button>
-          <button class="ios-io-btn" onclick={onImport}>Import</button>
-        </div>
+        <button class="ios-footer-btn" onclick={onExport}>Export</button>
+        <button class="ios-footer-btn" onclick={onImport}>Import</button>
       </div>
     </div>
   </div>
@@ -98,11 +96,9 @@
   .ios-row-icon { color: var(--text-secondary); flex-shrink: 0; }
   .ios-row-label { flex: 1; }
   .ios-badge { background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; min-width: 18px; height: 18px; border-radius: 9px; display: flex; align-items: center; justify-content: center; padding: 0 5px; }
-  .ios-sheet-footer { padding: 8px 20px 20px; padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px)); border-top: 0.5px solid var(--border); display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
-  .ios-theme-btn { padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 500; color: var(--text-secondary); background: var(--surface); cursor: pointer; transition: all 0.15s var(--ease); border: none; }
-  .ios-theme-btn:hover { color: var(--text); background: var(--surface-hover); }
-  .ios-io { display: flex; gap: 6px; margin-left: auto; }
-  .ios-io-btn { padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 500; color: var(--text-secondary); background: var(--surface); cursor: pointer; transition: all 0.15s var(--ease); border: none; }
-  .ios-io-btn:hover { color: var(--text); background: var(--surface-hover); }
+  .ios-sheet-footer { padding: 12px 20px 20px; padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px)); border-top: 0.5px solid var(--border); display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .ios-footer-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 14px; border-radius: 10px; font-size: 13px; font-weight: 500; color: var(--text-secondary); background: var(--surface); border: 1px solid var(--border); cursor: pointer; transition: all 0.15s var(--ease); }
+  .ios-footer-btn:hover { color: var(--text); background: var(--surface-hover); border-color: var(--accent-subtle); }
+  .ios-footer-btn:active { transform: scale(0.97); }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 </style>

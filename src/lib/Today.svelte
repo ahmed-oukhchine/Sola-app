@@ -1380,6 +1380,7 @@
   }
   .st-input:focus {
     border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12);
   }
   .edit-input {
     width: 100%;
@@ -1408,6 +1409,7 @@
   }
   .edit-time:focus {
     border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12);
   }
   .edit-energy-row {
     display: flex;

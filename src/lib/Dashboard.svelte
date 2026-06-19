@@ -320,7 +320,7 @@
   .db-current-time { font-size: 12px; color: var(--text-muted); }
   .db-current-empty { font-size: 14px; color: var(--text-secondary); padding: 6px 0; }
   .empty-link { background: none; border: none; color: var(--accent); cursor: pointer; font-size: inherit; font-weight: 500; padding: 0; }
-  .empty-link:hover { opacity: 0.8; }
+  .empty-link:hover { opacity: 0.8; filter: brightness(1.1); }
 
   .db-quick-row { display: flex; gap: 8px; }
 

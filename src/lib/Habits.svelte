@@ -279,7 +279,7 @@
     border: 1px solid var(--border); background: var(--bg);
     color: var(--text); font-size: 13px;
   }
-  .habit-time-input:focus { border-color: var(--accent); outline: none; }
+  .habit-time-input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12); }
   .habit-heatmap { display: flex; gap: 3px; flex-wrap: wrap; }
   .heat-dot { width: 8px; height: 8px; border-radius: 2px; background: var(--border); transition: all 0.15s var(--ease); }
   .heat-dot.filled { background: var(--accent); }

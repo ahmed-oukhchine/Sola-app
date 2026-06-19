@@ -191,7 +191,7 @@
     flex-shrink: 0;
     transition: all 0.15s var(--ease);
   }
-  .rp-add-btn:hover { opacity: 0.85; }
+  .rp-add-btn:hover { opacity: 0.85; filter: brightness(1.1); }
   .rp-add-btn:disabled { opacity: 0.3; cursor: default; }
   .rp-task-list {
     display: flex;
@@ -212,7 +212,7 @@
     width: 100%;
     transition: background 0.12s var(--ease);
   }
-  .rp-task:hover { background: var(--surface); }
+  .rp-task:hover { background: var(--surface-hover); }
   .rp-task-num {
     font-size: 11px;
     font-weight: 600;

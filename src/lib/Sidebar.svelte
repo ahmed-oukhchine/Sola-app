@@ -89,7 +89,7 @@
   .ios-section:last-child { margin-bottom: 0; }
   .ios-section-label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; padding: 8px 12px 6px; display: block; }
   .ios-row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border-radius: 12px; font-size: 15px; font-weight: 400; color: var(--text); cursor: pointer; background: transparent; transition: all 0.15s var(--ease); border: none; text-align: left; }
-  .ios-row:hover { background: var(--surface); }
+  .ios-row:hover { background: var(--surface-hover); }
   .ios-row.active { background: var(--accent-subtle); }
   .ios-row.active .ios-row-icon { color: var(--accent); }
   .ios-row.active .ios-row-label { font-weight: 500; }

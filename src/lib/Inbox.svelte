@@ -88,7 +88,7 @@
   .dump-sub { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
   .dump-input-row { display: flex; gap: 8px; }
   .dump-input { flex: 1; min-height: 60px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 10px 12px; color: var(--text); font-size: 14px; resize: vertical; font-family: inherit; outline: none; transition: border-color 0.2s var(--ease); }
-  .dump-input:focus { border-color: var(--accent); }
+  .dump-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12); }
   .dump-input::placeholder { color: var(--text-muted); }
   .dump-btn { height: fit-content; padding: 10px 20px; border-radius: var(--radius-md); font-size: 13px; font-weight: 500; background: var(--accent-gradient); color: #fff; border: none; cursor: pointer; transition: all 0.2s var(--ease); white-space: nowrap; }
   .dump-btn:hover { box-shadow: var(--accent-glow); }

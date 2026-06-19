@@ -91,7 +91,7 @@
   .kanban-col-title { font-size: 15px; font-weight: 600; color: var(--text); }
   .kanban-count { font-size: 12px; font-weight: 600; color: var(--text-muted); background: var(--surface); padding: 2px 9px; border-radius: 10px; border: 1px solid var(--border); }
   .kanban-items { display: flex; flex-direction: column; gap: 6px; }
-  .kanban-item { display: flex; align-items: center; gap: 8px; padding: 12px 14px; background: var(--surface); border-radius: 10px; border: 1px solid var(--border); font-size: 14px; transition: all 0.15s var(--ease); backdrop-filter: blur(var(--glass-blur)); }
+  .kanban-item { display: flex; align-items: center; gap: 8px; padding: 12px 14px; background: var(--surface); border-radius: 10px; border: 1px solid var(--border); font-size: 14px; transition: all 0.15s var(--ease); }
   .kanban-item:hover { border-color: var(--accent-subtle); box-shadow: var(--shadow-sm); }
   .kanban-item.done { opacity: 0.5; }
   .kanban-item.done .kanban-item-text { text-decoration: line-through; }

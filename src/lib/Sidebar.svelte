@@ -1,8 +1,8 @@
 <script>
   import { fly } from 'svelte/transition'
-  import { LayoutDashboard, CalendarDays, Inbox, Crosshair, ListChecks, Clock, Calendar, Target, Columns3, SquareCheck, Tags, BookOpen, TrendingUp, Settings, ChevronLeft, ChevronRight, Moon, Sun, Circle, ChevronDown, Briefcase, Star, Flame } from 'lucide-svelte'
+  import { LayoutDashboard, CalendarDays, Inbox, Crosshair, ListChecks, Clock, Calendar, Target, Columns3, SquareCheck, Tags, BookOpen, TrendingUp, Settings, ChevronDown, Briefcase, Star, Flame, X } from 'lucide-svelte'
 
-  let { open, activeView, streak, points, theme, effectiveTheme, collapsed, onNavigate, onClose, onThemeCycle, onExport, onImport, onCollapse, inboxCount = 0, somedayCount = 0 } = $props()
+  let { open, activeView, streak, points, theme, effectiveTheme, onNavigate, onClose, onThemeCycle, onExport, onImport, inboxCount = 0, somedayCount = 0 } = $props()
 
   const GROUPS = [
     {
@@ -36,131 +36,73 @@
       ]
     }
   ]
-
-  let expandedGroups = $state({ Plan: true, Organize: true, Review: true })
-
-  function toggleGroup(label) {
-    expandedGroups[label] = !expandedGroups[label]
-  }
 </script>
 
-<div class="backdrop" class:visible={open} onclick={onClose} onkeydown={(e) => { if (e.key === 'Escape') onClose() }} tabindex={open ? 0 : -1} role="dialog" aria-label="Navigation">
-  {#if open}
-    <div class="sidebar" class:collapsed class:expanded={!collapsed} out:fly={{ x: -300, duration: 250 }} tabindex="0" onclick={(e) => e.stopPropagation()} onkeydown={(e) => { if (e.key === 'Escape') onClose() }} role="dialog" aria-label="Sidebar">
-      {#if collapsed}
-        <div class="sb-header-col">
-          <button class="sb-toggle" onclick={onCollapse} aria-label="Expand sidebar">
-            <ChevronRight size={18} strokeWidth={1.5} />
-          </button>
+{#if open}
+  <div class="ios-sheet-backdrop" onclick={onClose} onkeydown={(e) => { if (e.key === 'Escape') onClose() }} tabindex={open ? 0 : -1} role="dialog" aria-label="Navigation">
+    <div class="ios-sheet" in:fly={{ y: 60, duration: 350, opacity: 0 }} out:fly={{ y: 40, duration: 200, opacity: 0 }} onclick={(e) => e.stopPropagation()} onkeydown={(e) => { if (e.key === 'Escape') onClose() }} role="dialog" aria-label="Sidebar">
+      <div class="ios-sheet-handle"></div>
+      <div class="ios-sheet-header">
+        <h2 class="ios-sheet-title">Sola</h2>
+        <div class="ios-sheet-stats">
+          <span class="ios-stat"><Star size={13} strokeWidth={1.5} /> {points}</span>
+          <span class="ios-stat"><Flame size={13} strokeWidth={1.5} /> {streak}</span>
         </div>
+      </div>
+      <div class="ios-sheet-body">
         {#each GROUPS as group}
-          <div class="sb-group-col">
-            <span class="sb-group-label-col">{group.label}</span>
+          <div class="ios-section">
+            <span class="ios-section-label">{group.label}</span>
             {#each group.views as v}
-              <button class="sb-item-col" class:active={activeView === v.id} onclick={() => { onNavigate(v.id); onClose() }} title={v.label}>
-                <v.icon size={18} strokeWidth={1.5} />
+              <button class="ios-row" class:active={activeView === v.id} onclick={() => { onNavigate(v.id); onClose() }}>
+                <v.icon size={18} strokeWidth={1.5} class="ios-row-icon" />
+                <span class="ios-row-label">{v.label}</span>
+                {#if v.badge && v.badge > 0}
+                  <span class="ios-badge">{v.badge}</span>
+                {/if}
               </button>
             {/each}
           </div>
         {/each}
-        <div class="sb-footer-col">
-          <button class="sb-item-col" onclick={onThemeCycle} title="Theme">
-            {#if effectiveTheme === 'dark'}
-              <Moon size={18} strokeWidth={1.5} />
-            {:else}
-              <Sun size={18} strokeWidth={1.5} />
-            {/if}
-          </button>
+      </div>
+      <div class="ios-sheet-footer">
+        <button class="ios-theme-btn" onclick={onThemeCycle}>
+          {effectiveTheme === 'dark' ? 'Dark' : 'Light'} mode
+        </button>
+        <div class="ios-io">
+          <button class="ios-io-btn" onclick={onExport}>Export</button>
+          <button class="ios-io-btn" onclick={onImport}>Import</button>
         </div>
-      {:else}
-        <div class="sb-header">
-          <h2 class="sb-logo">Sola</h2>
-          <button class="sb-toggle" onclick={onCollapse} aria-label="Collapse sidebar">
-            <ChevronLeft size={18} strokeWidth={1.5} />
-          </button>
-        </div>
-        <div class="sb-items">
-          {#each GROUPS as group}
-            <div class="sb-group">
-              <button class="sb-group-header" onclick={() => toggleGroup(group.label)}>
-                <span class="sb-group-label">{group.label}</span>
-                <span class="chevron-wrap" class:rotated={!expandedGroups[group.label]}><ChevronDown size={14} strokeWidth={1.5} /></span>
-              </button>
-              {#if expandedGroups[group.label]}
-                {#each group.views as v}
-                  <button class="sb-item" class:active={activeView === v.id} onclick={() => { onNavigate(v.id); onClose() }}>
-                    <v.icon size={18} strokeWidth={1.5} />
-                    <span>{v.label}</span>
-                    {#if v.badge && v.badge > 0}
-                      <span class="sb-badge">{v.badge}</span>
-                    {/if}
-                  </button>
-                {/each}
-              {/if}
-            </div>
-          {/each}
-        </div>
-        <div class="sb-footer">
-          <div class="sb-stats">
-            <span class="sb-stat"><Star size={14} strokeWidth={1.5} /> {points}</span>
-            <span class="sb-stat"><Flame size={14} strokeWidth={1.5} /> {streak} day{streak !== 1 ? 's' : ''}</span>
-          </div>
-          <button class="sb-theme" onclick={onThemeCycle}>
-            {#if effectiveTheme === 'dark'}
-              <Moon size={14} strokeWidth={1.5} />
-            {:else}
-              <Sun size={14} strokeWidth={1.5} />
-            {/if}
-            <span>{theme}</span>
-          </button>
-          <div class="sb-io">
-            <button class="sb-io-btn" onclick={onExport}>Export</button>
-            <button class="sb-io-btn" onclick={onImport}>Import</button>
-          </div>
-        </div>
-      {/if}
+      </div>
     </div>
-  {/if}
-</div>
+  </div>
+{/if}
 
 <style>
-  .backdrop { position: fixed; inset: 0; z-index: 200; display: flex; pointer-events: none; opacity: 0; background: rgba(0,0,0,0); backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px); transition: opacity 0.25s var(--ease), background 0.25s var(--ease); }
-  .backdrop.visible { pointer-events: auto; opacity: 1; background: rgba(0,0,0,0.5); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
-  .sidebar { height: 100%; background: var(--glass-bg); backdrop-filter: blur(var(--glass-blur)); border-right: 1px solid var(--glass-border); display: flex; flex-direction: column; box-shadow: 4px 0 60px rgba(0,0,0,0.3); animation: slideIn 0.35s var(--ease-out); }
-  .sidebar.expanded { width: 280px; max-width: 80vw; padding: 0; }
-  .sidebar.collapsed { width: 72px; align-items: center; padding: 0; }
-  @keyframes slideIn { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-  .sb-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 20px 14px; border-bottom: 1px solid var(--glass-border); }
-  .sb-header-col { padding: 20px 0; }
-  .sb-logo { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-  .sb-toggle { width: 34px; height: 34px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); background: transparent; transition: all 0.2s var(--ease); }
-  .sb-toggle:hover { background: var(--surface-hover); color: var(--text); }
-  .sb-items { flex: 1; padding: 12px 10px; display: flex; flex-direction: column; gap: 2px; overflow-y: auto; }
-
-  .sb-footer-col { padding: 12px 0; display: flex; flex-direction: column; align-items: center; border-top: 1px solid var(--glass-border); }
-  .sb-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: var(--radius-md); font-size: 15px; font-weight: 500; color: var(--text-secondary); cursor: pointer; background: transparent; transition: all 0.2s var(--ease); border: none; text-align: left; width: 100%; }
-  .sb-item:hover { background: var(--surface-hover); color: var(--text); transform: translateX(3px); }
-  .sb-item.active { background: var(--accent-subtle); color: var(--accent); box-shadow: 0 0 24px rgba(var(--accent-rgb), 0.08); }
-  .sb-item-col { width: 44px; height: 44px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; color: var(--text-muted); cursor: pointer; background: transparent; transition: all 0.2s var(--ease); border: none; }
-  .sb-item-col:hover { background: var(--surface-hover); color: var(--text); }
-  .sb-item-col.active { background: var(--accent-subtle); color: var(--accent); box-shadow: 0 0 24px rgba(var(--accent-rgb), 0.1); }
-  .sb-footer { padding: 14px 20px; border-top: 1px solid var(--glass-border); display: flex; flex-direction: column; gap: 10px; }
-  .sb-stats { display: flex; gap: 14px; }
-  .sb-stat { font-size: 13px; font-weight: 600; color: var(--text-muted); }
-  .sb-theme { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: var(--text-muted); cursor: pointer; background: transparent; padding: 6px 0; transition: color 0.2s var(--ease); text-transform: capitalize; border: none; }
-  .sb-theme:hover { color: var(--text); }
-  .sb-io { display: flex; gap: 8px; }
-  .sb-io-btn { flex: 1; padding: 10px; border-radius: var(--radius-md); font-size: 12px; font-weight: 500; color: var(--text-muted); background: var(--bg); border: 1px solid var(--border); cursor: pointer; transition: all 0.2s var(--ease); }
-  .sb-io-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); }
-  .sb-group { margin-bottom: 2px; }
-  .sb-group-header { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 10px 14px 6px; font-size: 10px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.2px; cursor: pointer; background: none; border: none; transition: color 0.2s var(--ease); }
-  .sb-group-header:hover { color: var(--text-secondary); }
-  .chevron-wrap { display: inline-flex; align-items: center; transition: transform 0.25s var(--ease); }
-  .chevron-wrap.rotated { transform: rotate(-90deg); }
-  .sb-group-label { pointer-events: none; }
-  .sb-group-col { display: flex; flex-direction: column; align-items: center; padding: 6px 0; }
-  .sb-group-col:not(:last-child) { border-bottom: 1px solid var(--border-light); margin-bottom: 6px; }
-  .collapsed .sb-group-label-col { display: none; }
-  .sb-group-label-col { font-size: 10px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 6px; pointer-events: none; }
-  .sb-badge { margin-left: auto; background: var(--accent-gradient); color: #fff; font-size: 10px; font-weight: 700; min-width: 18px; height: 18px; border-radius: 9px; display: flex; align-items: center; justify-content: center; padding: 0 5px; line-height: 1; }
+  .ios-sheet-backdrop { position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.4); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); display: flex; align-items: flex-end; justify-content: center; animation: fadeIn 0.25s var(--ease-out); }
+  .ios-sheet { width: 100%; max-width: 420px; max-height: 85vh; background: var(--bg); border-radius: 20px 20px 0 0; display: flex; flex-direction: column; box-shadow: 0 -4px 60px rgba(0,0,0,0.5); overflow: hidden; }
+  .ios-sheet-handle { width: 36px; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); margin: 8px auto 4px; flex-shrink: 0; }
+  .ios-sheet-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px 8px; flex-shrink: 0; }
+  .ios-sheet-title { font-size: 20px; font-weight: 650; color: var(--text); letter-spacing: -0.3px; }
+  .ios-sheet-stats { display: flex; gap: 12px; }
+  .ios-stat { font-size: 12px; font-weight: 600; color: var(--text-secondary); display: flex; align-items: center; gap: 4px; }
+  .ios-sheet-body { flex: 1; overflow-y: auto; padding: 4px 16px 12px; }
+  .ios-section { margin-bottom: 16px; }
+  .ios-section:last-child { margin-bottom: 0; }
+  .ios-section-label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; padding: 8px 12px 6px; display: block; }
+  .ios-row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border-radius: 12px; font-size: 15px; font-weight: 400; color: var(--text); cursor: pointer; background: transparent; transition: all 0.15s var(--ease); border: none; text-align: left; }
+  .ios-row:hover { background: var(--surface); }
+  .ios-row.active { background: var(--accent-subtle); }
+  .ios-row.active .ios-row-icon { color: var(--accent); }
+  .ios-row.active .ios-row-label { font-weight: 500; }
+  .ios-row-icon { color: var(--text-secondary); flex-shrink: 0; }
+  .ios-row-label { flex: 1; }
+  .ios-badge { background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; min-width: 18px; height: 18px; border-radius: 9px; display: flex; align-items: center; justify-content: center; padding: 0 5px; }
+  .ios-sheet-footer { padding: 8px 20px 20px; padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px)); border-top: 0.5px solid var(--border); display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+  .ios-theme-btn { padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 500; color: var(--text-secondary); background: var(--surface); cursor: pointer; transition: all 0.15s var(--ease); border: none; }
+  .ios-theme-btn:hover { color: var(--text); background: var(--surface-hover); }
+  .ios-io { display: flex; gap: 6px; margin-left: auto; }
+  .ios-io-btn { padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 500; color: var(--text-secondary); background: var(--surface); cursor: pointer; transition: all 0.15s var(--ease); border: none; }
+  .ios-io-btn:hover { color: var(--text); background: var(--surface-hover); }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 </style>

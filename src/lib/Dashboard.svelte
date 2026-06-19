@@ -288,63 +288,63 @@
 
 <style>
   .db-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; }
-  .db-config-btn { width: 36px; height: 36px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); background: var(--surface); border: 1px solid var(--border); padding: 0; transition: all 0.2s var(--ease); flex-shrink: 0; margin-top: 4px; }
-  .db-config-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); }
+  .db-config-btn { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); background: transparent; border: 1px solid var(--border); padding: 0; transition: all 0.15s var(--ease); flex-shrink: 0; margin-top: 4px; }
+  .db-config-btn:hover { color: var(--accent); border-color: var(--accent-subtle); }
 
-  .db-config { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px 18px; margin-bottom: 16px; overflow: hidden; }
-  .db-config-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .db-config { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px 16px; margin-bottom: 16px; }
+  .db-config-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
   .db-config-title { font-size: 13px; font-weight: 600; color: var(--text); }
   .db-config-close { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); background: transparent; border: none; transition: all 0.15s var(--ease); }
   .db-config-close:hover { background: var(--surface-hover); color: var(--text); }
-  .db-config-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-  .db-config-chip { display: flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; color: var(--text-secondary); background: var(--bg); border: 1px solid var(--border); cursor: pointer; transition: all 0.15s var(--ease); }
+  .db-config-grid { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
+  .db-config-chip { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; color: var(--text-secondary); background: var(--bg); border: 1px solid var(--border); cursor: pointer; transition: all 0.15s var(--ease); }
   .db-config-chip:hover { border-color: var(--accent-subtle); }
-  .db-config-chip.on { background: var(--accent-subtle); color: var(--accent); border-color: rgba(var(--accent-rgb), 0.2); }
+  .db-config-chip.on { background: var(--accent-subtle); color: var(--accent); border-color: transparent; }
   .db-config-hint { font-size: 11px; color: var(--text-muted); }
 
-  .db-widgets { display: flex; flex-direction: column; gap: 12px; }
-  .db-widget { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; transition: all 0.2s var(--ease); backdrop-filter: blur(var(--glass-blur)); }
-  .db-widget:hover { border-color: var(--accent-subtle); box-shadow: 0 2px 16px rgba(0,0,0,0.15); }
+  .db-widgets { display: flex; flex-direction: column; gap: 10px; }
+  .db-widget { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; transition: all 0.15s var(--ease); }
+  .db-widget:hover { border-color: var(--border); background: var(--surface-hover); }
   .db-widget.dragging { opacity: 0.4; }
-  .db-widget.drag-over { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-subtle); }
+  .db-widget.drag-over { border-color: var(--accent); }
   .db-widget-header { display: flex; align-items: center; gap: 8px; padding: 10px 14px 0; }
   .db-drag { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: grab; color: var(--text-muted); background: transparent; border: none; padding: 0; transition: all 0.15s var(--ease); touch-action: none; }
   .db-drag:hover { background: var(--surface-hover); color: var(--text-secondary); }
   .db-drag:active { cursor: grabbing; }
-  .db-widget-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; }
-  .db-widget-body { padding: 10px 14px 14px; }
+  .db-widget-label { font-size: 10px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; }
+  .db-widget-body { padding: 8px 14px 12px; }
 
-  .db-current-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
-  .db-current-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); flex-shrink: 0; box-shadow: 0 0 0 4px var(--accent-subtle); animation: pulse 2s infinite; }
+  .db-current-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+  .db-current-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; box-shadow: 0 0 0 4px var(--accent-subtle); animation: pulse 2s infinite; }
   .db-current-title { font-size: 15px; font-weight: 500; color: var(--text); flex: 1; }
   .db-current-time { font-size: 12px; color: var(--text-muted); }
   .db-current-empty { font-size: 14px; color: var(--text-secondary); padding: 6px 0; }
-  .empty-link { background: none; border: none; color: var(--accent); cursor: pointer; font-size: inherit; font-weight: 500; padding: 0; text-decoration: underline; text-underline-offset: 2px; }
-  .empty-link:hover { color: var(--accent-hover); }
+  .empty-link { background: none; border: none; color: var(--accent); cursor: pointer; font-size: inherit; font-weight: 500; padding: 0; }
+  .empty-link:hover { opacity: 0.8; }
 
-  .db-quick-row { display: flex; gap: 10px; }
+  .db-quick-row { display: flex; gap: 8px; }
 
-  .db-nav-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .db-nav-btn { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; color: var(--text-secondary); background: var(--bg); border: 1px solid var(--border); cursor: pointer; transition: all 0.2s var(--ease); }
-  .db-nav-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); transform: translateY(-1px); }
+  .db-nav-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .db-nav-btn { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px; border-radius: 10px; font-size: 12px; font-weight: 500; color: var(--text-secondary); background: var(--bg); border: 1px solid var(--border); cursor: pointer; transition: all 0.15s var(--ease); }
+  .db-nav-btn:hover { color: var(--accent); border-color: var(--accent-subtle); background: var(--accent-subtle); }
   .db-nav-btn:active { transform: scale(0.97); }
 
   .db-recent-empty { font-size: 14px; color: var(--text-secondary); padding: 6px 0; }
-  .db-recent-list { display: flex; flex-direction: column; gap: 6px; }
-  .db-recent-item { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border-light); }
+  .db-recent-list { display: flex; flex-direction: column; gap: 4px; }
+  .db-recent-item { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 0.5px solid var(--border-light); }
   .db-recent-item:last-child { border-bottom: none; }
   .db-recent-check { flex-shrink: 0; color: var(--complete); }
   .db-recent-text { flex: 1; font-size: 14px; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .db-recent-date { font-size: 11px; color: var(--text-muted); flex-shrink: 0; }
 
   .db-upcoming-list { display: flex; flex-direction: column; gap: 6px; }
-  .db-upcoming-item { display: flex; align-items: center; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--border-light); }
+  .db-upcoming-item { display: flex; align-items: center; gap: 12px; padding: 6px 0; border-bottom: 0.5px solid var(--border-light); }
   .db-upcoming-item:last-child { border-bottom: none; }
   .db-upcoming-time { font-size: 12px; font-weight: 600; color: var(--text-secondary); font-variant-numeric: tabular-nums; min-width: 44px; }
   .db-upcoming-title { font-size: 14px; color: var(--text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-  .level-bar { width: 100%; height: 3px; background: var(--border); border-radius: 2px; margin-top: 8px; overflow: hidden; }
-  .level-fill { height: 100%; background: var(--accent-gradient); border-radius: 2px; transition: width 0.3s var(--ease); }
+  .level-bar { width: 100%; height: 3px; background: var(--border); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+  .level-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s var(--ease); }
 
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 </style>

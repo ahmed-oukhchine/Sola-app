@@ -1,6 +1,6 @@
 <script>
   import { fly } from "svelte/transition";
-  import { Plus, Check, X, Info, Crosshair, Save } from 'lucide-svelte';
+  import { Plus, Check, X, Info, Crosshair, Save, Star } from 'lucide-svelte';
   import {
     store,
     addTask,
@@ -13,6 +13,7 @@
     toggleExpand,
     reorderTask,
     addTemplate,
+    setHighlight,
   } from "./taskStore.svelte.js";
   let { now, onCompleteTask, onCompleteSubtask, onStartFocus } = $props();
   let todayStr = $derived(new Date().toISOString().split("T")[0]);
@@ -56,6 +57,9 @@
         (!hideCompleted || !t.completed) &&
         t.title.toLowerCase().includes(searchQuery.toLowerCase()),
     ),
+  );
+  let todayHighlight = $derived(
+    todayTasks.find((t) => t.highlight),
   );
   let actionTask = $derived(
     currentTask || nextTask || todayTasks.find((t) => !t.completed),
@@ -302,6 +306,28 @@
     bind:value={searchQuery}
   />
 </div>
+<div class="highlight-section">
+  {#if todayHighlight}
+    <div class="highlight-card">
+      <div class="highlight-star"><Star size={18} strokeWidth={1.5} fill="currentColor" /></div>
+      <div class="highlight-body">
+        <span class="highlight-label">Today's Highlight</span>
+        <span class="highlight-title">{todayHighlight.title}</span>
+      </div>
+      <button
+        class="highlight-unmark"
+        onclick={() => setHighlight('', todayStr)}
+        aria-label="Unmark highlight"
+      ><X size={14} strokeWidth={1.5} /></button>
+    </div>
+  {:else if todayTasks.length > 0}
+    <button class="highlight-pick" onclick={() => {}}>
+      <Star size={14} strokeWidth={1.5} />
+      Pick your main focus
+    </button>
+  {/if}
+</div>
+
 {#if nextAction && actionTask}<div class="next-action-card">
     <div class="na-label">Next action</div>
     <div class="na-title">{actionTask.title}</div>
@@ -562,6 +588,15 @@
                         ? "W"
                         : "7"}</span
                   >{/if}<button
+                  class="tl-star"
+                  class:highlighted={task.highlight}
+                  aria-label="Mark as highlight"
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    setHighlight(task.id, todayStr);
+                  }}
+                  ><Star size={11} strokeWidth={1.5} fill={task.highlight ? 'currentColor' : 'none'} /></button
+                ><button
                   class="tl-focus"
                   aria-label="Focus"
                   onclick={(e) => {
@@ -754,6 +789,15 @@
                         ? "W"
                         : "7"}</span
                   >{/if}<button
+                  class="us-star"
+                  class:highlighted={task.highlight}
+                  aria-label="Mark as highlight"
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    setHighlight(task.id, todayStr);
+                  }}
+                  ><Star size={11} strokeWidth={1.5} fill={task.highlight ? 'currentColor' : 'none'} /></button
+                ><button
                   class="us-focus"
                   aria-label="Focus"
                   onclick={(e) => {
@@ -847,7 +891,6 @@
     color: var(--text);
     box-shadow: var(--shadow-sm);
     border: 1px solid var(--border);
-    backdrop-filter: blur(var(--glass-blur));
   }
   .search-input {
     flex: 1;
@@ -862,7 +905,7 @@
   }
   .search-input:focus {
     border-color: var(--accent);
-    box-shadow: var(--glow);
+    box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12);
   }
   .next-action-card {
     margin: 0 22px 16px;
@@ -874,7 +917,6 @@
     box-shadow: var(--shadow-md);
     flex-shrink: 0;
     animation: fadeIn 0.35s var(--ease-out);
-    backdrop-filter: blur(var(--glass-blur));
   }
   .na-label {
     font-size: 11px;
@@ -1033,40 +1075,38 @@
     padding-right: 10px;
     font-variant-numeric: tabular-nums;
   }
-  .tl-task {
-    position: absolute;
-    left: 52px;
-    right: 2px;
-    background: var(--surface);
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border);
-    box-shadow: var(--shadow-sm);
-    transition:
-      height 0.25s var(--ease),
-      opacity 0.25s var(--ease),
-      box-shadow 0.25s var(--ease);
-    overflow: hidden;
-  }
-  .tl-task:hover {
-    box-shadow: var(--shadow-md);
-    border-color: var(--accent-subtle);
-  }
-  .tl-task.completed {
-    opacity: 0.3;
-  }
-  .tl-task::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    background: var(--accent-gradient);
-    border-radius: 3px 0 0 3px;
-  }
-  .tl-task.completed::before {
-    background: var(--complete);
-  }
+    .tl-task {
+      position: absolute;
+      left: 52px;
+      right: 2px;
+      background: var(--surface);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      transition:
+        height 0.25s var(--ease),
+        opacity 0.25s var(--ease);
+      overflow: hidden;
+    }
+    .tl-task:hover {
+      background: var(--surface-hover);
+      border-color: var(--border);
+    }
+    .tl-task.completed {
+      opacity: 0.35;
+    }
+    .tl-task::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: var(--accent);
+      border-radius: 3px 0 0 3px;
+    }
+    .tl-task.completed::before {
+      background: var(--complete);
+    }
   .tl-main {
     display: flex;
     align-items: flex-start;
@@ -1229,18 +1269,18 @@
     text-transform: uppercase;
     letter-spacing: 1px;
     margin-bottom: 8px;
+    padding: 0 4px;
   }
   .us-task {
     background: var(--surface);
-    border-radius: var(--radius-sm);
+    border-radius: 12px;
     margin-bottom: 8px;
     border: 1px solid var(--border);
-    transition: all 0.2s var(--ease);
+    transition: all 0.15s var(--ease);
     overflow: hidden;
   }
   .us-task:hover {
-    box-shadow: var(--shadow-sm);
-    border-color: var(--accent-subtle);
+    background: var(--surface-hover);
   }
   .us-task.completed {
     opacity: 0.35;
@@ -1427,5 +1467,96 @@
   .us-focus:hover {
     background: var(--accent-subtle);
     color: var(--accent);
+  }
+  .highlight-section {
+    padding: 0 22px 12px;
+    flex-shrink: 0;
+  }
+  .highlight-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: linear-gradient(135deg, rgba(255, 200, 50, 0.12), rgba(255, 160, 50, 0.08));
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(255, 200, 50, 0.2);
+    box-shadow: var(--shadow-md);
+  }
+  .highlight-star {
+    color: #f0b429;
+    flex-shrink: 0;
+    display: flex;
+  }
+  .highlight-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .highlight-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #c8941e;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .highlight-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.3;
+  }
+  .highlight-unmark {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-muted);
+    background: var(--surface);
+    border: none;
+    flex-shrink: 0;
+    transition: all 0.15s var(--ease);
+  }
+  .highlight-unmark:hover {
+    background: var(--danger-bg);
+    color: var(--danger);
+  }
+  .highlight-pick {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    width: 100%;
+    border-radius: var(--radius-md);
+    border: 1px dashed var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s var(--ease);
+  }
+  .highlight-pick:hover {
+    border-color: var(--accent-subtle);
+    color: var(--accent);
+    background: var(--accent-subtle);
+  }
+  .tl-star, .us-star {
+    width: 26px; height: 26px; border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text-muted); flex-shrink: 0;
+    background: transparent; padding: 0;
+    transition: all 0.15s var(--ease);
+  }
+  .tl-star:hover, .us-star:hover {
+    background: rgba(240, 180, 41, 0.1);
+    color: #f0b429;
+  }
+  .tl-star.highlighted, .us-star.highlighted {
+    color: #f0b429;
   }
 </style>

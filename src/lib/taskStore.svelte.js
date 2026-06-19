@@ -109,6 +109,7 @@ export function addTask(title, startTime = '', endTime = '', energy = null, repe
     tags: tagsList,
     estimatedMinutes,
     order: maxOrder + 1,
+    highlight: false,
     createdAt: Date.now()
   }
   store.tasks.push(task)
@@ -135,6 +136,14 @@ export function updateTask(id, fields) {
     t.unscheduled = !t.startTime
     persist()
   }
+}
+
+export function setHighlight(taskId, dateStr) {
+  const todayTasks = store.tasks.filter(t => t.date === dateStr)
+  for (const t of todayTasks) {
+    t.highlight = t.id === taskId
+  }
+  persist()
 }
 
 export function removeTask(id) {
@@ -574,6 +583,14 @@ export function loadPoints() { return _points }
 export function savePoints(p) {
   _points = p
   try { localStorage.setItem(KEYS.points, String(p)) } catch {}
+}
+
+export function getLevel(points) {
+  return Math.max(1, Math.floor(Math.sqrt(points / 100)) + 1)
+}
+
+export function getXpForNextLevel(level) {
+  return level <= 0 ? 0 : Math.pow(level, 2) * 100
 }
 
 // --- Streak ---

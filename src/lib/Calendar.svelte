@@ -429,7 +429,7 @@
   .cal-cell { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 10px; cursor: pointer; background: transparent; border: 1px solid transparent; transition: all 0.15s var(--ease); gap: 2px; position: relative; min-height: 0; padding: 0; overflow: visible; animation: cellEnter 0.35s var(--ease) both; animation-delay: calc(var(--i, 0) * 12ms); }
   .cal-cell:hover { background: var(--surface-hover); }
   .cal-cell.weekend { opacity: 0.65; }
-  .cal-cell.today { border-color: rgba(var(--accent-rgb), 0.35); background: rgba(var(--accent-rgb), 0.04); }
+  .cal-cell.today { border-color: rgba(var(--accent-rgb), 0.35); background: rgba(var(--accent-rgb), 0.12); }
   .cal-cell.sel { background: var(--accent-gradient); border-color: transparent; box-shadow: var(--accent-glow); animation: selPulse 2.5s var(--ease) infinite; }
   .cal-cell.sel .cal-num { color: #fff; font-weight: 600; }
   .cal-cell.overdue { box-shadow: 0 0 0 1px rgba(220, 100, 80, 0.3), 0 0 12px rgba(220, 100, 80, 0.08); }

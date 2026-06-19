@@ -214,7 +214,6 @@
     background: var(--surface); border-radius: var(--radius-lg);
     border: 1px solid var(--border); padding: 20px;
     transition: all 0.25s var(--ease);
-    backdrop-filter: blur(var(--glass-blur));
     position: relative; overflow: hidden;
   }
   .habit-card:hover { border-color: var(--accent-subtle); box-shadow: var(--shadow-md); }

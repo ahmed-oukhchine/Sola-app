@@ -2,6 +2,8 @@
   import { fade, fly } from 'svelte/transition'
   import { onMount } from 'svelte'
   import Sidebar from './lib/Sidebar.svelte'
+  import DesktopSidebar from './lib/DesktopSidebar.svelte'
+  import RightPanel from './lib/RightPanel.svelte'
   import Dashboard from './lib/Dashboard.svelte'
   import CalendarView from './lib/Calendar.svelte'
   import GoalsView from './lib/Goals.svelte'
@@ -21,12 +23,13 @@
   import Onboarding from './lib/Onboarding.svelte'
   import Account from './lib/Account.svelte'
   import { store, someday, addTask, loadAll, exportData, importData, loadPoints, savePoints, computeStreak, requestPermission, scheduleAll, removeTask } from './lib/taskStore.svelte.js'
-  import { Menu, Search, CalendarDays, Sunrise, Plus, CircleCheckBig, Download, Star, Flame } from 'lucide-svelte'
-  import Toast from './lib/Toast.svelte'
+  import { Menu, Search, CalendarDays, Sunrise, Plus, CircleCheckBig, Download, Star, Flame, Sparkles, Monitor } from 'lucide-svelte'
+import Toast from './lib/Toast.svelte'
+import LockScreen from './lib/LockScreen.svelte'
+import DopamineMenu from './lib/DopamineMenu.svelte'
 
   let activeView = $state('dashboard')
   let sidebarOpen = $state(false)
-  let sidebarCollapsed = $state(JSON.parse(localStorage.getItem('focus-sidebar-collapsed') || 'false'))
   let now = $state(new Date())
   let points = $state(loadPoints())
   let streak = $state(computeStreak())
@@ -63,6 +66,8 @@
   const IDLE_TIMEOUT = 5 * 60 * 1000
   let lastActivity = $state(Date.now())
   let showLock = $state(false)
+  let showDopamine = $state(false)
+  let isDesktop = $state(false)
 
   function refreshActivity() {
     lastActivity = Date.now()
@@ -189,11 +194,6 @@
     }
   }
 
-  function toggleSidebarCollapse() {
-    sidebarCollapsed = !sidebarCollapsed
-    localStorage.setItem('focus-sidebar-collapsed', JSON.stringify(sidebarCollapsed))
-  }
-
   function addPoints(amt) {
     points += amt
     savePoints(points)
@@ -250,7 +250,9 @@
     await loadAll()
     points = loadPoints()
     streak = computeStreak()
-    try { const { SplashScreen } = await import('@capacitor/splash-screen'); SplashScreen.hide() } catch {}
+    const dq = window.matchMedia('(min-width: 1280px)')
+    isDesktop = dq.matches
+    dq.addEventListener('change', (e) => { isDesktop = e.matches })
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
     systemDark = mq.matches
     mq.addEventListener('change', (e) => { systemDark = e.matches; applyEffectiveTheme() })
@@ -273,20 +275,6 @@
     const evts = ['mousedown', 'mousemove', 'touchstart', 'touchmove', 'keydown', 'scroll', 'wheel']
     for (const evt of evts) document.addEventListener(evt, refreshActivity, { passive: true })
     window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstall = e; setTimeout(() => deferredInstall = null, 30000) })
-    try {
-      const { App } = await import('@capacitor/app')
-      App.addListener('backButton', () => {
-        if (showLock || showOnboarding || showAccount) return
-        if (sidebarOpen) { sidebarOpen = false; return }
-        if (showSearch) { showSearch = false; return }
-        if (showMorning) { showMorning = false; return }
-        if (showEvening) { showEvening = false; return }
-        if (showWeeklyReview) { showWeeklyReview = false; return }
-        if (showBackupReminder) { showBackupReminder = false; return }
-        if (activeView !== 'dashboard') { activeView = 'dashboard'; return }
-        App.exitApp()
-      })
-    } catch {}
     return () => {
       document.removeEventListener('keydown', handleKeydown)
       for (const evt of evts) document.removeEventListener(evt, refreshActivity)
@@ -376,45 +364,73 @@
   <LockScreen username={userName} onUnlock={() => { refreshActivity(); handleUnlock(userName) }} />
 {/if}
 
-<Sidebar open={sidebarOpen} {activeView} {streak} {points} {theme} {effectiveTheme} collapsed={sidebarCollapsed} onNavigate={(v) => activeView = v} onClose={() => sidebarOpen = false} onThemeCycle={cycleTheme} onCollapse={toggleSidebarCollapse} onExport={handleExport} onImport={handleImport} {inboxCount} {somedayCount} />
-<div class="app">
-  <header class="header">
-    <button class="hamburger" onclick={() => sidebarOpen = true} aria-label="Menu">
-        <Menu size={20} strokeWidth={1.5} />
-    </button>
-    <h1 class="logo">Sola</h1>
-    <div class="header-actions">
-      {#if deferredInstall}
-        <button class="install-btn" onclick={handleInstall} title="Install app">
-          <Download size={14} strokeWidth={1.5} />
+{#if !isDesktop}
+  <Sidebar open={sidebarOpen} {activeView} {streak} {points} {theme} {effectiveTheme} onNavigate={(v) => activeView = v} onClose={() => sidebarOpen = false} onThemeCycle={cycleTheme} onExport={handleExport} onImport={handleImport} {inboxCount} {somedayCount} />
+{/if}
+
+<div class="app-layout">
+  {#if isDesktop}
+    <DesktopSidebar {activeView} {streak} {points} {theme} {effectiveTheme} onNavigate={(v) => activeView = v} onThemeCycle={cycleTheme} onExport={handleExport} onImport={handleImport} {inboxCount} {somedayCount} onOpenSearch={() => showSearch = true} />
+  {/if}
+
+  <div class="app-main">
+    <header class="header" class:desktop={isDesktop}>
+      {#if !isDesktop}
+        <button class="hamburger" onclick={() => sidebarOpen = true} aria-label="Menu">
+          <Menu size={20} strokeWidth={1.5} />
+        </button>
+      {:else}
+        <button class="hamburger desktop-ham" onclick={() => activeView = 'dashboard'} aria-label="Home">
+          <Monitor size={18} strokeWidth={1.5} />
         </button>
       {/if}
-      <button class="header-search-btn" onclick={() => showSearch = true} aria-label="Search (Ctrl+K)">
-        <Search size={16} strokeWidth={1.5} />
-      </button>
-      <span class="points-badge"><Star size={14} strokeWidth={1.5} /> {points}</span>
-      <span class="date">{dayStr}</span>
-    </div>
-  </header>
+      <h1 class="logo">Sola</h1>
+      <div class="header-actions">
+        {#if deferredInstall && !isDesktop}
+          <button class="install-btn" onclick={handleInstall} title="Install app">
+            <Download size={14} strokeWidth={1.5} />
+          </button>
+        {/if}
+        <button class="header-search-btn" onclick={() => showSearch = true} aria-label="Search (Ctrl+K)">
+          <Search size={16} strokeWidth={1.5} />
+        </button>
+        <span class="points-badge"><Star size={14} strokeWidth={1.5} /> {points}</span>
+        <button class="dm-btn" onclick={() => showDopamine = true} aria-label="Dopamine menu">
+          <Sparkles size={16} strokeWidth={1.5} />
+        </button>
+        {#if !isDesktop}
+          <span class="date">{dayStr}</span>
+        {/if}
+      </div>
+    </header>
 
-  {#if activeView === 'dashboard'}<div in:fade={{ duration: 200 }} class="view-wrap"><Dashboard onNavigate={(v) => activeView = v} /></div>{/if}
-  {#if activeView === 'calendar'}<div in:fade={{ duration: 200 }} class="view-wrap"><CalendarView /></div>{/if}
-  {#if activeView === 'goals'}<div in:fade={{ duration: 200 }} class="view-wrap"><GoalsView /></div>{/if}
-  {#if activeView === 'kanban'}<div in:fade={{ duration: 200 }} class="view-wrap"><KanbanView /></div>{/if}
-  {#if activeView === 'settings'}<div in:fade={{ duration: 200 }} class="view-wrap"><SettingsView {theme} {effectiveTheme} onThemeCycle={cycleTheme} {accentColor} onAccentChange={setAccent} {autoThemeTime} onAutoThemeChange={(t) => autoThemeTime = t} /></div>{/if}
-  {#if activeView === 'habits'}<div in:fade={{ duration: 200 }} class="view-wrap"><HabitsView /></div>{/if}
-  {#if activeView === 'tags'}<div in:fade={{ duration: 200 }} class="view-wrap"><TagsView /></div>{/if}
-  {#if activeView === 'today'}<div in:fade={{ duration: 200 }} class="view-wrap"><TodayView {now} onCompleteTask={onCompleteTask} onCompleteSubtask={onCompleteSubtask} onStartFocus={(id) => { focusTaskId = id; activeView = 'focus' }} /></div>{/if}
-  {#if activeView === 'inbox'}<div in:fade={{ duration: 200 }} class="view-wrap"><InboxView /></div>{/if}
-  {#if activeView === 'focus'}<div in:fade={{ duration: 200 }} class="view-wrap"><FocusView taskId={focusTaskId} onClearTask={() => focusTaskId = null} /></div>{/if}
-  {#if activeView === 'templates'}<div in:fade={{ duration: 200 }} class="view-wrap"><TemplatesView /></div>{/if}
-  {#if activeView === 'routines'}<div in:fade={{ duration: 200 }} class="view-wrap"><RoutinesView /></div>{/if}
-  {#if activeView === 'someday'}<div in:fade={{ duration: 200 }} class="view-wrap"><SomedayView /></div>{/if}
-  {#if activeView === 'life-courses'}<div in:fade={{ duration: 200 }} class="view-wrap"><LifeCoursesView /></div>{/if}
-  {#if activeView === 'stats'}<div in:fade={{ duration: 200 }} class="view-wrap"><StatsView {points} {streak} {completedCount} todayTotal={todayTasks.length} {completionRate} {recentCompletions} /></div>{/if}
+    <div class="app-content">
+      {#if activeView === 'dashboard'}<div in:fade={{ duration: 200 }} class="view-wrap"><Dashboard onNavigate={(v) => activeView = v} /></div>{/if}
+      {#if activeView === 'calendar'}<div in:fade={{ duration: 200 }} class="view-wrap"><CalendarView /></div>{/if}
+      {#if activeView === 'goals'}<div in:fade={{ duration: 200 }} class="view-wrap"><GoalsView /></div>{/if}
+      {#if activeView === 'kanban'}<div in:fade={{ duration: 200 }} class="view-wrap"><KanbanView /></div>{/if}
+      {#if activeView === 'settings'}<div in:fade={{ duration: 200 }} class="view-wrap"><SettingsView {theme} {effectiveTheme} onThemeCycle={cycleTheme} {accentColor} onAccentChange={setAccent} {autoThemeTime} onAutoThemeChange={(t) => autoThemeTime = t} /></div>{/if}
+      {#if activeView === 'habits'}<div in:fade={{ duration: 200 }} class="view-wrap"><HabitsView /></div>{/if}
+      {#if activeView === 'tags'}<div in:fade={{ duration: 200 }} class="view-wrap"><TagsView /></div>{/if}
+      {#if activeView === 'today'}<div in:fade={{ duration: 200 }} class="view-wrap"><TodayView {now} onCompleteTask={onCompleteTask} onCompleteSubtask={onCompleteSubtask} onStartFocus={(id) => { focusTaskId = id; activeView = 'focus' }} /></div>{/if}
+      {#if activeView === 'inbox'}<div in:fade={{ duration: 200 }} class="view-wrap"><InboxView /></div>{/if}
+      {#if activeView === 'focus'}<div in:fade={{ duration: 200 }} class="view-wrap"><FocusView taskId={focusTaskId} onClearTask={() => focusTaskId = null} /></div>{/if}
+      {#if activeView === 'templates'}<div in:fade={{ duration: 200 }} class="view-wrap"><TemplatesView /></div>{/if}
+      {#if activeView === 'routines'}<div in:fade={{ duration: 200 }} class="view-wrap"><RoutinesView /></div>{/if}
+      {#if activeView === 'someday'}<div in:fade={{ duration: 200 }} class="view-wrap"><SomedayView /></div>{/if}
+      {#if activeView === 'life-courses'}<div in:fade={{ duration: 200 }} class="view-wrap"><LifeCoursesView /></div>{/if}
+      {#if activeView === 'stats'}<div in:fade={{ duration: 200 }} class="view-wrap"><StatsView {points} {streak} {completedCount} todayTotal={todayTasks.length} {completionRate} {recentCompletions} /></div>{/if}
+    </div>
+  </div>
+
+  {#if isDesktop}
+    <RightPanel {activeView} {points} {streak} {now} {todayTasks} {completedCount} onNavigate={(v) => activeView = v} onStartFocus={(id) => { focusTaskId = id; activeView = 'focus' }} onOpenDopamine={() => showDopamine = true} />
+  {/if}
 </div>
 
 <SearchModal open={showSearch} onClose={() => showSearch = false} onNavigate={(v) => activeView = v} />
+
+<DopamineMenu open={showDopamine} onClose={() => showDopamine = false} />
 
 {#if showWeeklyReview && weeklyReviewData}
   <div class="ritual-overlay" out:fade={{ duration: 200 }} onclick={dismissWeeklyReview} role="dialog">
@@ -496,20 +512,38 @@
 <Toast {toasts} onDismiss={dismissToast} onUndo={handleUndo} />
 
 <style>
-  .app { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+  .app-layout { display: flex; flex: 1; min-height: 0; height: 100%; }
+  .app-main { display: flex; flex-direction: column; flex: 1; min-width: 0; overflow: hidden; }
+  .app-content { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
   .view-wrap { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-  .header { display: flex; align-items: center; gap: 10px; padding: 16px 20px 10px; padding-top: calc(16px + env(safe-area-inset-top, 0px)); flex-shrink: 0; position: relative; }
-  .header::after { content: ''; position: absolute; bottom: 0; left: 16px; right: 16px; height: 1px; background: linear-gradient(90deg, transparent, var(--border), rgba(var(--accent-rgb), 0.15), var(--border), transparent); }
-  .hamburger { width: 38px; height: 38px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); background: var(--surface); border: 1px solid var(--border); padding: 0; transition: all 0.2s var(--ease); flex-shrink: 0; backdrop-filter: blur(var(--glass-blur)); }
-  .hamburger:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); }
+  .header { display: flex; align-items: center; gap: 8px; padding: 12px 20px 10px; padding-top: calc(12px + env(safe-area-inset-top, 0px)); flex-shrink: 0; position: relative; }
+  .header.desktop { padding: 10px 20px; padding-top: calc(10px + env(safe-area-inset-top, 0px)); }
+  .header::after { content: ''; position: absolute; bottom: 0; left: 16px; right: 16px; height: 0.5px; background: var(--border); }
+  .header.desktop::after { left: 0; right: 0; }
+  .desktop-ham { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); background: transparent; padding: 0; transition: all 0.15s var(--ease); flex-shrink: 0; }
+  .desktop-ham:hover { color: var(--text); background: var(--surface); }
+  .hamburger { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); background: transparent; padding: 0; transition: all 0.2s var(--ease); flex-shrink: 0; }
+  .hamburger:hover { color: var(--text); background: var(--surface); }
   .hamburger:active { transform: scale(0.92); }
-  .logo { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; color: var(--text); flex: 1; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-  .header-actions { display: flex; align-items: center; gap: 8px; }
-  .points-badge { font-size: 12px; font-weight: 600; color: var(--accent); background: var(--accent-subtle); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(var(--accent-rgb), 0.15); display: flex; align-items: center; gap: 4px; }
-  .header-search-btn { width: 34px; height: 34px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); background: var(--surface); border: 1px solid var(--border); padding: 0; transition: all 0.15s var(--ease); flex-shrink: 0; }
-  .header-search-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); }
-  .install-btn { width: 34px; height: 34px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--complete); background: rgba(138,154,122,0.1); border: 1px solid rgba(138,154,122,0.25); padding: 0; transition: all 0.15s var(--ease); flex-shrink: 0; }
-  .install-btn:hover { background: rgba(138,154,122,0.2); border-color: var(--complete); }
+  .logo { font-size: 20px; font-weight: 650; letter-spacing: -0.3px; color: var(--text); flex: 1; }
+  .header-actions { display: flex; align-items: center; gap: 6px; }
+  .points-badge { font-size: 11px; font-weight: 600; color: var(--accent); background: var(--accent-subtle); padding: 4px 10px; border-radius: 20px; display: flex; align-items: center; gap: 4px; }
+  .header-search-btn { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); background: transparent; border: none; padding: 0; transition: all 0.15s var(--ease); flex-shrink: 0; }
+  .header-search-btn:hover { color: var(--text); background: var(--surface); }
+  .install-btn { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--complete); background: transparent; border: none; padding: 0; transition: all 0.15s var(--ease); flex-shrink: 0; }
+  .install-btn:hover { background: rgba(122,154,106,0.1); }
+  .dm-btn { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--accent); background: transparent; border: none; padding: 0; transition: all 0.15s var(--ease); flex-shrink: 0; }
+  .dm-btn:hover { background: var(--accent-subtle); }
+
+  @media (max-width: 1279px) {
+    .app-layout { flex-direction: column; }
+    .app-main { height: 100%; }
+  }
+
+  @media (min-width: 1280px) {
+    .app-layout { height: 100vh; }
+    .app-main { border-left: 0.5px solid var(--border); border-right: 0.5px solid var(--border); }
+  }
   .review-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 16px 22px; }
   .review-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px; text-align: center; }
   .review-num { display: block; font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
@@ -522,7 +556,7 @@
   .ritual-stat { font-size: 13px; color: var(--text-secondary); margin-left: auto; }
   .ritual-body { display: flex; gap: 8px; padding: 14px 22px; }
   .ritual-input { flex: 1; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--text); font-size: 15px; outline: none; }
-  .ritual-input:focus { border-color: var(--accent); box-shadow: var(--glow); }
+  .ritual-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12); }
   .ritual-add-btn { width: 40px; height: 40px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; background: var(--accent-gradient); color: #fff; border: none; cursor: pointer; flex-shrink: 0; box-shadow: var(--accent-glow); }
   .ritual-add-btn:hover { box-shadow: 0 0 30px rgba(var(--accent-rgb), 0.25); }
   .ritual-add-btn:disabled { opacity: 0.25; box-shadow: none; }

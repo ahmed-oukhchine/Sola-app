@@ -1,6 +1,6 @@
 <script>
   import { fade } from 'svelte/transition'
-  import { Play, Pause, RotateCcw, PlusCircle, X, Timer, PartyPopper } from 'lucide-svelte';
+  import { Play, Pause, PlusCircle, X, Timer, PartyPopper, UserRound } from 'lucide-svelte';
   import { store, logFocusSession } from './taskStore.svelte.js'
   const PRESETS = [5, 15, 25, 45]
   let timerMinutes = $state(25), timerRemaining = $state(25 * 60)
@@ -197,6 +197,16 @@
   function resetTimer() { timerRunning = false; timerPaused = false; clearInterval(tickInterval); tickInterval = null; timerRemaining = timerMinutes * 60; stopSound() }
 
   $effect(() => () => { if (tickInterval) clearInterval(tickInterval); stopSound() })
+
+  // --- Body Double ---
+  let showBodyDouble = $state(false)
+  const bdMessages = ['Right here with you', 'You can do this', 'One step at a time', 'Stay with it', 'Almost there', 'You got this', 'Keep going', 'Breathe and focus']
+  let bdIndex = $state(0)
+  $effect(() => {
+    if (!showBodyDouble || !timerRunning) return
+    const interval = setInterval(() => { bdIndex = (bdIndex + 1) % bdMessages.length }, 8000)
+    return () => clearInterval(interval)
+  })
 </script>
 
 <main class="focus-view">
@@ -267,6 +277,26 @@
       <Timer size={14} strokeWidth={1.5} />
     <span>{pomodoroActive ? `${pomodoroSession} ${pomodoroCount > 0 ? `(${pomodoroCount})` : ''}` : 'Pomodoro'}</span>
   </button>
+
+  <button class="bd-toggle" class:active={showBodyDouble} onclick={() => showBodyDouble = !showBodyDouble}>
+    <UserRound size={14} strokeWidth={1.5} />
+    <span>{showBodyDouble ? 'Double on' : 'Body double'}</span>
+  </button>
+
+  {#if showBodyDouble}
+    <div class="bd-card" transition:fade={{ duration: 300 }}>
+      <div class="bd-avatar">
+        <UserRound size={28} strokeWidth={1.5} />
+      </div>
+      <div class="bd-info">
+        <span class="bd-name">Your focus partner</span>
+        <span class="bd-message">{bdMessages[bdIndex]}</span>
+      </div>
+      <div class="bd-status">
+        <span class="bd-dot"></span>
+      </div>
+    </div>
+  {/if}
 </main>
 
 {#if showCelebration}
@@ -281,42 +311,53 @@
 
 <style>
   .focus-view { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; gap: 14px; position: relative; }
-  .time-timer { width: 260px; height: 260px; overflow: visible; margin-top: 10px; }
-  .tt-bg { fill: none; stroke: rgba(255,255,255,0.04); stroke-width: 10px; }
-  .tt-fill { fill: none; stroke: var(--accent); stroke-width: 10px; stroke-linecap: round; transition: stroke-dashoffset 0.4s var(--ease); filter: drop-shadow(0 0 20px rgba(var(--accent-rgb), 0.2)); }
-  .tt-digits { font-size: 56px; font-weight: 650; fill: var(--text); font-variant-numeric: tabular-nums; letter-spacing: 2px; }
-  .tt-label { font-size: 13px; fill: var(--text-muted); font-weight: 500; letter-spacing: 2px; text-transform: uppercase; }
-  .sound-indicator { font-size: 11px; color: var(--accent); font-weight: 500; letter-spacing: 0.5px; }
-  .sound-row { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
-  .sound-btn { padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 500; color: var(--text-secondary); background: var(--glass-bg); border: 1px solid var(--glass-border); cursor: pointer; transition: all 0.2s var(--ease); backdrop-filter: blur(var(--glass-blur)); }
-  .sound-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); }
-  .sound-btn.active { background: var(--accent-gradient); color: #fff; border-color: transparent; box-shadow: var(--accent-glow); }
-  .sound-btn:disabled { opacity: 0.2; cursor: default; }
+  .time-timer { width: 240px; height: 240px; overflow: visible; margin-top: 10px; }
+  .tt-bg { fill: none; stroke: rgba(255,255,255,0.08); stroke-width: 8px; }
+  .tt-fill { fill: none; stroke: var(--accent); stroke-width: 8px; stroke-linecap: round; transition: stroke-dashoffset 0.5s var(--ease-out); filter: drop-shadow(0 0 24px rgba(var(--accent-rgb), 0.15)); }
+  .tt-digits { font-size: 52px; font-weight: 600; fill: var(--text); font-variant-numeric: tabular-nums; letter-spacing: 2px; }
+  .tt-label { font-size: 11px; fill: var(--text-muted); font-weight: 500; letter-spacing: 2px; text-transform: uppercase; }
+  .sound-indicator { font-size: 11px; color: var(--accent); font-weight: 500; letter-spacing: 0.3px; }
+  .sound-row { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; }
+  .sound-btn { padding: 6px 14px; border-radius: 20px; font-size: 11px; font-weight: 500; color: var(--text-secondary); background: var(--surface); border: 1px solid var(--border); cursor: pointer; transition: all 0.2s var(--ease); }
+  .sound-btn:hover { border-color: var(--accent-subtle); color: var(--accent); }
+  .sound-btn.active { background: var(--accent); color: #fff; border-color: transparent; }
+  .sound-btn:disabled { opacity: 0.35; cursor: default; }
   .presets { display: flex; gap: 8px; }
-  .preset-btn { width: 50px; height: 50px; border-radius: 50%; font-size: 13px; font-weight: 600; color: var(--text-secondary); background: var(--glass-bg); border: 1px solid var(--glass-border); cursor: pointer; transition: all 0.25s var(--ease); backdrop-filter: blur(var(--glass-blur)); }
-  .preset-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
-  .preset-btn.active { background: var(--accent-gradient); color: #fff; border-color: transparent; box-shadow: var(--accent-glow); }
-  .preset-btn:disabled { opacity: 0.2; cursor: default; }
-  .focus-controls { display: flex; gap: 12px; align-items: center; }
-  .focus-btn { padding: 14px 32px; border-radius: 50px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.25s var(--ease); display: flex; align-items: center; gap: 8px; }
-  .focus-btn.primary { background: var(--accent-gradient); color: #fff; border: none; box-shadow: var(--accent-glow); }
-  .focus-btn.primary:hover { box-shadow: 0 0 60px rgba(var(--accent-rgb), 0.3); transform: translateY(-2px); }
+  .preset-btn { width: 46px; height: 46px; border-radius: 50%; font-size: 12px; font-weight: 600; color: var(--text-secondary); background: var(--surface); border: 1px solid var(--border); cursor: pointer; transition: all 0.2s var(--ease); }
+  .preset-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .preset-btn.active { background: var(--accent); color: #fff; border-color: transparent; }
+  .preset-btn:disabled { opacity: 0.35; cursor: default; }
+  .focus-controls { display: flex; gap: 10px; align-items: center; }
+  .focus-btn { padding: 12px 28px; border-radius: 50px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s var(--ease); display: flex; align-items: center; gap: 6px; }
+  .focus-btn.primary { background: var(--accent); color: #fff; border: none; }
+  .focus-btn.primary:hover { filter: brightness(1.15); }
   .focus-btn.primary:active { transform: scale(0.97); }
-  .focus-btn.primary:disabled { opacity: 0.2; cursor: default; box-shadow: none; transform: none; }
-  .focus-btn.secondary { width: 48px; height: 48px; border-radius: 50%; background: var(--surface); color: var(--text); border: 1px solid var(--border); justify-content: center; }
-  .focus-btn.secondary:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); transform: translateY(-2px); }
-  .pomo-btn { display: flex; align-items: center; gap: 6px; padding: 8px 20px; border-radius: 20px; font-size: 12px; font-weight: 500; color: var(--text-secondary); background: var(--glass-bg); border: 1px solid var(--glass-border); cursor: pointer; transition: all 0.2s var(--ease); backdrop-filter: blur(var(--glass-blur)); }
-  .pomo-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); }
+  .focus-btn.primary:disabled { opacity: 0.2; cursor: default; }
+  .focus-btn.secondary { width: 44px; height: 44px; border-radius: 50%; background: var(--surface); color: var(--text); border: 1px solid var(--border); justify-content: center; }
+  .focus-btn.secondary:hover { border-color: var(--accent); color: var(--accent); }
+  .pomo-btn { display: flex; align-items: center; gap: 6px; padding: 6px 16px; border-radius: 20px; font-size: 11px; font-weight: 500; color: var(--text-secondary); background: var(--surface); border: 1px solid var(--border); cursor: pointer; transition: all 0.2s var(--ease); }
+  .pomo-btn:hover { border-color: var(--accent-subtle); color: var(--accent); }
   .pomo-btn.active { background: var(--accent-subtle); border-color: var(--accent); color: var(--accent); }
-  .focus-task-badge { display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 50px; max-width: 80%; backdrop-filter: blur(var(--glass-blur)); }
-  .focus-task-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
-  .focus-task-title { font-size: 13px; color: var(--text); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .focus-task-clear { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); background: transparent; border: none; padding: 0; flex-shrink: 0; transition: all 0.2s var(--ease); }
+  .bd-toggle { display: flex; align-items: center; gap: 6px; padding: 6px 16px; border-radius: 20px; font-size: 11px; font-weight: 500; color: var(--text-secondary); background: var(--surface); border: 1px solid var(--border); cursor: pointer; transition: all 0.2s var(--ease); }
+  .bd-toggle:hover { border-color: var(--accent-subtle); color: var(--accent); }
+  .bd-toggle.active { background: var(--accent-subtle); border-color: var(--accent); color: var(--accent); }
+  .bd-card { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); width: 100%; max-width: 300px; }
+  .bd-avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--accent-subtle); display: flex; align-items: center; justify-content: center; color: var(--accent); flex-shrink: 0; }
+  .bd-info { flex: 1; display: flex; flex-direction: column; gap: 1px; }
+  .bd-name { font-size: 13px; font-weight: 500; color: var(--text); }
+  .bd-message { font-size: 11px; color: var(--text-secondary); font-style: italic; }
+  .bd-status { display: flex; align-items: center; }
+  .bd-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--complete); animation: pulse-dot 2s ease-in-out infinite; }
+  @keyframes pulse-dot { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+  .focus-task-badge { display: flex; align-items: center; gap: 6px; padding: 6px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 50px; max-width: 80%; }
+  .focus-task-label { font-size: 9px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+  .focus-task-title { font-size: 12px; color: var(--text); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .focus-task-clear { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); background: transparent; border: none; padding: 0; flex-shrink: 0; transition: all 0.2s var(--ease); }
   .focus-task-clear:hover { background: var(--danger-bg); color: var(--danger); }
-  .celebration-overlay { position: fixed; inset: 0; z-index: 300; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); animation: fadeIn 0.3s ease; }
-  .celebration-card { background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border); padding: 40px 48px; text-align: center; animation: scaleIn 0.35s var(--ease-spring); box-shadow: 0 0 80px rgba(var(--accent-rgb), 0.15); }
-  .celebration-title { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
-  .celebration-sub { font-size: 14px; color: var(--text-secondary); }
+  .celebration-overlay { position: fixed; inset: 0; z-index: 300; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); backdrop-filter: blur(16px); animation: fadeIn 0.2s var(--ease-out); }
+  .celebration-card { background: var(--bg); border-radius: var(--radius-xl); border: 1px solid var(--border); padding: 36px 44px; text-align: center; animation: scaleIn 0.35s var(--ease-spring); }
+  .celebration-title { font-size: 20px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .celebration-sub { font-size: 13px; color: var(--text-secondary); }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   @keyframes scaleIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 </style>

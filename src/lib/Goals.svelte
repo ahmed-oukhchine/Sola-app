@@ -112,7 +112,7 @@
   .goal-form-row { display: flex; gap: 10px; margin-top: 8px; }
   .goal-num { max-width: 120px; }
   .goal-list { display: flex; flex-direction: column; gap: 12px; }
-  .goal-card { background: var(--surface); border-radius: var(--radius-md); border: 1px solid var(--border); padding: 18px 20px; transition: all 0.2s var(--ease); backdrop-filter: blur(var(--glass-blur)); }
+  .goal-card { background: var(--surface); border-radius: var(--radius-md); border: 1px solid var(--border); padding: 18px 20px; transition: all 0.2s var(--ease); }
   .goal-card:hover { box-shadow: var(--shadow-sm); border-color: var(--accent-subtle); }
   .goal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
   .goal-title { font-size: 17px; font-weight: 600; color: var(--text); }

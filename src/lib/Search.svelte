@@ -57,21 +57,15 @@
         </div>
       {:else if query && results.length === 0}
         <div class="search-empty">No results found</div>
-      {:else}
-        <div class="search-hints">
-          <div class="hint"><kbd>↑</kbd><kbd>↓</kbd> Navigate</div>
-          <div class="hint"><kbd>Enter</kbd> Open</div>
-          <div class="hint"><kbd>Esc</kbd> Close</div>
-        </div>
       {/if}
     </div>
   </div>
 {/if}
 
 <style>
-  .search-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: flex-start; justify-content: center; padding: 80px 24px; z-index: 200; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+  .search-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; padding: 24px; z-index: 200; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
   .search-modal { background: var(--glass-bg); backdrop-filter: blur(var(--glass-blur)); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); width: 100%; max-width: 520px; box-shadow: var(--shadow-xl); overflow: hidden; animation: scaleIn 0.2s var(--ease-out); }
-  .search-input-row { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--glass-border); }
+  .search-input-row { display: flex; align-items: center; gap: 12px; padding: 16px 20px; }
   .search-input { flex: 1; border: none; background: transparent; color: var(--text); font-size: 16px; outline: none; }
   .search-input::placeholder { color: var(--text-muted); }
   .search-icon { flex-shrink: 0; color: var(--text-muted); }
@@ -85,7 +79,4 @@
   .sr-title { font-size: 14px; font-weight: 500; color: var(--text); }
   .sr-sub { font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .search-empty { padding: 40px 20px; text-align: center; color: var(--text-muted); font-size: 14px; }
-  .search-hints { display: flex; gap: 16px; justify-content: center; padding: 14px 20px; }
-  .hint { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
-  .hint kbd { background: var(--surface-raised); border: 1px solid var(--border); border-radius: 6px; padding: 2px 8px; font-size: 11px; font-family: inherit; color: var(--text-secondary); }
 </style>

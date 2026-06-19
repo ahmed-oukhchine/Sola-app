@@ -85,7 +85,7 @@
 <style>
   .routine-add-row { display: flex; gap: 10px; margin-bottom: 20px; }
   .routine-type-heading { font-size: 16px; font-weight: 600; color: var(--text); margin: 16px 0 10px; }
-  .routine-card { background: var(--surface); border-radius: var(--radius-md); border: 1px solid var(--border); margin-bottom: 12px; padding: 18px 20px; transition: all 0.2s var(--ease); backdrop-filter: blur(var(--glass-blur)); }
+  .routine-card { background: var(--surface); border-radius: var(--radius-md); border: 1px solid var(--border); margin-bottom: 12px; padding: 18px 20px; transition: all 0.2s var(--ease); }
   .routine-card:hover { box-shadow: var(--shadow-sm); border-color: var(--accent-subtle); }
   .routine-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
   .routine-title { font-size: 16px; font-weight: 600; color: var(--text); }

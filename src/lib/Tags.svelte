@@ -67,7 +67,7 @@
   .tag-color-swatch.selected { border-color: var(--text); box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--text); }
   .tag-color-swatch.sm { width: 24px; height: 24px; }
   .tag-list { display: flex; flex-direction: column; gap: 8px; }
-  .tag-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: var(--surface); border-radius: 10px; border: 1px solid var(--border); transition: all 0.15s var(--ease); backdrop-filter: blur(var(--glass-blur)); }
+  .tag-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: var(--surface); border-radius: 10px; border: 1px solid var(--border); transition: all 0.15s var(--ease); }
   .tag-item:hover { border-color: var(--accent-subtle); box-shadow: var(--shadow-sm); }
   .tag-left { display: flex; align-items: center; gap: 12px; }
   .tag-badge { width: 14px; height: 14px; border-radius: 4px; flex-shrink: 0; }

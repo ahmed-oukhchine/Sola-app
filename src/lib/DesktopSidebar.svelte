@@ -170,7 +170,7 @@
     border: none;
     text-align: left;
   }
-  .ds-row:hover { color: var(--text); background: var(--surface); }
+  .ds-row:hover { color: var(--text); background: var(--surface-hover); }
   .ds-row.active { color: var(--text); background: var(--accent-subtle); }
   .ds-row.active .ds-row-icon { color: var(--accent); }
   .ds-row.active .ds-row-label { font-weight: 500; }

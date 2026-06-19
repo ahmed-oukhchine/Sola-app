@@ -120,11 +120,11 @@
   .goal-desc { font-size: 14px; color: var(--text-secondary); margin-bottom: 12px; }
   .goal-progress-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
   .goal-bar-bg { flex: 1; height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; }
-  .goal-bar-fill { height: 100%; background: var(--accent-gradient); border-radius: 4px; transition: width 0.4s var(--ease); box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.15); }
+  .goal-bar-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.4s var(--ease); }
   .goal-pct { font-size: 14px; font-weight: 600; color: var(--text-secondary); min-width: 36px; text-align: right; }
   .goal-footer { display: flex; gap: 10px; }
   .goal-edit-btn { font-size: 13px; font-weight: 500; color: var(--text-secondary); cursor: pointer; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); }
   .goal-edit-btn:hover { border-color: var(--accent); color: var(--text); }
   .goal-del-btn { font-size: 13px; font-weight: 500; color: var(--text-muted); cursor: pointer; padding: 6px 14px; border-radius: 6px; background: transparent; }
-  .goal-del-btn:hover { color: #b06060; }
+  .goal-del-btn:hover { color: var(--danger); }
 </style>

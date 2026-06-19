@@ -94,7 +94,7 @@
   .routine-items { display: flex; flex-direction: column; gap: 6px; }
   .routine-item { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
   .rg-check { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; background: transparent; padding: 0; transition: all 0.15s var(--ease-spring); flex-shrink: 0; }
-  .rg-check.checked { background: var(--complete); border-color: var(--complete); color: #fff; box-shadow: 0 0 10px rgba(138, 154, 122, 0.25); }
+  .rg-check.checked { background: var(--complete); border-color: var(--complete); color: #fff; }
   .rg-title { font-size: 14px; color: var(--text); flex: 1; }
   .rg-title.rg-done { text-decoration: line-through; color: var(--text-muted); }
   .rg-del { width: 24px; height: 24px; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); background: transparent; padding: 0; transition: all 0.15s var(--ease); }
@@ -102,5 +102,5 @@
   .rg-add { padding: 6px 0; }
   .rg-input { width: 100%; padding: 9px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-size: 13px; transition: border-color 0.15s var(--ease); }
   .rg-input::placeholder { color: var(--text-muted); }
-  .rg-input:focus { border-color: var(--accent); }
+  .rg-input:focus { border-color: var(--accent); box-shadow: var(--accent-ring); }
 </style>

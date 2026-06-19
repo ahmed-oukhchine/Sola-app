@@ -269,7 +269,7 @@
     display: flex; align-items: center; justify-content: center; gap: 6px;
   }
   .habit-action:hover:not(:disabled) { border-color: var(--accent); color: var(--text); }
-  .habit-action.checked { background: var(--accent-gradient); color: #fff; border-color: transparent; box-shadow: var(--accent-glow); }
+  .habit-action.checked { background: var(--accent); color: #fff; border-color: transparent; }
   .habit-action.timer.active { background: var(--accent-subtle); border-color: var(--accent); color: var(--accent); }
   .habit-action:disabled { opacity: 0.3; cursor: default; }
   .habit-time-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
@@ -279,7 +279,7 @@
     border: 1px solid var(--border); background: var(--bg);
     color: var(--text); font-size: 13px;
   }
-  .habit-time-input:focus { border-color: var(--accent); outline: none; }
+  .habit-time-input:focus { border-color: var(--accent); outline: none; box-shadow: var(--accent-ring); }
   .habit-heatmap { display: flex; gap: 3px; flex-wrap: wrap; }
   .heat-dot { width: 8px; height: 8px; border-radius: 2px; background: var(--border); transition: all 0.15s var(--ease); }
   .heat-dot.filled { background: var(--accent); }

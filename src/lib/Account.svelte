@@ -212,7 +212,7 @@
   .ac-field { display: flex; flex-direction: column; gap: 6px; }
   .ac-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
   .ac-input { width: 100%; padding: 12px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-size: 14px; transition: all 0.2s var(--ease); box-sizing: border-box; }
-  .ac-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12); outline: none; }
+  .ac-input:focus { border-color: var(--accent); box-shadow: var(--accent-ring); outline: none; }
   .ac-input::placeholder { color: var(--text-muted); }
   .ac-input--valid { border-color: rgba(var(--complete), 0.3); }
   .ac-input--error { border-color: var(--danger); }

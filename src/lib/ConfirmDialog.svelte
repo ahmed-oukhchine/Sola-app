@@ -38,8 +38,8 @@
   .confirm-btn { padding: 9px 20px; border-radius: var(--radius-md); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s var(--ease); border: none; }
   .confirm-btn.secondary { background: var(--surface-raised); color: var(--text-secondary); border: 1px solid var(--glass-border); backdrop-filter: blur(12px); }
   .confirm-btn.secondary:hover { background: var(--surface-hover); color: var(--text); border-color: var(--accent-subtle); }
-  .confirm-btn.primary { background: var(--accent-gradient); color: #fff; box-shadow: var(--accent-glow); }
-  .confirm-btn.primary:hover { box-shadow: 0 0 40px rgba(var(--accent-rgb), 0.3); transform: translateY(-1px); }
+  .confirm-btn.primary { background: var(--accent); color: #fff; }
+  .confirm-btn.primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
   .confirm-btn.primary.danger { background: linear-gradient(135deg, var(--danger), #a05040); box-shadow: 0 0 20px rgba(192, 112, 96, 0.15); }
-  .confirm-btn.primary.danger:hover { box-shadow: 0 0 40px rgba(192, 112, 96, 0.25); }
+  .confirm-btn.primary.danger:hover { filter: brightness(1.1); }
 </style>

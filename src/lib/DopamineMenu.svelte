@@ -91,7 +91,7 @@
   .dm-panel { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-xl); width: 100%; max-width: 400px; padding: 24px; animation: scaleIn 0.35s var(--ease-spring); }
   .dm-header { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
   .dm-close { margin-left: auto; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); padding: 0; transition: all 0.15s var(--ease); background: transparent; border: none; }
-  .dm-close:hover { background: var(--surface); color: var(--text); }
+  .dm-close:hover { background: var(--surface-hover); color: var(--text); }
   .dm-title { font-size: 18px; font-weight: 650; color: var(--text); }
   .dm-sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 18px; margin-top: 4px; }
   .dm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }

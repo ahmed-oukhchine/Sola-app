@@ -430,16 +430,16 @@
   .cal-cell:hover { background: var(--surface-hover); }
   .cal-cell.weekend { opacity: 0.65; }
   .cal-cell.today { border-color: rgba(var(--accent-rgb), 0.35); background: rgba(var(--accent-rgb), 0.12); }
-  .cal-cell.sel { background: var(--accent-gradient); border-color: transparent; box-shadow: var(--accent-glow); animation: selPulse 2.5s var(--ease) infinite; }
+  .cal-cell.sel { background: var(--accent); border-color: transparent; box-shadow: var(--accent-ring); animation: selPulse 2.5s var(--ease) infinite; color: #fff; }
   .cal-cell.sel .cal-num { color: #fff; font-weight: 600; }
-  .cal-cell.overdue { box-shadow: 0 0 0 1px rgba(220, 100, 80, 0.3), 0 0 12px rgba(220, 100, 80, 0.08); }
-  .cal-cell.overdue:hover { box-shadow: 0 0 0 1px rgba(220, 100, 80, 0.5), 0 0 16px rgba(220, 100, 80, 0.12); }
-  .cal-cell.overdue.sel { box-shadow: var(--accent-glow); }
+  .cal-cell.overdue { box-shadow: 0 0 0 1px rgba(var(--danger-rgb), 0.3), 0 0 12px rgba(var(--danger-rgb), 0.08); }
+  .cal-cell.overdue:hover { box-shadow: 0 0 0 1px rgba(var(--danger-rgb), 0.5), 0 0 16px rgba(var(--danger-rgb), 0.12); }
+  .cal-cell.overdue.sel { box-shadow: var(--accent-ring); }
   .cal-cell.empty { cursor: default; pointer-events: none; }
   .cal-cell.drag-over { border-color: var(--accent); background: rgba(var(--accent-rgb), 0.08); transform: scale(1.06); }
 
   @keyframes cellEnter { from { opacity: 0; transform: translateY(8px) scale(0.92); } to { opacity: 1; transform: translateY(0) scale(1); } }
-  @keyframes selPulse { 0%, 100% { box-shadow: var(--accent-glow); } 50% { box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.15), 0 0 24px rgba(var(--accent-rgb), 0.25); } }
+  @keyframes selPulse { 0%, 100% { box-shadow: var(--accent-ring); } 50% { box-shadow: var(--accent-ring), 0 0 24px rgba(var(--accent-rgb), 0.2); } }
 
   .cal-num { font-size: 14px; font-weight: 500; color: var(--text); line-height: 1; }
   .cal-dots { display: flex; gap: 2px; align-items: center; height: 4px; }

@@ -25,27 +25,31 @@
 :root {
   --bg: #000;
   --bg-gradient: radial-gradient(ellipse at 50% 0%, #0a0a0e 0%, #000 80%);
-  --surface: rgba(255, 255, 255, 0.09);
-  --surface-raised: rgba(255, 255, 255, 0.14);
-  --surface-hover: rgba(255, 255, 255, 0.18);
-  --border: rgba(255, 255, 255, 0.12);
-  --border-light: rgba(255, 255, 255, 0.06);
-  --text: #ffffff;
-  --text-secondary: rgba(255, 255, 255, 0.55);
-  --text-muted: rgba(255, 255, 255, 0.45);
-  --glass-bg: rgba(255, 255, 255, 0.08);
+  --surface: rgba(255, 255, 255, 0.06);
+  --surface-raised: rgba(255, 255, 255, 0.08);
+  --surface-hover: rgba(255, 255, 255, 0.10);
+  --surface-active: rgba(255, 255, 255, 0.14);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-light: rgba(255, 255, 255, 0.04);
+  --text: #ededef;
+  --text-secondary: #9b9ba3;
+  --text-muted: #5f5f67;
+  --glass-bg: rgba(255, 255, 255, 0.06);
   --glass-border: var(--border);
-  --glass-blur: 16px;
-  --accent: #5a9a9a;
-  --accent-rgb: 90, 154, 154;
-  --accent-hover: #6aaaaa;
-  --accent-subtle: rgba(90, 154, 154, 0.12);
-  --accent-gradient: linear-gradient(135deg, #5a9a9a, #4a8a8a);
-  --accent-glow: 0 0 40px rgba(90, 154, 154, 0.12);
-  --complete: #7a9a6a;
-  --complete-bg: rgba(122, 154, 106, 0.08);
-  --danger: #c06050;
-  --danger-bg: rgba(192, 96, 80, 0.08);
+  --glass-blur: 24px;
+  --accent: #A78BFA;
+  --accent-rgb: 167, 139, 250;
+  --accent-hover: #B89EFF;
+  --accent-subtle: rgba(167, 139, 250, 0.12);
+  --accent-ring: 0 0 0 3px rgba(167, 139, 250, 0.25);
+  --complete: #6EE7B7;
+  --complete-bg: rgba(110, 231, 183, 0.12);
+  --danger: #FB923C;
+  --danger-rgb: 251, 146, 60;
+  --danger-bg: rgba(251, 146, 60, 0.12);
+  --warning: #FCD34D;
+  --warning-rgb: 252, 211, 77;
+  --warning-bg: rgba(252, 211, 77, 0.12);
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.5);
@@ -62,31 +66,37 @@
 }
 
 [data-theme="light"] {
-  --bg: #f2f2f6;
-  --bg-gradient: radial-gradient(ellipse at 50% 0%, #f8f8fc 0%, #f2f2f6 100%);
-  --surface: rgba(255, 255, 255, 0.78);
-  --surface-raised: rgba(255, 255, 255, 0.95);
-  --surface-hover: rgba(255, 255, 255, 0.88);
-  --border: rgba(0, 0, 0, 0.12);
-  --border-light: rgba(0, 0, 0, 0.06);
-  --text: #1c1c1e;
-  --text-secondary: rgba(28, 28, 30, 0.55);
-  --text-muted: rgba(28, 28, 30, 0.50);
-  --accent: #5a9a9a;
-  --accent-rgb: 90, 154, 154;
-  --accent-hover: #4a8a8a;
-  --accent-subtle: rgba(90, 154, 154, 0.08);
-  --accent-gradient: linear-gradient(135deg, #6aaa9a, #5a9a9a);
-  --accent-glow: 0 0 30px rgba(90, 154, 154, 0.08);
-  --complete: #6a8a5a;
-  --danger: #a05040;
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
-  --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.16);
-  --shadow-xl: 0 16px 60px rgba(0, 0, 0, 0.20);
+  --bg: #f7f7f9;
+  --bg-gradient: radial-gradient(ellipse at 50% 0%, #fafafe 0%, #f7f7f9 100%);
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-hover: rgba(0, 0, 0, 0.04);
+  --surface-active: rgba(0, 0, 0, 0.08);
+  --border: rgba(0, 0, 0, 0.07);
+  --border-light: rgba(0, 0, 0, 0.04);
+  --text: #1a1a1e;
+  --text-secondary: #6b6b73;
+  --text-muted: #9d9da5;
   --glass-bg: rgba(255, 255, 255, 0.85);
-  --glass-border: rgba(0, 0, 0, 0.10);
+  --glass-border: rgba(0, 0, 0, 0.08);
   --glass-blur: 20px;
+  --accent: #A78BFA;
+  --accent-rgb: 167, 139, 250;
+  --accent-hover: #8B70E8;
+  --accent-subtle: rgba(167, 139, 250, 0.10);
+  --accent-ring: 0 0 0 3px rgba(167, 139, 250, 0.20);
+  --complete: #34D399;
+  --complete-bg: rgba(52, 211, 153, 0.10);
+  --danger: #FB923C;
+  --danger-rgb: 251, 146, 60;
+  --danger-bg: rgba(251, 146, 60, 0.10);
+  --warning: #F59E0B;
+  --warning-rgb: 245, 158, 11;
+  --warning-bg: rgba(245, 158, 11, 0.10);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.10);
+  --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.14);
+  --shadow-xl: 0 16px 60px rgba(0, 0, 0, 0.18);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -185,7 +195,7 @@ input::placeholder, textarea::placeholder {
   border: 1px solid var(--border); border-radius: var(--radius-md);
   color: var(--text); font-size: 16px; transition: all 0.2s var(--ease);
 }
-.input:focus { border-color: var(--accent); }
+.input:focus { border-color: var(--accent); box-shadow: var(--accent-ring); }
 
 .btn {
   flex: 1; padding: 14px; border-radius: var(--radius-md);
@@ -194,7 +204,7 @@ input::placeholder, textarea::placeholder {
 .btn-cancel { background: var(--surface); border: 1px solid var(--border); color: var(--text-secondary); }
 .btn-cancel:hover { background: var(--surface-hover); color: var(--text); }
 .btn-cancel:active { transform: scale(0.97); }
-.btn-save { background: var(--accent-gradient); color: #fff; border: none; }
+.btn-save { background: var(--accent); color: #fff; border: none; }
 .btn-save:hover { filter: brightness(1.1); }
 .btn-save:active { transform: scale(0.97); }
 .btn-save:disabled { opacity: 0.25; cursor: default; }
@@ -204,7 +214,7 @@ input::placeholder, textarea::placeholder {
 .inbox-add-btn {
   padding: 14px 24px; border-radius: var(--radius-md);
   font-size: 15px; font-weight: 500;
-  background: var(--accent-gradient); color: #fff;
+  background: var(--accent); color: #fff;
   cursor: pointer; transition: all 0.2s var(--ease);
   flex-shrink: 0;
 }
@@ -278,7 +288,7 @@ input::placeholder, textarea::placeholder {
   color: var(--text); font-size: 15px; transition: border-color 0.2s var(--ease);
   cursor: pointer;
 }
-.routine-select:focus { border-color: var(--accent); }
+.routine-select:focus { border-color: var(--accent); box-shadow: var(--accent-ring); }
 
 .energy-btn {
   padding: 8px 18px; border-radius: 8px; font-size: 13px;
@@ -286,7 +296,7 @@ input::placeholder, textarea::placeholder {
   border: 1px solid var(--border); cursor: pointer; transition: all 0.2s var(--ease);
 }
 .energy-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); }
-.energy-btn.selected { background: var(--accent-gradient); color: #fff; border-color: transparent; }
+.energy-btn.selected { background: var(--accent); color: #fff; border-color: transparent; }
 .energy-btn.sm { padding: 6px 14px; font-size: 12px; }
 
 .date-label { font-size: 12px; color: var(--text-muted); font-weight: 500; }

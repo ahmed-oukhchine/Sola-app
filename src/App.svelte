@@ -118,8 +118,8 @@ import DopamineMenu from './lib/DopamineMenu.svelte'
     root.style.setProperty('--accent-rgb', `${r},${g},${b}`)
     root.style.setProperty('--accent-hover', shadeColor(color, 10))
     root.style.setProperty('--accent-subtle', `rgba(${r}, ${g}, ${b}, ${effectiveTheme === 'light' ? 0.08 : 0.12})`)
-    root.style.setProperty('--accent-gradient', `linear-gradient(135deg, ${color}, ${shadeColor(color, -12)})`)
-    root.style.setProperty('--accent-glow', `0 0 30px rgba(${r}, ${g}, ${b}, ${effectiveTheme === 'light' ? 0.08 : 0.15})`)
+    root.style.setProperty('--accent-hover', shadeColor(color, effectiveTheme === 'light' ? -10 : 10))
+    root.style.setProperty('--accent-ring', `0 0 0 3px rgba(${r}, ${g}, ${b}, ${effectiveTheme === 'light' ? 0.20 : 0.25})`)
     root.style.setProperty('--glow', `0 0 0 2px rgba(${r}, ${g}, ${b}, 0.25)`)
   }
 
@@ -134,8 +134,8 @@ import DopamineMenu from './lib/DopamineMenu.svelte'
       root.style.removeProperty('--accent')
       root.style.removeProperty('--accent-hover')
       root.style.removeProperty('--accent-subtle')
-      root.style.removeProperty('--accent-gradient')
-      root.style.removeProperty('--accent-glow')
+      root.style.removeProperty('--accent-hover')
+      root.style.removeProperty('--accent-ring')
       root.style.removeProperty('--glow')
     }
   }
@@ -521,17 +521,17 @@ import DopamineMenu from './lib/DopamineMenu.svelte'
   .header::after { content: ''; position: absolute; bottom: 0; left: 16px; right: 16px; height: 0.5px; background: var(--border); }
   .header.desktop::after { left: 0; right: 0; }
   .desktop-ham { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); background: transparent; padding: 0; transition: all 0.15s var(--ease); flex-shrink: 0; }
-  .desktop-ham:hover { color: var(--text); background: var(--surface); }
+  .desktop-ham:hover { color: var(--text); background: var(--surface-hover); }
   .hamburger { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); background: transparent; padding: 0; transition: all 0.2s var(--ease); flex-shrink: 0; }
-  .hamburger:hover { color: var(--text); background: var(--surface); }
+  .hamburger:hover { color: var(--text); background: var(--surface-hover); }
   .hamburger:active { transform: scale(0.92); }
   .logo { font-size: 20px; font-weight: 650; letter-spacing: -0.3px; color: var(--text); flex: 1; }
   .header-actions { display: flex; align-items: center; gap: 6px; }
   .points-badge { font-size: 11px; font-weight: 600; color: var(--accent); background: var(--accent-subtle); padding: 4px 10px; border-radius: 20px; display: flex; align-items: center; gap: 4px; }
   .header-search-btn { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); background: transparent; border: none; padding: 0; transition: all 0.15s var(--ease); flex-shrink: 0; }
-  .header-search-btn:hover { color: var(--text); background: var(--surface); }
+  .header-search-btn:hover { color: var(--text); background: var(--surface-hover); }
   .install-btn { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--complete); background: transparent; border: none; padding: 0; transition: all 0.15s var(--ease); flex-shrink: 0; }
-  .install-btn:hover { background: rgba(122,154,106,0.1); }
+  .install-btn:hover { background: var(--complete-bg); }
   .dm-btn { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--accent); background: transparent; border: none; padding: 0; transition: all 0.15s var(--ease); flex-shrink: 0; }
   .dm-btn:hover { background: var(--accent-subtle); }
 
@@ -556,14 +556,14 @@ import DopamineMenu from './lib/DopamineMenu.svelte'
   .ritual-stat { font-size: 13px; color: var(--text-secondary); margin-left: auto; }
   .ritual-body { display: flex; gap: 8px; padding: 14px 22px; }
   .ritual-input { flex: 1; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--text); font-size: 15px; outline: none; }
-  .ritual-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12); }
-  .ritual-add-btn { width: 40px; height: 40px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; background: var(--accent-gradient); color: #fff; border: none; cursor: pointer; flex-shrink: 0; box-shadow: var(--accent-glow); }
-  .ritual-add-btn:hover { box-shadow: 0 0 30px rgba(var(--accent-rgb), 0.25); }
-  .ritual-add-btn:disabled { opacity: 0.25; box-shadow: none; }
+  .ritual-input:focus { border-color: var(--accent); box-shadow: var(--accent-ring); }
+  .ritual-add-btn { width: 40px; height: 40px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; background: var(--accent); color: #fff; border: none; cursor: pointer; flex-shrink: 0; }
+  .ritual-add-btn:hover { filter: brightness(1.1); }
+  .ritual-add-btn:disabled { opacity: 0.25; filter: none; }
   .ritual-footer { display: flex; gap: 8px; padding: 8px 22px 18px; }
   .ritual-btn { padding: 9px 20px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s var(--ease); }
-  .ritual-btn.primary { background: var(--accent-gradient); color: #fff; border: none; }
-  .ritual-btn.primary:hover { box-shadow: 0 0 30px rgba(var(--accent-rgb), 0.2); }
+  .ritual-btn.primary { background: var(--accent); color: #fff; border: none; }
+  .ritual-btn.primary:hover { filter: brightness(1.1); }
   .ritual-btn.secondary { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
   .ritual-btn.secondary:hover { border-color: var(--accent); color: var(--accent); }
 </style>

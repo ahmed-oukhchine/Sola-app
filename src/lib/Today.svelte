@@ -905,7 +905,7 @@
   }
   .search-input:focus {
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12);
+    box-shadow: var(--accent-ring);
   }
   .next-action-card {
     margin: 0 22px 16px;
@@ -943,15 +943,14 @@
     border-radius: 50px;
     font-size: 15px;
     font-weight: 500;
-    background: var(--accent-gradient);
+    background: var(--accent);
     color: #fff;
     cursor: pointer;
     transition: all 0.2s var(--ease);
-    box-shadow: var(--accent-glow);
     border: none;
   }
   .na-btn:hover {
-    box-shadow: 0 0 50px rgba(var(--accent-rgb), 0.3);
+    filter: brightness(1.1);
     transform: translateY(-2px);
   }
   .na-btn:active {
@@ -1133,7 +1132,6 @@
     background: var(--complete);
     border-color: var(--complete);
     color: #fff;
-    box-shadow: 0 0 12px rgba(138, 154, 122, 0.3);
   }
   .tl-check:active {
     transform: scale(0.85);
@@ -1239,7 +1237,7 @@
     left: 52px;
     right: 0;
     height: 2px;
-    background: var(--accent-gradient);
+    background: var(--accent);
     z-index: 10;
     pointer-events: none;
   }
@@ -1333,7 +1331,6 @@
     background: var(--complete);
     border-color: var(--complete);
     color: #fff;
-    box-shadow: 0 0 8px rgba(138, 154, 122, 0.25);
   }
   .st-title {
     font-size: 13px;
@@ -1380,6 +1377,7 @@
   }
   .st-input:focus {
     border-color: var(--accent);
+    box-shadow: var(--accent-ring);
   }
   .edit-input {
     width: 100%;
@@ -1408,6 +1406,7 @@
   }
   .edit-time:focus {
     border-color: var(--accent);
+    box-shadow: var(--accent-ring);
   }
   .edit-energy-row {
     display: flex;
@@ -1423,7 +1422,7 @@
     border-radius: 4px;
     font-size: 12px;
     font-weight: 500;
-    background: var(--accent-gradient);
+    background: var(--accent);
     color: #fff;
     cursor: pointer;
     border: none;
@@ -1553,8 +1552,8 @@
     transition: all 0.15s var(--ease);
   }
   .tl-star:hover, .us-star:hover {
-    background: rgba(240, 180, 41, 0.1);
-    color: #f0b429;
+    background: var(--warning-bg);
+    color: var(--warning);
   }
   .tl-star.highlighted, .us-star.highlighted {
     color: #f0b429;

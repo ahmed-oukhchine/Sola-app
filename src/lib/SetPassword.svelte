@@ -76,7 +76,7 @@
   .sp-label { font-size: 13px; color: var(--text-secondary); margin: 0; }
   .sp-pw-row { position: relative; width: 100%; }
   .sp-input { width: 100%; padding: 10px 40px 10px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-size: 14px; transition: all 0.2s var(--ease); box-sizing: border-box; }
-  .sp-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12); outline: none; }
+  .sp-input:focus { border-color: var(--accent); box-shadow: var(--accent-ring); outline: none; }
   .sp-input::placeholder { color: var(--text-muted); }
   .sp-input--error { border-color: var(--danger); }
   .sp-eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 6px; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }

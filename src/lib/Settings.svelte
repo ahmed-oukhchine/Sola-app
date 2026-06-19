@@ -174,14 +174,14 @@
   .settings-label { font-size: 15px; color: var(--text); }
   .settings-value { font-size: 15px; color: var(--text-secondary); font-weight: 500; }
   .settings-theme-btn { display: flex; align-items: center; gap: 8px; padding: 8px 18px; border-radius: 10px; border: 1px solid var(--border); background: var(--glass-bg); color: var(--text); font-size: 14px; font-weight: 500; cursor: pointer; text-transform: capitalize; transition: all 0.2s var(--ease); backdrop-filter: blur(var(--glass-blur)); }
-  .settings-theme-btn:hover { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12); transform: translateY(-1px); }
+  .settings-theme-btn:hover { border-color: var(--accent); box-shadow: var(--accent-ring); transform: translateY(-1px); }
   .settings-btn-row { display: flex; gap: 10px; margin-bottom: 10px; }
   .settings-action-btn { width: 100%; padding: 13px 16px; border-radius: var(--radius-md); font-size: 15px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: var(--glass-bg); color: var(--text-secondary); text-align: center; transition: all 0.2s var(--ease); backdrop-filter: blur(var(--glass-blur)); }
-  .settings-action-btn:hover { border-color: var(--accent); color: var(--text); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12); transform: translateY(-1px); }
-  .settings-action-btn.primary { background: var(--accent-gradient); color: #fff; border-color: transparent; box-shadow: var(--accent-glow); }
-  .settings-action-btn.primary:hover { box-shadow: 0 0 50px rgba(var(--accent-rgb), 0.3); }
+  .settings-action-btn:hover { border-color: var(--accent); color: var(--text); box-shadow: var(--accent-ring); transform: translateY(-1px); }
+  .settings-action-btn.primary { background: var(--accent); color: #fff; border-color: transparent; }
+  .settings-action-btn.primary:hover { filter: brightness(1.1); }
   .settings-action-btn.danger { color: #b06060; border-color: rgba(176, 96, 96, 0.25); margin-top: 10px; }
-  .settings-action-btn.danger:hover { background: rgba(176, 96, 96, 0.08); border-color: var(--danger); color: var(--danger); }
+  .settings-action-btn.danger:hover { background: var(--danger-bg); border-color: var(--danger); color: var(--danger); }
   .settings-action-btn.mini { width: auto; padding: 6px 14px; font-size: 12px; border-radius: 8px; display: inline-block; margin: 0; }
   .settings-action-btn.danger.mini { margin-top: 0; }
   .settings-hint { font-size: 11px; color: var(--text-muted); margin-top: -8px; margin-bottom: 16px; line-height: 1.5; }
@@ -194,9 +194,9 @@
   .accent-picker::-webkit-color-swatch-wrapper { padding: 0; }
   .accent-picker::-webkit-color-swatch { border: 2px solid var(--border); border-radius: 50%; }
   .accent-input { width: 90px; padding: 6px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 13px; font-family: var(--font-mono); text-align: center; transition: border-color 0.2s var(--ease); }
-  .accent-input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12); }
+  .accent-input:focus { border-color: var(--accent); outline: none; box-shadow: var(--accent-ring); }
   .accent-reset { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); background: var(--surface); border: 1px solid var(--border); padding: 0; transition: all 0.2s var(--ease); }
   .accent-reset:hover { color: var(--danger); border-color: var(--danger); transform: scale(1.05); }
   .auto-theme-input { padding: 6px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--glass-bg); color: var(--text); font-size: 13px; transition: border-color 0.2s var(--ease); backdrop-filter: blur(var(--glass-blur)); }
-  .auto-theme-input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12); }
+  .auto-theme-input:focus { border-color: var(--accent); outline: none; box-shadow: var(--accent-ring); }
 </style>

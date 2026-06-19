@@ -88,10 +88,10 @@
   .dump-sub { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
   .dump-input-row { display: flex; gap: 8px; }
   .dump-input { flex: 1; min-height: 60px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 10px 12px; color: var(--text); font-size: 14px; resize: vertical; font-family: inherit; outline: none; transition: border-color 0.2s var(--ease); }
-  .dump-input:focus { border-color: var(--accent); }
+  .dump-input:focus { border-color: var(--accent); box-shadow: var(--accent-ring); }
   .dump-input::placeholder { color: var(--text-muted); }
-  .dump-btn { height: fit-content; padding: 10px 20px; border-radius: var(--radius-md); font-size: 13px; font-weight: 500; background: var(--accent-gradient); color: #fff; border: none; cursor: pointer; transition: all 0.2s var(--ease); white-space: nowrap; }
-  .dump-btn:hover { box-shadow: var(--accent-glow); }
+  .dump-btn { height: fit-content; padding: 10px 20px; border-radius: var(--radius-md); font-size: 13px; font-weight: 500; background: var(--accent); color: #fff; border: none; cursor: pointer; transition: all 0.2s var(--ease); white-space: nowrap; }
+  .dump-btn:hover { filter: brightness(1.1); }
   .dump-btn:disabled { opacity: 0.3; cursor: default; box-shadow: none; }
   .dump-list { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
   .dump-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px 14px; }

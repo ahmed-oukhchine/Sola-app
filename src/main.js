@@ -16,8 +16,7 @@ if (accent && /^#[0-9a-fA-F]{6}$/.test(accent)) {
   root.style.setProperty('--accent-rgb', `${r},${g},${b}`)
   root.style.setProperty('--accent-hover', shade(accent, 10))
   root.style.setProperty('--accent-subtle', `rgba(${r}, ${g}, ${b}, ${isLight ? 0.08 : 0.12})`)
-  root.style.setProperty('--accent-gradient', `linear-gradient(135deg, ${accent}, ${shade(accent, -12)})`)
-  root.style.setProperty('--accent-glow', `0 0 30px rgba(${r}, ${g}, ${b}, ${isLight ? 0.08 : 0.15})`)
+  root.style.setProperty('--accent-ring', `0 0 0 3px rgba(${r}, ${g}, ${b}, ${isLight ? 0.20 : 0.25})`)
   root.style.setProperty('--glow', `0 0 0 2px rgba(${r}, ${g}, ${b}, 0.25)`)
 }
 

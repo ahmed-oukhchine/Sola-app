@@ -77,7 +77,7 @@
   .lk-form { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-bottom: 4px; }
   .lk-pw-row { position: relative; width: 100%; }
   .lk-input { width: 100%; padding: 12px 44px 12px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-size: 14px; transition: all 0.2s var(--ease); box-sizing: border-box; text-align: left; }
-  .lk-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12); outline: none; }
+  .lk-input:focus { border-color: var(--accent); box-shadow: var(--accent-ring); outline: none; }
   .lk-input::placeholder { color: var(--text-muted); }
   .lk-eye { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 6px; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
   .lk-eye:hover { color: var(--text-secondary); background: var(--surface-hover); }

@@ -174,7 +174,7 @@
   }
   .rp-input:focus {
     border-color: var(--accent);
-    box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.15);
+    box-shadow: var(--accent-ring);
   }
   .rp-input::placeholder { color: var(--text-muted); }
   .rp-add-btn {
@@ -212,7 +212,7 @@
     width: 100%;
     transition: background 0.12s var(--ease);
   }
-  .rp-task:hover { background: var(--surface); }
+  .rp-task:hover { background: var(--surface-hover); }
   .rp-task-num {
     font-size: 11px;
     font-weight: 600;

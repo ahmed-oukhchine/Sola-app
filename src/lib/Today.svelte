@@ -40,6 +40,11 @@
     updateTask(task.id, { date: tomorrow, startTime: '08:00', endTime: '09:00' });
   }
   let todayStr = $derived(new Date().toISOString().split("T")[0]);
+  let yesterdayUnfinished = $derived.by(() => {
+    const d = new Date(); d.setDate(d.getDate() - 1);
+    const ys = d.toISOString().split("T")[0];
+    return store.tasks.filter(t => t.date === ys && !t.completed);
+  });
   let todayTasks = $derived(
     store.tasks
       .filter((t) => t.date === todayStr)
@@ -551,6 +556,18 @@
       ><Plus size={18} strokeWidth={1.5} />Add task</button
     >{/if}
   <main class="task-list">
+    {#if yesterdayUnfinished.length > 0}
+      <div class="yesterday-banner" transition:fly={{ y: -6, duration: 200, opacity: 0 }}>
+        <span class="yesterday-label">{yesterdayUnfinished.length} task{yesterdayUnfinished.length !== 1 ? 's' : ''}
+          left from yesterday</span>
+        <button class="yesterday-bring" onclick={() => {
+          yesterdayUnfinished.forEach(t => updateTask(t.id, { date: todayStr }));
+        }}>Bring to today</button>
+        <button class="yesterday-dismiss" onclick={() => {
+          yesterdayUnfinished.forEach(t => updateTask(t.id, { date: todayStr }));
+        }}>✓</button>
+      </div>
+    {/if}
     {#if timedTasks.length > 0}<div
         class="timeline"
         style="height: {TOTAL_H}px"
@@ -1170,6 +1187,10 @@
     padding: 0 22px 22px;
     -webkit-overflow-scrolling: touch;
   }
+  .yesterday-banner { display: flex; align-items: center; gap: 8px; padding: 10px 14px; margin-bottom: 10px; border-radius: var(--radius-md); background: var(--accent-subtle); border: 1px solid var(--accent); }
+  .yesterday-label { flex: 1; font-size: 13px; font-weight: 500; color: var(--accent); }
+  .yesterday-bring { padding: 4px 12px; border-radius: 14px; font-size: 11px; font-weight: 600; background: var(--accent); color: #fff; border: none; cursor: pointer; white-space: nowrap; }
+  .yesterday-dismiss { width: 24px; height: 24px; border-radius: 50%; border: none; background: transparent; color: var(--accent); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; }
   .timeline {
     position: relative;
     margin: 0 0 16px;

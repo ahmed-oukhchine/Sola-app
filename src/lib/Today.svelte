@@ -34,6 +34,11 @@
     } catch {}
     if (navigator.vibrate) navigator.vibrate(12)
   }
+  function moveToTomorrow(task) {
+    const d = new Date(); d.setDate(d.getDate() + 1);
+    const tomorrow = d.toISOString().split("T")[0];
+    updateTask(task.id, { date: tomorrow, startTime: '08:00', endTime: '09:00' });
+  }
   let todayStr = $derived(new Date().toISOString().split("T")[0]);
   let todayTasks = $derived(
     store.tasks
@@ -718,6 +723,12 @@
                   }}
                   ><Save size={11} strokeWidth={1.5} /></button
                 ><button
+                  class="tl-tomorrow"
+                  aria-label="Move to tomorrow"
+                  title="Reschedule to tomorrow"
+                  onclick={(e) => { e.stopPropagation(); moveToTomorrow(task); }}
+                  ><Sunrise size={11} strokeWidth={1.5} /></button
+                ><button
                   class="tl-del"
                   aria-label="Delete"
                   onclick={(e) => {
@@ -1321,7 +1332,7 @@
     color: var(--accent);
     flex-shrink: 0;
   }
-  .tl-del {
+  .tl-del, .tl-tomorrow {
     width: 26px;
     height: 26px;
     border-radius: var(--radius-sm);
@@ -1339,6 +1350,7 @@
     background: var(--danger-bg);
     color: var(--danger);
   }
+  .tl-tomorrow:hover { background: var(--accent-subtle); color: var(--accent); }
   .tl-focus {
     width: 26px; height: 26px; border-radius: var(--radius-sm);
     display: flex; align-items: center; justify-content: center;

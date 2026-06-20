@@ -7,6 +7,26 @@
   let title = $state('')
   let dumpText = $state('')
   let dumps = $state(JSON.parse(localStorage.getItem('focus-dumps') || '[]'))
+  let selected = $state(new Set())
+  let selectMode = $state(false)
+
+  function toggleSelect(id) {
+    const s = new Set(selected)
+    if (s.has(id)) s.delete(id); else s.add(id)
+    selected = s
+  }
+
+  function moveSelected() {
+    for (const id of selected) moveInboxToToday(id)
+    selected = new Set()
+    selectMode = false
+  }
+
+  function deleteSelected() {
+    for (const id of selected) removeFromInbox(id)
+    selected = new Set()
+    selectMode = false
+  }
 
   function handleAdd() {
     if (!title.trim()) return
@@ -42,9 +62,19 @@
   {#if inbox.items.length === 0}
     <div class="empty"><p style="margin:0">Your inbox is empty</p></div>
   {:else}
+    <div class="inbox-toolbar">
+      <button class="inbox-bulk-toggle" class:active={selectMode} onclick={() => { selectMode = !selectMode; selected = new Set() }}>{selectMode ? 'Done' : 'Select'}</button>
+      {#if selectMode && selected.size > 0}
+        <button class="inbox-bulk-action" onclick={moveSelected}>Move {selected.size} to Today</button>
+        <button class="inbox-bulk-action danger" onclick={deleteSelected}>Delete {selected.size}</button>
+      {/if}
+    </div>
     <div class="inbox-list">
       {#each [...inbox.items].reverse() as item (item.id)}
-        <div class="inbox-item" transition:fly={{ y: 6, duration: 150, opacity: 0 }}>
+        <div class="inbox-item" class:selected={selected.has(item.id)} transition:fly={{ y: 6, duration: 150, opacity: 0 }}>
+          {#if selectMode}
+            <button class="inbox-check" class:checked={selected.has(item.id)} onclick={() => toggleSelect(item.id)}>{selected.has(item.id) ? '✓' : ''}</button>
+          {/if}
           <span class="inbox-text">{item.title}</span>
           <div class="inbox-actions">
             <button class="inbox-action" onclick={() => moveInboxToToday(item.id)} title="Move to today">Today</button>
@@ -100,4 +130,12 @@
   .dump-date { font-size: 11px; color: var(--text-muted); font-weight: 500; }
   .dump-del { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--text-muted); background: transparent; border: none; cursor: pointer; padding: 0; transition: all 0.2s var(--ease); }
   .dump-del:hover { background: var(--danger-bg); color: var(--danger); }
+  .inbox-toolbar { display: flex; gap: 6px; margin-bottom: 8px; align-items: center; }
+  .inbox-bulk-toggle { padding: 4px 12px; border-radius: 16px; font-size: 11px; font-weight: 500; color: var(--text-muted); background: transparent; border: 1px solid var(--border); cursor: pointer; }
+  .inbox-bulk-toggle.active { background: var(--accent-subtle); color: var(--accent); border-color: var(--accent-subtle); }
+  .inbox-bulk-action { padding: 4px 12px; border-radius: 16px; font-size: 11px; font-weight: 600; background: var(--accent); color: #fff; border: none; cursor: pointer; }
+  .inbox-bulk-action.danger { background: var(--danger); }
+  .inbox-check { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--border); background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; font-size: 11px; color: #fff; padding: 0; transition: all 0.15s var(--ease); }
+  .inbox-check.checked { background: var(--accent); border-color: var(--accent); }
+  .inbox-item.selected { background: var(--accent-subtle); border-color: var(--accent); }
 </style>

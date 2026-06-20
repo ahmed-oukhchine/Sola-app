@@ -398,23 +398,23 @@
   .star { position: absolute; border-radius: 50%; background: var(--text); }
   .star-idle .star, .star-paused .star { animation: none; }
   .star-active .star {
-    animation: star-drift 12s ease-out infinite alternate;
+    animation: star-drift 28s cubic-bezier(0.45, 0.05, 0.25, 1) infinite alternate;
   }
-  .star-active .star:nth-child(3n) { animation-duration: 18s; }
-  .star-active .star:nth-child(5n) { animation-duration: 22s; }
-  .star-active .star:nth-child(7n) { animation-duration: 15s; }
+  .star-active .star:nth-child(3n) { animation-duration: 40s; }
+  .star-active .star:nth-child(5n) { animation-duration: 50s; }
+  .star-active .star:nth-child(7n) { animation-duration: 35s; }
   @keyframes star-drift {
     0% { transform: translate(0, 0); }
     100% { transform: translate(var(--drift-x), var(--drift-y)); }
   }
   .star-active .star:nth-child(4n) {
-    animation: star-drift 14s ease-out infinite alternate,
-               star-twinkle 6s ease-in-out infinite;
+    animation: star-drift 32s cubic-bezier(0.45, 0.05, 0.25, 1) infinite alternate,
+               star-twinkle 8s ease-in-out infinite;
     animation-delay: var(--twinkle-delay, 0s), var(--twinkle-delay, 0s);
   }
   @keyframes star-twinkle {
-    0%, 100% { opacity: 0.15; }
-    50% { opacity: 0.55; }
+    0%, 100% { opacity: 0.12; }
+    50% { opacity: 0.5; }
   }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   @keyframes scaleIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }

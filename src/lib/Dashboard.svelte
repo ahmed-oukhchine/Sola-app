@@ -199,6 +199,7 @@
               <div class="stat-card" style="padding:14px 12px">
                 <span class="stat-num" style="font-size:22px"><Flame size={14} strokeWidth={1.5} />{streak}</span>
                 <span class="stat-label" style="margin-top:3px">Day streak</span>
+                <div class="chain-row">{#each Array(Math.min(streak, 30)) as _, i}<span class="chain-link" style="--i:{i};animation-delay:{i * 0.05}s"></span>{/each}{#if streak > 30}<span class="chain-more">+{streak - 30}</span>{/if}</div>
               </div>
               <div class="stat-card" style="padding:14px 12px">
                 <span class="stat-num" style="font-size:22px">{completedCount}<span style="font-size:14px;color:var(--text-muted)">/{totalCount}</span></span>
@@ -355,5 +356,10 @@
   .level-bar { width: 100%; height: 2px; background: var(--border); border-radius: 2px; margin-top: 4px; overflow: hidden; }
   .level-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s var(--ease); }
 
+  .chain-row { display: flex; gap: 2px; align-items: center; margin-top: 6px; flex-wrap: wrap; }
+  .chain-link { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); opacity: 0.3; animation: chain-glow 3s ease-in-out infinite; animation-delay: var(--i, 0)s; }
+  .chain-link:nth-child(7n) { background: var(--complete); }
+  .chain-more { font-size: 9px; color: var(--text-muted); margin-left: 2px; }
+  @keyframes chain-glow { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.9; } }
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 </style>

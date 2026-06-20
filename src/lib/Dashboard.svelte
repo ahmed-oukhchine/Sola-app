@@ -56,9 +56,22 @@
     nav: { label: 'Navigation' },
     recent: { label: 'Recent' },
     upcoming: { label: 'Upcoming' },
-    starred: { label: 'Starred' }
+    starred: { label: 'Starred' },
+    'micro-wins': { label: 'Micro-Wins' }
   }
   let starredTasks = $derived(store.tasks.filter(t => t.highlight).reverse())
+  let microWins = $state(JSON.parse(localStorage.getItem('focus-micro-wins') || '[]'))
+  let winText = $state('')
+  function addWin() {
+    if (!winText.trim()) return
+    microWins = [{ id: Date.now(), text: winText.trim(), date: todayStr }, ...microWins]
+    localStorage.setItem('focus-micro-wins', JSON.stringify(microWins))
+    winText = ''
+  }
+  function removeWin(id) {
+    microWins = microWins.filter(w => w.id !== id)
+    localStorage.setItem('focus-micro-wins', JSON.stringify(microWins))
+  }
   let pastAffirmation = $derived.by(() => {
     const past = store.tasks.filter(t => t.completed && t.date !== todayStr)
     if (past.length === 0) return null
@@ -70,7 +83,7 @@
   const ALL_IDS = Object.keys(WIDGET_META)
 
   let widgetOrder = $state(JSON.parse(localStorage.getItem('focus-db-widgets') || JSON.stringify(DEFAULT_ORDER)))
-  let enabledWidgets = $state(JSON.parse(localStorage.getItem('focus-db-enabled') || '{"stats":true,"current":true,"quick-add":true,"nav":true,"recent":true,"upcoming":true,"starred":true}'))
+  let enabledWidgets = $state(JSON.parse(localStorage.getItem('focus-db-enabled') || '{"stats":true,"current":true,"quick-add":true,"nav":true,"recent":true,"upcoming":true,"starred":true,"micro-wins":true}'))
 
   let showConfig = $state(false)
 
@@ -210,6 +223,7 @@
             {:else if id === 'recent'}<Check size={12} strokeWidth={1.5} />
             {:else if id === 'upcoming'}<Clock size={12} strokeWidth={1.5} />
             {:else if id === 'starred'}<Star size={12} strokeWidth={1.5} />
+            {:else if id === 'micro-wins'}<Zap size={12} strokeWidth={1.5} />
             {/if}
             {WIDGET_META[id].label}
           </button>
@@ -346,6 +360,25 @@
                 {/each}
               </div>
             {/if}
+
+          {:else if wid === 'micro-wins'}
+            <div class="db-win-row">
+              <input type="text" class="input" placeholder="A small win..." bind:value={winText} onkeydown={(e) => { if (e.key === 'Enter') addWin() }} />
+              <button class="inbox-add-btn" onclick={addWin} disabled={!winText.trim()}>Log</button>
+            </div>
+            {#if microWins.length === 0}
+              <div class="db-recent-empty"><p>No micro-wins yet — log your first small win!</p></div>
+            {:else}
+              <div class="db-win-list">
+                {#each microWins as w (w.id)}
+                  <div class="db-win-item">
+                    <span class="db-win-icon">&#127775;</span>
+                    <span class="db-win-text">{w.text}</span>
+                    <button class="db-win-del" onclick={() => removeWin(w.id)} aria-label="Remove"><X size={10} strokeWidth={1.5} /></button>
+                  </div>
+                {/each}
+              </div>
+            {/if}
           {/if}
         </div>
       </div>
@@ -417,6 +450,17 @@
   .db-starred-icon { flex-shrink: 0; color: var(--accent); }
   .db-starred-title { flex: 1; font-size: 13px; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .db-starred-date { font-size: 10px; color: var(--text-muted); flex-shrink: 0; }
+  .db-win-row { display: flex; gap: 6px; margin-bottom: 6px; }
+  .db-win-row .input { padding: 8px 12px; font-size: 13px; }
+  .inbox-add-btn { padding: 8px 16px; border-radius: var(--radius-md); font-size: 12px; font-weight: 500; background: var(--accent); color: #fff; border: none; cursor: pointer; transition: all 0.2s var(--ease); white-space: nowrap; }
+  .inbox-add-btn:disabled { opacity: 0.3; cursor: default; }
+  .db-win-list { display: flex; flex-direction: column; gap: 2px; }
+  .db-win-item { display: flex; align-items: center; gap: 6px; padding: 4px 0; border-bottom: 0.5px solid var(--border-light); }
+  .db-win-item:last-child { border-bottom: none; }
+  .db-win-icon { flex-shrink: 0; font-size: 12px; }
+  .db-win-text { flex: 1; font-size: 13px; color: var(--text); }
+  .db-win-del { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--text-muted); background: transparent; border: none; cursor: pointer; padding: 0; transition: all 0.15s var(--ease); }
+  .db-win-del:hover { background: var(--danger-bg); color: var(--danger); }
   .affirmation-banner { display: flex; align-items: center; gap: 10px; padding: 14px 16px; background: linear-gradient(135deg, var(--accent-subtle), transparent); border: 1px solid var(--accent); border-radius: var(--radius-md); margin-bottom: 8px; }
   .affirmation-icon { font-size: 18px; flex-shrink: 0; }
   .affirmation-text { font-size: 13px; color: var(--text); line-height: 1.4; }

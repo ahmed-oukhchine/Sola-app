@@ -1,11 +1,12 @@
 <script>
-  import { CalendarDays, Inbox, Crosshair, TrendingUp, Flame, Star, Check, GripVertical, Settings, X, Clock } from 'lucide-svelte'
-  import { store, addTask, loadPoints, computeStreak } from './taskStore.svelte.js'
+  import { CalendarDays, Inbox, Crosshair, TrendingUp, Flame, Star, Check, GripVertical, Settings, X, Clock, Zap } from 'lucide-svelte'
+  import { store, addTask, loadPoints, computeStreak, computeMomentum } from './taskStore.svelte.js'
 
   let { onNavigate } = $props()
 
   let points = $state(loadPoints())
   let streak = $state(computeStreak())
+  let momentum = $derived(computeMomentum())
   let level = $derived(Math.floor(points / 100) + 1)
   let levelProgress = $derived(points % 100)
   let title = $state('')
@@ -203,6 +204,10 @@
               <div class="stat-card" style="padding:20px 16px">
                 <span class="stat-num" style="font-size:30px">{completionRate}<span style="font-size:16px;color:var(--text-muted)">%</span></span>
                 <span class="stat-label" style="margin-top:6px">Rate</span>
+              </div>
+              <div class="stat-card" style="padding:20px 16px">
+                <span class="stat-num" style="font-size:30px;color:{momentum < 30 ? 'var(--danger)' : momentum > 70 ? 'var(--complete)' : 'var(--text)'}">{momentum}</span>
+                <span class="stat-label" style="margin-top:6px">Momentum</span>
               </div>
             </div>
 

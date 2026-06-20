@@ -22,7 +22,7 @@
   import SearchModal from './lib/Search.svelte'
   import Onboarding from './lib/Onboarding.svelte'
   import Account from './lib/Account.svelte'
-  import { store, someday, addTask, loadAll, exportData, importData, loadPoints, savePoints, computeStreak, requestPermission, scheduleAll, removeTask, rolloverIncompleteTasks } from './lib/taskStore.svelte.js'
+  import { store, someday, addTask, loadAll, exportData, importData, loadPoints, savePoints, computeStreak, computeMomentum, getRecentAverageCompletion, generateWeeklyLetter, requestPermission, scheduleAll, removeTask, rolloverIncompleteTasks } from './lib/taskStore.svelte.js'
   import { Menu, Search, CalendarDays, Sunrise, Plus, CircleCheckBig, Download, Star, Flame, Sparkles, Monitor } from 'lucide-svelte'
 import Toast from './lib/Toast.svelte'
 import LockScreen from './lib/LockScreen.svelte'
@@ -70,6 +70,8 @@ import ShutdownRitual from './lib/ShutdownRitual.svelte'
   let showLock = $state(false)
   let showDopamine = $state(false)
   let isDesktop = $state(false)
+  let showDayComplete = $state(false)
+  let momentum = $derived(computeMomentum())
 
   function refreshActivity() {
     lastActivity = Date.now()
@@ -235,6 +237,7 @@ import ShutdownRitual from './lib/ShutdownRitual.svelte'
   function completeEvening() {
     localStorage.setItem(`focus-evening:${todayStr}`, 'done')
     showEvening = false
+    showDayComplete = true
   }
 
   function skipEvening() {
@@ -252,6 +255,7 @@ import ShutdownRitual from './lib/ShutdownRitual.svelte'
     await loadAll()
     points = loadPoints()
     streak = computeStreak()
+    showDayComplete = localStorage.getItem(`focus-evening:${new Date().toISOString().split('T')[0]}`) === 'done'
     const dq = window.matchMedia('(min-width: 1280px)')
     isDesktop = dq.matches
     dq.addEventListener('change', (e) => { isDesktop = e.matches })
@@ -265,10 +269,16 @@ import ShutdownRitual from './lib/ShutdownRitual.svelte'
       checkWeeklyReview()
       checkBackupReminder()
     }
+    let lastDayCheck = new Date().toISOString().split('T')[0]
     setInterval(() => {
       now = new Date()
       streak = computeStreak()
       checkAutoTheme()
+      const dayKey = new Date().toISOString().split('T')[0]
+      if (dayKey !== lastDayCheck) {
+        lastDayCheck = dayKey
+        showDayComplete = false
+      }
       if (hasAccount && !showOnboarding && !showAccount && Date.now() - lastActivity > IDLE_TIMEOUT) {
         showLock = true
       }
@@ -298,21 +308,7 @@ import ShutdownRitual from './lib/ShutdownRitual.svelte'
     if (day !== 0) return
     const lastReview = localStorage.getItem('focus-weekly-review')
     if (lastReview === new Date().toISOString().split('T')[0]) return
-    const byDate = {}
-    for (const t of store.tasks) {
-      if (!t.completed) continue
-      byDate[t.date] = (byDate[t.date] || 0) + 1
-    }
-    const dates = Object.keys(byDate).sort()
-    let bestDay = '', bestCount = 0
-    for (const [d, c] of Object.entries(byDate)) {
-      if (c > bestCount) { bestCount = c; bestDay = d }
-    }
-    const totalCompleted = store.tasks.filter(t => t.completed).length
-    const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7)
-    const weekKey = weekAgo.toISOString().split('T')[0]
-    const weekCompleted = store.tasks.filter(t => t.completed && t.date >= weekKey).length
-    weeklyReviewData = { totalCompleted, weekCompleted, bestDay: bestDay ? `${bestDay} (${bestCount} tasks)` : '—', streak: computeStreak() }
+    weeklyReviewData = generateWeeklyLetter()
     showWeeklyReview = true
   }
 
@@ -403,6 +399,9 @@ import ShutdownRitual from './lib/ShutdownRitual.svelte'
         {#if !isDesktop}
           <span class="date">{dayStr}</span>
         {/if}
+        {#if showDayComplete}
+          <span class="resting-badge">Done</span>
+        {/if}
       </div>
     </header>
 
@@ -441,11 +440,8 @@ import ShutdownRitual from './lib/ShutdownRitual.svelte'
         <CalendarDays size={20} strokeWidth={1.5} color="var(--accent)" />
         <span class="ritual-title">Weekly Review</span>
       </div>
-      <div class="review-grid">
-        <div class="review-item"><span class="review-num">{weeklyReviewData.totalCompleted}</span><span class="review-label">Total done</span></div>
-        <div class="review-item"><span class="review-num">{weeklyReviewData.weekCompleted}</span><span class="review-label">This week</span></div>
-        <div class="review-item"><span class="review-num"><Flame size={14} strokeWidth={1.5} />{weeklyReviewData.streak}</span><span class="review-label">Streak</span></div>
-        <div class="review-item"><span class="review-num" style="font-size:12px">{weeklyReviewData.bestDay}</span><span class="review-label">Best day</span></div>
+      <div class="weekly-letter">
+        <p>{weeklyReviewData}</p>
       </div>
       <div class="ritual-footer">
         <button class="ritual-btn primary" onclick={dismissWeeklyReview}>Got it</button>
@@ -505,6 +501,7 @@ import ShutdownRitual from './lib/ShutdownRitual.svelte'
   .install-btn:hover { background: var(--complete-bg); }
   .dm-btn { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--accent); background: transparent; border: none; padding: 0; transition: all 0.15s var(--ease); flex-shrink: 0; }
   .dm-btn:hover { background: var(--accent-subtle); }
+  .resting-badge { font-size: 10px; font-weight: 600; color: var(--complete); background: var(--complete-bg); padding: 3px 10px; border-radius: 20px; letter-spacing: 0.3px; }
 
   @media (max-width: 1279px) {
     .app-layout { flex-direction: column; }
@@ -515,10 +512,8 @@ import ShutdownRitual from './lib/ShutdownRitual.svelte'
     .app-layout { height: 100vh; }
     .app-main { border-left: 0.5px solid var(--border); border-right: 0.5px solid var(--border); }
   }
-  .review-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 16px 22px; }
-  .review-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px; text-align: center; }
-  .review-num { display: block; font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
-  .review-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; }
+  .weekly-letter { padding: 18px 22px; }
+  .weekly-letter p { font-size: 14px; color: var(--text-secondary); line-height: 1.7; }
   .date { font-size: 12px; color: var(--text-muted); font-weight: 500; letter-spacing: 0.3px; }
   .ritual-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: flex-start; justify-content: center; padding: 60px 24px; z-index: 100; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); animation: fadeIn 0.2s var(--ease-out); }
   .ritual-card { background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-xl); width: 100%; max-width: 420px; box-shadow: var(--shadow-xl); overflow: hidden; animation: fadeIn 0.15s var(--ease-out); }

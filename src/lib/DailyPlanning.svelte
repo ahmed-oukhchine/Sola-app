@@ -1,6 +1,6 @@
 <script>
-  import { Sunrise, Plus, X, Check, ArrowRight, Clock, Target } from 'lucide-svelte'
-  import { store, inbox, someday, goals, addTask, addToInbox, addToSomeday, moveInboxToToday, moveSomedayToToday, linkTaskToGoal, removeFromInbox, removeFromSomeday, updateTask, getTodayAvailableMinutes } from './taskStore.svelte.js'
+  import { Sunrise, Plus, X, Check, ArrowRight, Clock, Target, Star, Flame } from 'lucide-svelte'
+  import { store, inbox, someday, goals, addTask, addToInbox, addToSomeday, moveInboxToToday, moveSomedayToToday, linkTaskToGoal, removeFromInbox, removeFromSomeday, updateTask, getTodayAvailableMinutes, computeStreak, getRolloverCount, getRecentAverageCompletion } from './taskStore.svelte.js'
 
   let { onDone, onSkip, onNavigate } = $props()
 
@@ -11,6 +11,11 @@
   let timeEstimates = $state({})
   let futureTaskIds = $state(new Set())
   let journalText = $state('')
+  let priorityText = $state(localStorage.getItem(`focus-priority:${new Date().toISOString().split('T')[0]}`) || '')
+
+  let streak = $derived(computeStreak())
+  let rolloverCount = $derived(getRolloverCount())
+  let avgCompletion = $derived(getRecentAverageCompletion(7))
 
   let unscheduled = $derived(store.tasks.filter(t => t.date !== todayStr && !t.completed && !t.repeat && t.rolloverCount !== undefined && !selectedTaskIds.has(t.id)))
   let inboxItems = $derived(inbox.items.filter(i => !selectedTaskIds.has(i.id)))
@@ -52,6 +57,9 @@
 
   function saveShutdown() {
     localStorage.setItem('focus-shutdown-time', shutdownTime)
+    if (priorityText.trim()) {
+      localStorage.setItem(`focus-priority:${todayStr}`, priorityText.trim())
+    }
     currentStep = 1
   }
 
@@ -124,7 +132,15 @@
 
     {#if currentStep === 0}
       <div class="rp-body">
-        <p class="rp-desc">When do you want to finish working today?</p>
+        {#if rolloverCount > 0}
+          <div class="rp-rollover-note">{rolloverCount} task{rolloverCount > 1 ? 's' : ''} rolled over from yesterday</div>
+        {/if}
+        {#if streak > 0}
+          <div class="rp-streak-note"><Flame size={13} strokeWidth={1.5} /> {streak} day streak</div>
+        {/if}
+        <p class="rp-desc" style="margin-top:12px">What's the one thing you want to make progress on today?</p>
+        <input type="text" class="rp-priority-input" placeholder="e.g. Finish the proposal draft" bind:value={priorityText} />
+        <p class="rp-desc" style="margin-top:16px">When do you want to finish working today?</p>
         <div class="rp-shutdown-row">
           <input type="time" class="rp-time-input" bind:value={shutdownTime} />
           <span class="rp-available">~{timeDisplay(availableMinutes)} available</span>
@@ -138,6 +154,9 @@
     {:else if currentStep === 1}
       <div class="rp-body rp-scroll">
         <p class="rp-desc">What are you working on? Select tasks to pull into today.</p>
+        {#if avgCompletion > 0}
+          <div class="rp-adaptive-hint">You typically complete <strong>{avgCompletion} task{avgCompletion > 1 ? 's' : ''}</strong> per day. <span class:rp-over={selectedTaskIds.size + todayUnscheduled.length > avgCompletion + 2}>{selectedTaskIds.size + todayUnscheduled.length} currently planned</span></div>
+        {/if}
 
         {#if unscheduled.length > 0}
           <div class="rp-section">
@@ -265,6 +284,12 @@
   .rp-body { padding: 18px 22px; flex: 1; overflow-y: auto; }
   .rp-scroll { min-height: 0; }
   .rp-desc { font-size: 14px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.5; }
+  .rp-rollover-note { font-size: 13px; color: var(--accent); background: var(--accent-subtle); padding: 8px 12px; border-radius: var(--radius-md); margin-bottom: 8px; }
+  .rp-streak-note { font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+  .rp-priority-input { width: 100%; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--text); font-size: 15px; outline: none; }
+  .rp-priority-input:focus { border-color: var(--accent); box-shadow: var(--accent-ring); }
+  .rp-adaptive-hint { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; padding: 8px 12px; background: var(--surface); border-radius: var(--radius-md); line-height: 1.5; }
+  .rp-adaptive-hint .rp-over { color: var(--danger); }
   .rp-shutdown-row { display: flex; align-items: center; gap: 12px; }
   .rp-time-input { padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--text); font-size: 16px; outline: none; }
   .rp-time-input:focus { border-color: var(--accent); box-shadow: var(--accent-ring); }

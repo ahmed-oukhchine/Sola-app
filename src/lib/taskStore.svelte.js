@@ -687,6 +687,88 @@ export function rolloverIncompleteTasks() {
   return stale
 }
 
+// --- Momentum Score ---
+
+export function computeMomentum() {
+  const today = new Date().toISOString().split('T')[0]
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+
+  const todayTasks = store.tasks.filter(t => t.date === today)
+  const completed = todayTasks.filter(t => t.completed).length
+  const total = todayTasks.length
+  const ratio = total > 0 ? completed / total : 0
+
+  const yesterdayTasks = store.tasks.filter(t => t.date === yesterday)
+  const yCompleted = yesterdayTasks.filter(t => t.completed).length
+  const yTotal = yesterdayTasks.length
+  const yRatio = yTotal > 0 ? yCompleted / yTotal : 0
+
+  const priorityDone = todayTasks.some(t => t.highlight && t.completed) ? 1 : 0
+  const recovery = (yRatio < 0.3 && ratio > 0.6) ? 1 : (yRatio < 0.3 ? 0.3 : 0.7)
+
+  const score = Math.round((ratio * 40) + (priorityDone * 30) + (recovery * 30))
+  return Math.min(100, Math.max(0, score))
+}
+
+export function getRolloverCount() {
+  const today = new Date().toISOString().split('T')[0]
+  return store.tasks.filter(t => t.date === today && t.rolloverCount > 0).length
+}
+
+export function getRecentAverageCompletion(days = 7) {
+  let total = 0, count = 0
+  for (let i = 1; i <= days; i++) {
+    const d = new Date(Date.now() - i * 86400000).toISOString().split('T')[0]
+    const dayTasks = store.tasks.filter(t => t.date === d)
+    if (dayTasks.length > 0) {
+      total += dayTasks.filter(t => t.completed).length
+      count++
+    }
+  }
+  return count > 0 ? Math.round(total / count) : 0
+}
+
+export function generateWeeklyLetter() {
+  const today = new Date()
+  const weekAgo = new Date(today); weekAgo.setDate(weekAgo.getDate() - 7)
+  const weekKey = weekAgo.toISOString().split('T')[0]
+
+  const weekTasks = store.tasks.filter(t => t.date >= weekKey)
+  const completed = weekTasks.filter(t => t.completed)
+  const total = weekTasks.length
+  const rate = total > 0 ? Math.round(completed.length / total * 100) : 0
+
+  const byDate = {}
+  for (const t of completed) {
+    byDate[t.date] = (byDate[t.date] || 0) + 1
+  }
+  let bestDay = '', bestCount = 0
+  for (const [d, c] of Object.entries(byDate)) {
+    if (c > bestCount) { bestCount = c; bestDay = d }
+  }
+
+  const bestLabel = bestDay ? new Date(bestDay).toLocaleDateString('en-US', { weekday: 'long' }) : '—'
+  const focusMin = focusSessions.items.filter(s => s.date >= weekKey).reduce((sum, s) => sum + s.minutes, 0)
+  const streak = computeStreak()
+  const rollovers = store.tasks.filter(t => t.rolloverCount > 0 && t.date >= weekKey).length
+  const momentum = computeMomentum()
+
+  const parts = [`This week, you completed ${completed.length} of ${total} tasks (${rate}%).`]
+  if (bestDay) parts.push(`Your most productive day was ${bestLabel} with ${bestCount} tasks done.`)
+  if (focusMin > 0) parts.push(`You logged ${Math.round(focusMin / 60)}h ${focusMin % 60}m in focused work.`)
+  if (streak > 0) parts.push(`Your streak is ${streak} day${streak > 1 ? 's' : ''}.`)
+  if (rollovers > 0) parts.push(`${rollovers} task${rollovers > 1 ? 's' : ''} rolled over this week — consider scaling back your daily load.`)
+  if (momentum < 30) parts.push(`This week was tough. Rest up — next week is a fresh start.`)
+  else if (momentum > 70) parts.push(`Strong momentum heading into next week. Keep it up.`)
+
+  const longestRollover = store.tasks.filter(t => t.rolloverCount > 1).sort((a, b) => (b.rolloverCount || 0) - (a.rolloverCount || 0))[0]
+  if (longestRollover) {
+    parts.push(`"${longestRollover.title}" has rolled over ${longestRollover.rolloverCount} times. Consider dropping or breaking it down.`)
+  }
+
+  return parts.join(' ')
+}
+
 export function generateRecurringTasks() {
   const today = new Date().toISOString().split('T')[0]
   const dayOfWeek = new Date().getDay()

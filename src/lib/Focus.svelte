@@ -8,6 +8,15 @@
   let timerPauseRemaining = $state(0), tickInterval = $state(null), doTick = $state(false), prevSecond = $state(-1)
   let pomodoroActive = $state(false), pomodoroSession = $state('focus'), pomodoroCount = $state(0)
   let showCelebration = $state(false)
+  let showExtend = $state(false)
+  let just5Session = $state(false)
+
+  function extendSession() {
+    timerMinutes = 5
+    timerRemaining = 5 * 60
+    showExtend = false
+    startTimerv()
+  }
   let { taskId, onClearTask } = $props()
   let focusTask = $derived(taskId ? store.tasks.find(t => t.id === taskId) : null)
 
@@ -198,7 +207,8 @@
       playTimerSound()
       const sessionMinutes = timerMinutes
       logFocusSession(sessionMinutes, pomodoroActive ? (pomodoroSession === 'focus' ? 'pomodoro-focus' : 'pomodoro-break') : 'focus')
-      if (!pomodoroActive) { showCelebration = true; setTimeout(() => showCelebration = false, 3000) }
+      if (just5Session) { just5Session = false; showExtend = true }
+      else if (!pomodoroActive) { showCelebration = true; setTimeout(() => showCelebration = false, 3000) }
       if (pomodoroActive) {
         if (pomodoroSession === 'focus') {
           pomodoroSession = 'break'; pomodoroCount++
@@ -287,6 +297,17 @@
       <button class="preset-btn" class:active={timerMinutes === m && timerStatus === 'ready'} onclick={() => setPreset(m)} disabled={timerRunning || timerPaused}>{m}</button>
     {/each}
   </div>
+  <button class="just5-btn" onclick={() => { if (timerStatus === 'ready') { just5Session = true; timerMinutes = 5; timerRemaining = 5 * 60; startTimerv() } }} disabled={timerRunning || timerPaused}>
+    Just 5 min
+  </button>
+
+  {#if showExtend}
+    <div class="extend-prompt" transition:fade={{ duration: 200 }}>
+      <span class="extend-text">Keep going?</span>
+      <button class="extend-btn" onclick={() => { extendSession() }}>+5 min</button>
+      <button class="extend-btn secondary" onclick={() => { showExtend = false }}>Done</button>
+    </div>
+  {/if}
 
   <div class="focus-controls">
     {#if timerStatus === 'ready'}
@@ -456,6 +477,13 @@
     0% { transform: translate(0, 0); opacity: 1; }
     100% { transform: translate(var(--to-x), var(--to-y)); opacity: 0; }
   }
+  .just5-btn { padding: 6px 20px; border-radius: 20px; font-size: 11px; font-weight: 600; color: var(--accent); background: transparent; border: 1px solid var(--accent-subtle); cursor: pointer; transition: all 0.2s var(--ease); }
+  .just5-btn:hover:not(:disabled) { background: var(--accent-subtle); }
+  .just5-btn:disabled { opacity: 0.35; cursor: default; }
+  .extend-prompt { display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 50px; }
+  .extend-text { font-size: 13px; color: var(--text); font-weight: 500; }
+  .extend-btn { padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; color: #fff; background: var(--accent); border: none; cursor: pointer; }
+  .extend-btn.secondary { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   @keyframes scaleIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 </style>

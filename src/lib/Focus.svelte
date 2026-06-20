@@ -16,6 +16,28 @@
   let audioCtx = $state(null)
   let soundNodes = $state([])
 
+  // Ambient starfield
+  let starCount = 80
+  let stars = $derived.by(() => {
+    const arr = []
+    for (let i = 0; i < starCount; i++) {
+      arr.push({
+        x: Math.random() * 100,
+        y: Math.random() * 100,
+        size: 0.5 + Math.random() * 2.5,
+        opacity: 0.15 + Math.random() * 0.4,
+        speed: 0.3 + Math.random() * 0.7,
+        delay: Math.random() * 8,
+        driftX: (Math.random() - 0.5) * 40,
+        driftY: (Math.random() - 0.5) * 40,
+        twinkleDelay: Math.random() * 6,
+        twinkleDuration: 3 + Math.random() * 5
+      })
+    }
+    return arr
+  })
+  let starState = $derived(timerRunning && !timerPaused ? 'active' : timerRunning ? 'paused' : 'idle')
+
   const SOUNDS = [
     { id: 'none', label: 'Silent' },
     { id: 'rain', label: 'Rain' },
@@ -209,7 +231,21 @@
   })
 </script>
 
-<main class="focus-view">
+<main class="focus-view" class:star-idle={starState === 'idle'} class:star-active={starState === 'active'} class:star-paused={starState === 'paused'}>
+  <div class="starfield">
+    {#each stars as s, i}
+      <div
+        class="star"
+        style="left: {s.x}%; top: {s.y}%;
+          width: {s.size}px; height: {s.size}px;
+          opacity: {s.opacity};
+          --drift-x: {s.driftX}px; --drift-y: {s.driftY}px;
+          --twinkle-delay: {s.twinkleDelay}s;
+          --twinkle-duration: {s.twinkleDuration}s;
+          animation-delay: {s.delay}s;"
+      ></div>
+    {/each}
+  </div>
   <svg class="time-timer" viewBox="0 0 280 280">
     <circle class="tt-bg" cx="140" cy="140" r="120" />
     <circle class="tt-fill" cx="140" cy="140" r="120"
@@ -358,6 +394,28 @@
   .celebration-card { background: var(--bg); border-radius: var(--radius-xl); border: 1px solid var(--border); padding: 36px 44px; text-align: center; animation: scaleIn 0.35s var(--ease-spring); }
   .celebration-title { font-size: 20px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
   .celebration-sub { font-size: 13px; color: var(--text-secondary); }
+  .starfield { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+  .star { position: absolute; border-radius: 50%; background: var(--text); }
+  .star-idle .star, .star-paused .star { animation: none; }
+  .star-active .star {
+    animation: star-drift 12s ease-out infinite alternate;
+  }
+  .star-active .star:nth-child(3n) { animation-duration: 18s; }
+  .star-active .star:nth-child(5n) { animation-duration: 22s; }
+  .star-active .star:nth-child(7n) { animation-duration: 15s; }
+  @keyframes star-drift {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(var(--drift-x), var(--drift-y)); }
+  }
+  .star-active .star:nth-child(4n) {
+    animation: star-drift 14s ease-out infinite alternate,
+               star-twinkle 6s ease-in-out infinite;
+    animation-delay: var(--twinkle-delay, 0s), var(--twinkle-delay, 0s);
+  }
+  @keyframes star-twinkle {
+    0%, 100% { opacity: 0.15; }
+    50% { opacity: 0.55; }
+  }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   @keyframes scaleIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 </style>

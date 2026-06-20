@@ -7,6 +7,14 @@
   let activeTimer = $state(null)
   let timerRemaining = $state(0)
   let timerInterval = $state(null)
+  let yesterdayStr = $derived(new Date(Date.now() - 86400000).toISOString().split('T')[0])
+  let forgiven = $state(JSON.parse(localStorage.getItem('focus-habit-forgiven') || '{}'))
+  function forgiveHabit(habitId) {
+    forgiven[habitId] = true
+    forgiven = { ...forgiven }
+    localStorage.setItem('focus-habit-forgiven', JSON.stringify(forgiven))
+    toggleHabitLog(habitId, yesterdayStr)
+  }
 
   function handleAdd() {
     if (!name.trim()) return
@@ -128,6 +136,13 @@
             </div>
           {/if}
 
+          {#if !todayDone && !isHabitDone(h.id, yesterdayStr) && !forgiven[h.id] && !complete}
+            <div class="habit-forgive">
+              <span class="forgive-text">Missed yesterday. No worries — just pick up again.</span>
+              <button class="forgive-btn" onclick={() => forgiveHabit(h.id)}>Forgive & continue</button>
+            </div>
+          {/if}
+
           <div class="habit-main">
             <div class="habit-ring-wrap">
               <svg class="habit-ring" viewBox="0 0 60 60">
@@ -218,6 +233,9 @@
   }
   .habit-card:hover { border-color: var(--accent-subtle); box-shadow: var(--shadow-md); }
   .habit-card.done { border-color: var(--complete); box-shadow: 0 0 30px rgba(138, 154, 122, 0.15); }
+  .habit-forgive { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: rgba(200,170,100,0.1); border: 1px solid rgba(200,170,100,0.2); border-radius: var(--radius-sm); margin-bottom: 12px; }
+  .forgive-text { flex: 1; font-size: 12px; color: var(--text-secondary); line-height: 1.4; }
+  .forgive-btn { padding: 5px 12px; border-radius: 16px; font-size: 11px; font-weight: 600; background: var(--accent); color: #fff; border: none; cursor: pointer; white-space: nowrap; }
   .habit-badge {
     display: inline-flex; align-items: center; gap: 6px;
     padding: 4px 12px; border-radius: 20px;

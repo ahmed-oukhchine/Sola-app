@@ -188,26 +188,26 @@
         <div class="db-widget-body">
           {#if wid === 'stats'}
             <div class="stats-grid" style="margin:0">
-              <div class="stat-card" style="padding:20px 16px">
-                <span class="stat-num" style="font-size:30px"><Star size={18} strokeWidth={1.5} />{points}</span>
-                <span class="stat-label" style="margin-top:6px">Level {level}</span>
+              <div class="stat-card" style="padding:14px 12px">
+                <span class="stat-num" style="font-size:22px"><Star size={14} strokeWidth={1.5} />{points}</span>
+                <span class="stat-label" style="margin-top:3px">Level {level}</span>
                 <div class="level-bar"><div class="level-fill" style="width:{levelProgress}%"></div></div>
               </div>
-              <div class="stat-card" style="padding:20px 16px">
-                <span class="stat-num" style="font-size:30px"><Flame size={18} strokeWidth={1.5} />{streak}</span>
-                <span class="stat-label" style="margin-top:6px">Day streak</span>
+              <div class="stat-card" style="padding:14px 12px">
+                <span class="stat-num" style="font-size:22px"><Flame size={14} strokeWidth={1.5} />{streak}</span>
+                <span class="stat-label" style="margin-top:3px">Day streak</span>
               </div>
-              <div class="stat-card" style="padding:20px 16px">
-                <span class="stat-num" style="font-size:30px">{completedCount}<span style="font-size:16px;color:var(--text-muted)">/{totalCount}</span></span>
-                <span class="stat-label" style="margin-top:6px">Today</span>
+              <div class="stat-card" style="padding:14px 12px">
+                <span class="stat-num" style="font-size:22px">{completedCount}<span style="font-size:14px;color:var(--text-muted)">/{totalCount}</span></span>
+                <span class="stat-label" style="margin-top:3px">Today</span>
               </div>
-              <div class="stat-card" style="padding:20px 16px">
-                <span class="stat-num" style="font-size:30px">{completionRate}<span style="font-size:16px;color:var(--text-muted)">%</span></span>
-                <span class="stat-label" style="margin-top:6px">Rate</span>
+              <div class="stat-card" style="padding:14px 12px">
+                <span class="stat-num" style="font-size:22px">{completionRate}<span style="font-size:14px;color:var(--text-muted)">%</span></span>
+                <span class="stat-label" style="margin-top:3px">Rate</span>
               </div>
-              <div class="stat-card" style="padding:20px 16px">
-                <span class="stat-num" style="font-size:30px;color:{momentum < 30 ? 'var(--danger)' : momentum > 70 ? 'var(--complete)' : 'var(--text)'}">{momentum}</span>
-                <span class="stat-label" style="margin-top:6px">Momentum</span>
+              <div class="stat-card" style="padding:14px 12px">
+                <span class="stat-num" style="font-size:22px;color:{momentum < 30 ? 'var(--danger)' : momentum > 70 ? 'var(--complete)' : 'var(--text)'}">{momentum}</span>
+                <span class="stat-label" style="margin-top:3px">Momentum</span>
               </div>
             </div>
 
@@ -292,7 +292,7 @@
 </div>
 
 <style>
-  .db-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; }
+  .db-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
   .db-config-btn { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); background: transparent; border: 1px solid var(--border); padding: 0; transition: all 0.15s var(--ease); flex-shrink: 0; margin-top: 4px; }
   .db-config-btn:hover { color: var(--accent); border-color: var(--accent-subtle); }
 
@@ -307,48 +307,49 @@
   .db-config-chip.on { background: var(--accent-subtle); color: var(--accent); border-color: transparent; }
   .db-config-hint { font-size: 11px; color: var(--text-muted); }
 
-  .db-widgets { display: flex; flex-direction: column; gap: 10px; }
-  .db-widget { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; transition: all 0.15s var(--ease); }
+  .db-widgets { display: flex; flex-direction: column; gap: 8px; }
+  .db-widget { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; transition: all 0.15s var(--ease); }
   .db-widget:hover { border-color: var(--border); background: var(--surface-hover); }
   .db-widget.dragging { opacity: 0.4; }
   .db-widget.drag-over { border-color: var(--accent); }
-  .db-widget-header { display: flex; align-items: center; gap: 8px; padding: 10px 14px 0; }
-  .db-drag { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: grab; color: var(--text-muted); background: transparent; border: none; padding: 0; transition: all 0.15s var(--ease); touch-action: none; }
+  .db-widget-header { display: flex; align-items: center; gap: 6px; padding: 8px 12px 0; }
+  .db-drag { width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: grab; color: var(--text-muted); background: transparent; border: none; padding: 0; transition: all 0.15s var(--ease); touch-action: none; }
   .db-drag:hover { background: var(--surface-hover); color: var(--text-secondary); }
   .db-drag:active { cursor: grabbing; }
-  .db-widget-label { font-size: 10px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; }
-  .db-widget-body { padding: 8px 14px 12px; }
+  .db-widget-label { font-size: 9px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; }
+  .db-widget-body { padding: 6px 12px 10px; }
 
-  .db-current-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
-  .db-current-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; box-shadow: 0 0 0 4px var(--accent-subtle); animation: pulse 2s infinite; }
-  .db-current-title { font-size: 15px; font-weight: 500; color: var(--text); flex: 1; }
-  .db-current-time { font-size: 12px; color: var(--text-muted); }
-  .db-current-empty { font-size: 14px; color: var(--text-secondary); padding: 6px 0; }
+  .db-current-row { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
+  .db-current-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; box-shadow: 0 0 0 3px var(--accent-subtle); animation: pulse 2s infinite; }
+  .db-current-title { font-size: 14px; font-weight: 500; color: var(--text); flex: 1; }
+  .db-current-time { font-size: 11px; color: var(--text-muted); }
+  .db-current-empty { font-size: 13px; color: var(--text-secondary); padding: 2px 0; }
   .empty-link { background: none; border: none; color: var(--accent); cursor: pointer; font-size: inherit; font-weight: 500; padding: 0; }
   .empty-link:hover { opacity: 0.8; }
 
-  .db-quick-row { display: flex; gap: 8px; }
+  .db-quick-row { display: flex; gap: 6px; }
+  .db-quick-row .input { padding: 10px 14px; font-size: 14px; }
 
-  .db-nav-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-  .db-nav-btn { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px; border-radius: 10px; font-size: 12px; font-weight: 500; color: var(--text-secondary); background: var(--bg); border: 1px solid var(--border); cursor: pointer; transition: all 0.15s var(--ease); }
+  .db-nav-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+  .db-nav-btn { display: flex; align-items: center; justify-content: center; gap: 5px; padding: 8px; border-radius: 8px; font-size: 11px; font-weight: 500; color: var(--text-secondary); background: var(--bg); border: 1px solid var(--border); cursor: pointer; transition: all 0.15s var(--ease); }
   .db-nav-btn:hover { color: var(--accent); border-color: var(--accent-subtle); background: var(--accent-subtle); }
   .db-nav-btn:active { transform: scale(0.97); }
 
-  .db-recent-empty { font-size: 14px; color: var(--text-secondary); padding: 6px 0; }
-  .db-recent-list { display: flex; flex-direction: column; gap: 4px; }
-  .db-recent-item { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 0.5px solid var(--border-light); }
+  .db-recent-empty { font-size: 13px; color: var(--text-secondary); padding: 3px 0; }
+  .db-recent-list { display: flex; flex-direction: column; gap: 2px; }
+  .db-recent-item { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 0.5px solid var(--border-light); }
   .db-recent-item:last-child { border-bottom: none; }
   .db-recent-check { flex-shrink: 0; color: var(--complete); }
-  .db-recent-text { flex: 1; font-size: 14px; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .db-recent-date { font-size: 11px; color: var(--text-muted); flex-shrink: 0; }
+  .db-recent-text { flex: 1; font-size: 13px; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .db-recent-date { font-size: 10px; color: var(--text-muted); flex-shrink: 0; }
 
-  .db-upcoming-list { display: flex; flex-direction: column; gap: 6px; }
-  .db-upcoming-item { display: flex; align-items: center; gap: 12px; padding: 6px 0; border-bottom: 0.5px solid var(--border-light); }
+  .db-upcoming-list { display: flex; flex-direction: column; gap: 4px; }
+  .db-upcoming-item { display: flex; align-items: center; gap: 10px; padding: 4px 0; border-bottom: 0.5px solid var(--border-light); }
   .db-upcoming-item:last-child { border-bottom: none; }
-  .db-upcoming-time { font-size: 12px; font-weight: 600; color: var(--text-secondary); font-variant-numeric: tabular-nums; min-width: 44px; }
-  .db-upcoming-title { font-size: 14px; color: var(--text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .db-upcoming-time { font-size: 11px; font-weight: 600; color: var(--text-secondary); font-variant-numeric: tabular-nums; min-width: 40px; }
+  .db-upcoming-title { font-size: 13px; color: var(--text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-  .level-bar { width: 100%; height: 3px; background: var(--border); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+  .level-bar { width: 100%; height: 2px; background: var(--border); border-radius: 2px; margin-top: 4px; overflow: hidden; }
   .level-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s var(--ease); }
 
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }

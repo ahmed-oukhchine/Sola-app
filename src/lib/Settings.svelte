@@ -53,6 +53,10 @@
     confirmAction = 'signout'
   }
 
+  function requestReset() {
+    confirmAction = 'reset'
+  }
+
   function doConfirm() {
     if (confirmAction === 'clear') {
       localStorage.clear()
@@ -63,6 +67,11 @@
       localStorage.removeItem('focus-session-expiry')
       localStorage.removeItem('focus-session-activity')
       localStorage.removeItem('focus-onboarded')
+      window.location.reload()
+    } else if (confirmAction === 'reset') {
+      const tasks = JSON.parse(localStorage.getItem('focus-tasks') || '[]')
+      for (const t of tasks) { t.rolloverCount = 0 }
+      localStorage.setItem('focus-tasks', JSON.stringify(tasks))
       window.location.reload()
     }
     confirmAction = null
@@ -160,12 +169,15 @@
       <button class="settings-action-btn primary" onclick={handleExport}>Export data</button>
       <button class="settings-action-btn" onclick={handleImport}>Import data</button>
     </div>
-    <button class="settings-action-btn danger" onclick={requestClearAll}>Clear all data</button>
+    <button class="settings-action-btn danger mini" onclick={requestClearAll}>Clear all data</button>
+    <button class="settings-action-btn reset-btn" onclick={requestReset}><span class="reset-icon">&#9998;</span> Reset without guilt</button>
+    <p class="settings-hint">Resets rollover counters and gives you a clean slate. Your tasks are not deleted.</p>
   </div>
 </div>
 
 <ConfirmDialog open={confirmAction === 'clear'} title="Clear all data" message="Delete all data? This cannot be undone." confirmLabel="Delete all" onConfirm={doConfirm} onCancel={() => confirmAction = null} />
 <ConfirmDialog open={confirmAction === 'signout'} title="Sign out" message="Sign out? You will need your password to sign back in." confirmLabel="Sign out" onConfirm={doConfirm} onCancel={() => confirmAction = null} />
+<ConfirmDialog open={confirmAction === 'reset'} title="Reset without guilt" message="This will set all rollover counters to zero and give you a fresh start. Your tasks, points, streaks, and all other data will be preserved." confirmLabel="Reset counters" onConfirm={doConfirm} onCancel={() => confirmAction = null} />
 
 <style>
   .settings-section { margin-bottom: 32px; }
@@ -184,6 +196,9 @@
   .settings-action-btn.danger:hover { background: var(--danger-bg); border-color: var(--danger); color: var(--danger); }
   .settings-action-btn.mini { width: auto; padding: 6px 14px; font-size: 12px; border-radius: 8px; display: inline-block; margin: 0; }
   .settings-action-btn.danger.mini { margin-top: 0; }
+  .settings-action-btn.reset-btn { margin-top: 8px; color: var(--accent); border-color: var(--accent-subtle); background: transparent; }
+  .settings-action-btn.reset-btn:hover { background: var(--accent-subtle); }
+  .reset-icon { margin-right: 4px; }
   .settings-hint { font-size: 11px; color: var(--text-muted); margin-top: -8px; margin-bottom: 16px; line-height: 1.5; }
   .toggle-btn { width: 44px; height: 24px; border-radius: 12px; background: var(--border); border: none; cursor: pointer; position: relative; transition: background 0.25s var(--ease); flex-shrink: 0; padding: 0; }
   .toggle-btn.on { background: var(--accent); }

@@ -65,6 +65,7 @@
       (t) =>
         !t.unscheduled &&
         (!hideCompleted || !t.completed) &&
+        (!mvpMode || mvpIds.includes(t.id)) &&
         t.title.toLowerCase().includes(searchQuery.toLowerCase()),
     ),
   );
@@ -73,6 +74,7 @@
       (t) =>
         t.unscheduled &&
         (!hideCompleted || !t.completed) &&
+        (!mvpMode || mvpIds.includes(t.id)) &&
         t.title.toLowerCase().includes(searchQuery.toLowerCase()),
     ),
   );
@@ -132,6 +134,15 @@
     taskEnergy = $state(null),
     taskRepeat = $state(null),
     showForm = $state(false);
+  let mvpMode = $state(false)
+  let mvpIds = $state(JSON.parse(localStorage.getItem('focus-mvp') || '[]'))
+  function toggleMvp(taskId) {
+    const idx = mvpIds.indexOf(taskId)
+    if (idx > -1) mvpIds.splice(idx, 1)
+    else if (mvpIds.length < 3) mvpIds.push(taskId)
+    mvpIds = mvpIds.slice()
+    localStorage.setItem('focus-mvp', JSON.stringify(mvpIds))
+  }
   function openForm() {
     showForm = true;
     taskEnergy = null;
@@ -335,6 +346,10 @@
     class="view-btn"
     class:active={hideCompleted}
     onclick={() => (hideCompleted = !hideCompleted)}>Hide done</button
+  ><button
+    class="view-btn mvp-btn"
+    class:active={mvpMode}
+    onclick={() => (mvpMode = !mvpMode)} title="Show only your 3 must-do tasks">MVP</button
   ><button class="plan-day-btn" onclick={onPlanDay} title="Plan your day">
     <Sunrise size={14} strokeWidth={1.5} />Plan
   </button><input
@@ -626,7 +641,7 @@
                     startEdit(task);
                   }}
                 >
-                  <span class="tl-title">{task.title}</span>{#if task.rolloverCount > 0}<span class="rollover-badge"
+                  <span class="tl-title">{task.title}{#if mvpIds.includes(task.id)}<span class="mvp-dot">★</span>{/if}</span>{#if task.rolloverCount > 0}<span class="rollover-badge"
                     >{task.rolloverCount}x</span
                   >{/if}<span class="tl-time"
                     >{timeDisplay(task.startTime)} → {timeDisplay(
@@ -657,7 +672,11 @@
                   }}
                   ><Star size={11} strokeWidth={1.5} fill={task.highlight ? 'currentColor' : 'none'} /></button
                 ><button
-                  class="tl-focus"
+                  class="tl-mvp"
+                  class:mvp-on={mvpIds.includes(task.id)}
+                  aria-label="Mark as must-do"
+                  onclick={(e) => { e.stopPropagation(); toggleMvp(task.id) }}>{mvpIds.includes(task.id) ? '★' : '☆'}</button
+                ><button class="tl-focus"
                   aria-label="Focus"
                   onclick={(e) => {
                     e.stopPropagation();
@@ -833,7 +852,7 @@
                   }}
                 >
                   <span class="us-title"
-                    >{task.title}{#if task.estimatedMinutes}<span class="us-est"
+                    >{task.title}{#if mvpIds.includes(task.id)}<span class="mvp-dot">★</span>{/if}{#if task.estimatedMinutes}<span class="us-est"
                         >{task.estimatedMinutes}m</span
                       >{/if}{#if task.rolloverCount > 0}<span class="rollover-badge"
                         >{task.rolloverCount}x</span
@@ -861,7 +880,11 @@
                   }}
                   ><Star size={11} strokeWidth={1.5} fill={task.highlight ? 'currentColor' : 'none'} /></button
                 ><button
-                  class="us-focus"
+                  class="tl-mvp"
+                  class:mvp-on={mvpIds.includes(task.id)}
+                  aria-label="Mark as must-do"
+                  onclick={(e) => { e.stopPropagation(); toggleMvp(task.id) }}>{mvpIds.includes(task.id) ? '★' : '☆'}</button
+                ><button class="us-focus"
                   aria-label="Focus"
                   onclick={(e) => {
                     e.stopPropagation();
@@ -1651,6 +1674,11 @@
     background: transparent; padding: 0;
     transition: all 0.15s var(--ease);
   }
+  .tl-mvp { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); background: transparent; border: none; padding: 0; font-size: 13px; transition: all 0.15s var(--ease); flex-shrink: 0; }
+  .tl-mvp:hover { background: var(--surface-hover); color: var(--accent); }
+  .tl-mvp.mvp-on { color: var(--accent); }
+  .mvp-btn { font-size: 11px; font-weight: 600; letter-spacing: 0.3px; }
+  .mvp-dot { color: var(--accent); margin-left: 3px; font-size: 10px; }
   .tl-star:hover, .us-star:hover {
     background: var(--warning-bg);
     color: var(--warning);

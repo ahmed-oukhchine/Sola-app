@@ -55,14 +55,16 @@
     'quick-add': { label: 'Quick Add' },
     nav: { label: 'Navigation' },
     recent: { label: 'Recent' },
-    upcoming: { label: 'Upcoming' }
+    upcoming: { label: 'Upcoming' },
+    starred: { label: 'Starred' }
   }
+  let starredTasks = $derived(store.tasks.filter(t => t.highlight).reverse())
 
   const DEFAULT_ORDER = ['stats', 'current', 'quick-add', 'nav', 'recent']
   const ALL_IDS = Object.keys(WIDGET_META)
 
   let widgetOrder = $state(JSON.parse(localStorage.getItem('focus-db-widgets') || JSON.stringify(DEFAULT_ORDER)))
-  let enabledWidgets = $state(JSON.parse(localStorage.getItem('focus-db-enabled') || '{"stats":true,"current":true,"quick-add":true,"nav":true,"recent":true,"upcoming":true}'))
+  let enabledWidgets = $state(JSON.parse(localStorage.getItem('focus-db-enabled') || '{"stats":true,"current":true,"quick-add":true,"nav":true,"recent":true,"upcoming":true,"starred":true}'))
 
   let showConfig = $state(false)
 
@@ -192,6 +194,7 @@
             {:else if id === 'nav'}<CalendarDays size={12} strokeWidth={1.5} />
             {:else if id === 'recent'}<Check size={12} strokeWidth={1.5} />
             {:else if id === 'upcoming'}<Clock size={12} strokeWidth={1.5} />
+            {:else if id === 'starred'}<Star size={12} strokeWidth={1.5} />
             {/if}
             {WIDGET_META[id].label}
           </button>
@@ -311,6 +314,23 @@
                 {/each}
               </div>
             {/if}
+
+          {:else if wid === 'starred'}
+            {#if starredTasks.length === 0}
+              <div class="db-recent-empty">
+                <p>Star a task from Today to see it here</p>
+              </div>
+            {:else}
+              <div class="db-starred-list">
+                {#each starredTasks as t (t.id)}
+                  <div class="db-starred-item">
+                    <span class="db-starred-icon"><Star size={11} strokeWidth={1.5} fill="currentColor" /></span>
+                    <span class="db-starred-title">{t.title}</span>
+                    <span class="db-starred-date">{t.date}</span>
+                  </div>
+                {/each}
+              </div>
+            {/if}
           {/if}
         </div>
       </div>
@@ -376,6 +396,12 @@
   .db-upcoming-time { font-size: 11px; font-weight: 600; color: var(--text-secondary); font-variant-numeric: tabular-nums; min-width: 40px; }
   .db-upcoming-title { font-size: 13px; color: var(--text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+  .db-starred-list { display: flex; flex-direction: column; gap: 2px; }
+  .db-starred-item { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 0.5px solid var(--border-light); }
+  .db-starred-item:last-child { border-bottom: none; }
+  .db-starred-icon { flex-shrink: 0; color: var(--accent); }
+  .db-starred-title { flex: 1; font-size: 13px; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .db-starred-date { font-size: 10px; color: var(--text-muted); flex-shrink: 0; }
   .rebound-banner { display: flex; align-items: center; gap: 10px; padding: 14px 16px; background: var(--accent-subtle); border: 1px solid var(--accent-subtle); border-radius: var(--radius-md); margin-bottom: 14px; }
   .rebound-icon { font-size: 20px; flex-shrink: 0; }
   .rebound-text { font-size: 13px; color: var(--text); line-height: 1.4; }

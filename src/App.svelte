@@ -74,6 +74,7 @@ import ShutdownRitual from './lib/ShutdownRitual.svelte'
   let momentum = $derived(computeMomentum())
   let showEmergency = $state(false)
   let emergencyText = $state('')
+  let windDownShown = $state(false)
 
   function openEmergency() { emergencyText = ''; showEmergency = true }
   function submitEmergency() {
@@ -290,6 +291,16 @@ import ShutdownRitual from './lib/ShutdownRitual.svelte'
       if (dayKey !== lastDayCheck) {
         lastDayCheck = dayKey
         showDayComplete = false
+      }
+      const shutdownTime = localStorage.getItem('focus-shutdown-time')
+      if (shutdownTime && !windDownShown) {
+        const [sh, sm] = shutdownTime.split(':').map(Number)
+        const nowMins = now.getHours() * 60 + now.getMinutes()
+        const shutdownMins = sh * 60 + sm
+        if (nowMins >= shutdownMins - 15 && nowMins < shutdownMins) {
+          toast('Wind-down time in 15 min — start wrapping up', 'info')
+          windDownShown = true
+        }
       }
       if (hasAccount && !showOnboarding && !showAccount && Date.now() - lastActivity > IDLE_TIMEOUT) {
         showLock = true

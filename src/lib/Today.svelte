@@ -597,8 +597,9 @@
                     startEdit(task);
                   }}
                 >
-                  <span class="tl-title">{task.title}</span><span
-                    class="tl-time"
+                  <span class="tl-title">{task.title}</span>{#if task.rolloverCount > 0}<span class="rollover-badge"
+                    >{task.rolloverCount}x</span
+                  >{/if}<span class="tl-time"
                     >{timeDisplay(task.startTime)} → {timeDisplay(
                       task.endTime,
                     )}{#if task.estimatedMinutes}<span class="tl-est"
@@ -804,6 +805,8 @@
                   <span class="us-title"
                     >{task.title}{#if task.estimatedMinutes}<span class="us-est"
                         >{task.estimatedMinutes}m</span
+                      >{/if}{#if task.rolloverCount > 0}<span class="rollover-badge"
+                        >{task.rolloverCount}x</span
                       >{/if}</span
                   >
                 </div>
@@ -1188,6 +1191,20 @@
   :global(.us-task.completed) .us-title {
     text-decoration: line-through;
     color: var(--text-secondary);
+  }
+  .rollover-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--warning);
+    background: rgba(200,170,100,0.15);
+    border-radius: 4px;
+    padding: 0 5px;
+    margin-left: 4px;
+    line-height: 16px;
+    vertical-align: middle;
   }
   .tl-time {
     font-size: 11px;

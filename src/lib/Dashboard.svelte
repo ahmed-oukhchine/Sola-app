@@ -5,6 +5,20 @@
 
   let { onNavigate } = $props()
 
+  let lastVisit = $state(localStorage.getItem('focus-last-visit') || '')
+  let today = new Date().toISOString().split('T')[0]
+  let daysAway = $derived.by(() => {
+    if (!lastVisit) return 0
+    const diff = (new Date(today).getTime() - new Date(lastVisit).getTime()) / 86400000
+    return Math.floor(diff)
+  })
+  let rebound = $derived(daysAway >= 3 && daysAway < 60)
+  let reboundDays = $derived(daysAway)
+
+  $effect(() => {
+    localStorage.setItem('focus-last-visit', today)
+  })
+
   let points = $state(loadPoints())
   let streak = $state(computeStreak())
   let momentum = $derived(computeMomentum())
@@ -153,6 +167,15 @@
       <Settings size={16} strokeWidth={1.5} />
     </button>
   </div>
+
+  {#if rebound}
+    <div class="rebound-banner" transition:fly={{ y: -6, duration: 300, opacity: 0 }}>
+      <div class="rebound-icon">&#127800;</div>
+      <div class="rebound-text">
+        <strong>Welcome back!</strong> It's been {reboundDays} day{reboundDays !== 1 ? 's' : ''}. No pressure — pick one small thing.
+      </div>
+    </div>
+  {/if}
 
   {#if showConfig}
     <div class="db-config" transition:fly={{ y: -8, duration: 200, opacity: 0 }}>
@@ -353,6 +376,10 @@
   .db-upcoming-time { font-size: 11px; font-weight: 600; color: var(--text-secondary); font-variant-numeric: tabular-nums; min-width: 40px; }
   .db-upcoming-title { font-size: 13px; color: var(--text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+  .rebound-banner { display: flex; align-items: center; gap: 10px; padding: 14px 16px; background: var(--accent-subtle); border: 1px solid var(--accent-subtle); border-radius: var(--radius-md); margin-bottom: 14px; }
+  .rebound-icon { font-size: 20px; flex-shrink: 0; }
+  .rebound-text { font-size: 13px; color: var(--text); line-height: 1.4; }
+  .rebound-text strong { color: var(--accent); }
   .level-bar { width: 100%; height: 2px; background: var(--border); border-radius: 2px; margin-top: 4px; overflow: hidden; }
   .level-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s var(--ease); }
 

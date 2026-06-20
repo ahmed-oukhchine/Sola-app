@@ -1,7 +1,7 @@
 <script>
   import { fly } from 'svelte/transition'
   import { CalendarDays, Inbox, Crosshair, TrendingUp, Flame, Star, Check, GripVertical, Settings, X, Clock, Zap } from 'lucide-svelte'
-  import { store, addTask, loadPoints, computeStreak, computeMomentum } from './taskStore.svelte.js'
+  import { store, addTask, loadPoints, computeStreak, computeMomentum, focusSessions } from './taskStore.svelte.js'
 
   let { onNavigate } = $props()
 
@@ -57,9 +57,11 @@
     recent: { label: 'Recent' },
     upcoming: { label: 'Upcoming' },
     starred: { label: 'Starred' },
-    'micro-wins': { label: 'Micro-Wins' }
+    'micro-wins': { label: 'Micro-Wins' },
+    sessions: { label: 'Sessions' }
   }
   let starredTasks = $derived(store.tasks.filter(t => t.highlight).reverse())
+  let recentSessions = $derived([...focusSessions.items].reverse().slice(0, 5))
   let microWins = $state(JSON.parse(localStorage.getItem('focus-micro-wins') || '[]'))
   let winText = $state('')
   function addWin() {
@@ -83,7 +85,7 @@
   const ALL_IDS = Object.keys(WIDGET_META)
 
   let widgetOrder = $state(JSON.parse(localStorage.getItem('focus-db-widgets') || JSON.stringify(DEFAULT_ORDER)))
-  let enabledWidgets = $state(JSON.parse(localStorage.getItem('focus-db-enabled') || '{"stats":true,"current":true,"quick-add":true,"nav":true,"recent":true,"upcoming":true,"starred":true,"micro-wins":true}'))
+  let enabledWidgets = $state(JSON.parse(localStorage.getItem('focus-db-enabled') || '{"stats":true,"current":true,"quick-add":true,"nav":true,"recent":true,"upcoming":true,"starred":true,"micro-wins":true,"sessions":true}'))
 
   let showConfig = $state(false)
 
@@ -224,6 +226,7 @@
             {:else if id === 'upcoming'}<Clock size={12} strokeWidth={1.5} />
             {:else if id === 'starred'}<Star size={12} strokeWidth={1.5} />
             {:else if id === 'micro-wins'}<Zap size={12} strokeWidth={1.5} />
+            {:else if id === 'sessions'}<Clock size={12} strokeWidth={1.5} />
             {/if}
             {WIDGET_META[id].label}
           </button>
@@ -361,6 +364,21 @@
               </div>
             {/if}
 
+          {:else if wid === 'sessions'}
+            {#if recentSessions.length === 0}
+              <div class="db-recent-empty"><p>No focus sessions yet — start a timer in Focus</p></div>
+            {:else}
+              <div class="db-session-list">
+                {#each recentSessions as s (s.id)}
+                  <div class="db-session-item">
+                    <span class="db-session-icon">{s.type === 'sprint' ? '⚡' : '🎯'}</span>
+                    <span class="db-session-min">{s.minutes}m</span>
+                    <span class="db-session-date">{s.date}</span>
+                  </div>
+                {/each}
+              </div>
+            {/if}
+
           {:else if wid === 'micro-wins'}
             <div class="db-win-row">
               <input type="text" class="input" placeholder="A small win..." bind:value={winText} onkeydown={(e) => { if (e.key === 'Enter') addWin() }} />
@@ -461,6 +479,12 @@
   .db-win-text { flex: 1; font-size: 13px; color: var(--text); }
   .db-win-del { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--text-muted); background: transparent; border: none; cursor: pointer; padding: 0; transition: all 0.15s var(--ease); }
   .db-win-del:hover { background: var(--danger-bg); color: var(--danger); }
+  .db-session-list { display: flex; flex-direction: column; gap: 2px; }
+  .db-session-item { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 0.5px solid var(--border-light); }
+  .db-session-item:last-child { border-bottom: none; }
+  .db-session-icon { flex-shrink: 0; font-size: 12px; }
+  .db-session-min { font-size: 12px; font-weight: 600; color: var(--accent); min-width: 30px; }
+  .db-session-date { font-size: 11px; color: var(--text-muted); }
   .affirmation-banner { display: flex; align-items: center; gap: 10px; padding: 14px 16px; background: linear-gradient(135deg, var(--accent-subtle), transparent); border: 1px solid var(--accent); border-radius: var(--radius-md); margin-bottom: 8px; }
   .affirmation-icon { font-size: 18px; flex-shrink: 0; }
   .affirmation-text { font-size: 13px; color: var(--text); line-height: 1.4; }

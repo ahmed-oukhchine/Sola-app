@@ -59,6 +59,12 @@
     starred: { label: 'Starred' }
   }
   let starredTasks = $derived(store.tasks.filter(t => t.highlight).reverse())
+  let pastAffirmation = $derived.by(() => {
+    const past = store.tasks.filter(t => t.completed && t.date !== todayStr)
+    if (past.length === 0) return null
+    const seed = todayStr.split('-').reduce((a, c) => a + c.charCodeAt(0), 0)
+    return past[seed % past.length]
+  })
 
   const DEFAULT_ORDER = ['stats', 'current', 'quick-add', 'nav', 'recent']
   const ALL_IDS = Object.keys(WIDGET_META)
@@ -170,6 +176,15 @@
     </button>
   </div>
 
+  {#if pastAffirmation}
+    <div class="affirmation-banner" transition:fly={{ y: -6, duration: 300, opacity: 0 }}>
+      <div class="affirmation-icon">&#127775;</div>
+      <div class="affirmation-text">
+        <strong>Past you did this:</strong> {pastAffirmation.title}
+        <span class="affirmation-date">— {pastAffirmation.date}</span>
+      </div>
+    </div>
+  {/if}
   {#if rebound}
     <div class="rebound-banner" transition:fly={{ y: -6, duration: 300, opacity: 0 }}>
       <div class="rebound-icon">&#127800;</div>
@@ -402,6 +417,11 @@
   .db-starred-icon { flex-shrink: 0; color: var(--accent); }
   .db-starred-title { flex: 1; font-size: 13px; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .db-starred-date { font-size: 10px; color: var(--text-muted); flex-shrink: 0; }
+  .affirmation-banner { display: flex; align-items: center; gap: 10px; padding: 14px 16px; background: linear-gradient(135deg, var(--accent-subtle), transparent); border: 1px solid var(--accent); border-radius: var(--radius-md); margin-bottom: 8px; }
+  .affirmation-icon { font-size: 18px; flex-shrink: 0; }
+  .affirmation-text { font-size: 13px; color: var(--text); line-height: 1.4; }
+  .affirmation-text strong { color: var(--accent); }
+  .affirmation-date { font-size: 11px; color: var(--text-muted); }
   .rebound-banner { display: flex; align-items: center; gap: 10px; padding: 14px 16px; background: var(--accent-subtle); border: 1px solid var(--accent-subtle); border-radius: var(--radius-md); margin-bottom: 14px; }
   .rebound-icon { font-size: 20px; flex-shrink: 0; }
   .rebound-text { font-size: 13px; color: var(--text); line-height: 1.4; }

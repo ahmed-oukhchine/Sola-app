@@ -72,6 +72,18 @@ import ShutdownRitual from './lib/ShutdownRitual.svelte'
   let isDesktop = $state(false)
   let showDayComplete = $state(false)
   let momentum = $derived(computeMomentum())
+  let showEmergency = $state(false)
+  let emergencyText = $state('')
+
+  function openEmergency() { emergencyText = ''; showEmergency = true }
+  function submitEmergency() {
+    if (!emergencyText.trim()) return
+    addTask(emergencyText.trim())
+    toast('One thing set. You\'ve got this.', 'success')
+    showEmergency = false
+    emergencyText = ''
+    activeView = 'today'
+  }
 
   function refreshActivity() {
     lastActivity = Date.now()
@@ -393,6 +405,7 @@ import ShutdownRitual from './lib/ShutdownRitual.svelte'
           <Search size={16} strokeWidth={1.5} />
         </button>
         <span class="points-badge"><Star size={14} strokeWidth={1.5} /> {points}</span>
+        <button class="emergency-btn" onclick={openEmergency} aria-label="Emergency mode">1</button>
         <button class="dm-btn" onclick={() => showDopamine = true} aria-label="Dopamine menu">
           <Sparkles size={16} strokeWidth={1.5} />
         </button>
@@ -476,6 +489,20 @@ import ShutdownRitual from './lib/ShutdownRitual.svelte'
   </div>
 {/if}
 
+{#if showEmergency}
+  <div class="emergency-overlay" in:fade={{ duration: 200 }} onclick={() => showEmergency = false} role="dialog">
+    <div class="emergency-card" onclick={(e) => e.stopPropagation()} role="document">
+      <div class="emergency-icon">&#9881;</div>
+      <div class="emergency-heading">What's the ONE thing I need to do today?</div>
+      <input type="text" class="emergency-input" placeholder="Type it here..." bind:value={emergencyText} onkeydown={(e) => { if (e.key === 'Enter') submitEmergency() }} autofocus />
+      <div class="emergency-actions">
+        <button class="emergency-go" onclick={submitEmergency} disabled={!emergencyText.trim()}>Focus on this</button>
+        <button class="emergency-cancel" onclick={() => showEmergency = false}>Never mind</button>
+      </div>
+    </div>
+  </div>
+{/if}
+
 <Toast {toasts} onDismiss={dismissToast} onUndo={handleUndo} />
 
 <style>
@@ -499,6 +526,8 @@ import ShutdownRitual from './lib/ShutdownRitual.svelte'
   .header-search-btn:hover { color: var(--text); background: var(--surface-hover); }
   .install-btn { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--complete); background: transparent; border: none; padding: 0; transition: all 0.15s var(--ease); flex-shrink: 0; }
   .install-btn:hover { background: var(--complete-bg); }
+  .emergency-btn { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--danger); background: rgba(176,96,96,0.1); border: 1px solid rgba(176,96,96,0.2); padding: 0; font-size: 13px; font-weight: 700; transition: all 0.15s var(--ease); flex-shrink: 0; }
+  .emergency-btn:hover { background: rgba(176,96,96,0.2); transform: scale(1.05); }
   .dm-btn { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--accent); background: transparent; border: none; padding: 0; transition: all 0.15s var(--ease); flex-shrink: 0; }
   .dm-btn:hover { background: var(--accent-subtle); }
   .resting-badge { font-size: 10px; font-weight: 600; color: var(--complete); background: var(--complete-bg); padding: 3px 10px; border-radius: 20px; letter-spacing: 0.3px; }
@@ -520,5 +549,17 @@ import ShutdownRitual from './lib/ShutdownRitual.svelte'
   .ritual-header { display: flex; align-items: center; gap: 10px; padding: 18px 22px; border-bottom: 1px solid var(--border); }
   .ritual-title { font-size: 15px; font-weight: 600; color: var(--text); }
   .ritual-footer { display: flex; gap: 8px; padding: 8px 22px 18px; }
+  .emergency-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; padding: 24px; z-index: 200; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+  .emergency-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 36px 32px; width: 100%; max-width: 380px; text-align: center; animation: fadeIn 0.25s var(--ease-out); }
+  .emergency-icon { font-size: 32px; margin-bottom: 12px; }
+  .emergency-heading { font-size: 18px; font-weight: 600; color: var(--text); margin-bottom: 20px; line-height: 1.35; }
+  .emergency-input { width: 100%; padding: 14px 16px; font-size: 18px; border-radius: var(--radius-md); border: 1.5px solid var(--border); background: var(--surface); color: var(--text); text-align: center; transition: border-color 0.2s var(--ease); box-sizing: border-box; }
+  .emergency-input:focus { border-color: var(--accent); outline: none; box-shadow: var(--accent-ring); }
+  .emergency-input::placeholder { color: var(--text-muted); font-size: 16px; }
+  .emergency-actions { display: flex; flex-direction: column; gap: 6px; margin-top: 20px; }
+  .emergency-go { padding: 14px; border-radius: var(--radius-md); font-size: 15px; font-weight: 600; background: var(--accent); color: #fff; border: none; cursor: pointer; transition: all 0.15s var(--ease); }
+  .emergency-go:disabled { opacity: 0.3; cursor: default; }
+  .emergency-go:hover:not(:disabled) { filter: brightness(1.1); }
+  .emergency-cancel { padding: 8px; border-radius: var(--radius-md); font-size: 13px; font-weight: 500; background: transparent; color: var(--text-muted); border: none; cursor: pointer; }
 
 </style>

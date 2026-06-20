@@ -103,6 +103,15 @@
   let bookRatio = $derived(
     Math.min(1, totalEstimatedMinutes / shutdownMinutes),
   );
+  let todayTip = $derived.by(() => {
+    if (todayTasks.length === 0) return 'Start by adding one small task'
+    if (todayTasks.every(t => t.completed)) return 'All done! Time to rest.'
+    if (overbooked) return 'You might have too much planned. Try moving some tasks to tomorrow.'
+    if (!todayHighlight && todayTasks.filter(t => !t.completed).length > 8) return 'Try picking just 3 must-dos for today.'
+    const inc = todayTasks.filter(t => !t.completed)
+    if (inc.length <= 3 && inc.length > 0) return 'A light day — great for deep focus.'
+    return ''
+  })
   function taskTop(t) {
     const [sh, sm] = t.startTime.split(":").map(Number);
     return ((sh * 60 + sm - START_H * 60) / 60) * HOUR_H;
@@ -916,7 +925,8 @@
                 </div>
               </div>{/if}
           </div>{/each}
-      </div>{/if}
+          </div>{/if}
+  {#if todayTip}<div class="today-tip">{todayTip}</div>{/if}
   </main>{/if}
 
 <style>
@@ -1633,6 +1643,7 @@
   .wl-fill.wl-over { background: var(--danger); }
   .wl-warning-text { font-size: 11px; color: var(--danger); margin-top: 6px; }
   .wl-caution-text { font-size: 11px; color: var(--warning); margin-top: 6px; }
+  .today-tip { margin: 8px 22px 4px; font-size: 11px; color: var(--text-muted); font-style: italic; text-align: center; }
   .tl-star, .us-star {
     width: 26px; height: 26px; border-radius: var(--radius-sm);
     display: flex; align-items: center; justify-content: center;

@@ -1,4 +1,5 @@
 <script>
+  import { fly } from 'svelte/transition'
   import { CalendarDays, Inbox, Crosshair, TrendingUp, Flame, Star, Check, GripVertical, Settings, X, Clock, Zap } from 'lucide-svelte'
   import { store, addTask, loadPoints, computeStreak, computeMomentum } from './taskStore.svelte.js'
 
@@ -50,6 +51,8 @@
   let enabledWidgets = $state(JSON.parse(localStorage.getItem('focus-db-enabled') || '{"stats":true,"current":true,"quick-add":true,"nav":true,"recent":true,"upcoming":true}'))
 
   let showConfig = $state(false)
+
+  function closeConfig() { showConfig = false }
 
   function saveState() {
     localStorage.setItem('focus-db-widgets', JSON.stringify(widgetOrder))
@@ -155,7 +158,7 @@
     <div class="db-config" transition:fly={{ y: -8, duration: 200, opacity: 0 }}>
       <div class="db-config-header">
         <span class="db-config-title">Widgets</span>
-        <button class="db-config-close" onclick={() => showConfig = false}><X size={14} strokeWidth={1.5} /></button>
+        <button class="db-config-close" onclick={closeConfig}><X size={14} strokeWidth={1.5} /></button>
       </div>
       <div class="db-config-grid">
         {#each ALL_IDS as id}

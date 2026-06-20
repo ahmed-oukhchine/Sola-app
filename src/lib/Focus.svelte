@@ -16,27 +16,29 @@
   let audioCtx = $state(null)
   let soundNodes = $state([])
 
-  // Ambient starfield
-  let starCount = 80
-  let stars = $derived.by(() => {
+  // Ambient firefly particles
+  let fireflyCount = 60
+  let fireflies = $derived.by(() => {
     const arr = []
-    for (let i = 0; i < starCount; i++) {
+    for (let i = 0; i < fireflyCount; i++) {
+      const drifter = i < Math.round(fireflyCount * 0.2)
+      const x = Math.random() * 100
+      const y = Math.random() * 100
       arr.push({
-        x: Math.random() * 100,
-        y: Math.random() * 100,
-        size: 0.5 + Math.random() * 2.5,
-        opacity: 0.15 + Math.random() * 0.4,
-        speed: 0.3 + Math.random() * 0.7,
-        delay: Math.random() * 8,
-        driftX: (Math.random() - 0.5) * 40,
-        driftY: (Math.random() - 0.5) * 40,
-        twinkleDelay: Math.random() * 6,
-        twinkleDuration: 3 + Math.random() * 5
+        x, y,
+        size: 1 + Math.random() * 2,
+        opacity: 0.15 + Math.random() * 0.35,
+        delay: Math.random() * 10,
+        drifter,
+        driftX: drifter ? (Math.random() - 0.5) * 25 : 0,
+        driftY: drifter ? (Math.random() - 0.5) * 25 : 0,
+        glowColor: Math.random() > 0.4 ? 'rgba(255,245,210,0.5)' : 'rgba(210,225,255,0.35)',
+        toX: `${(50 - x) * 0.4}vw`,
+        toY: `${(50 - y) * 0.4}vh`
       })
     }
     return arr
   })
-  let starState = $derived(timerRunning && !timerPaused ? 'active' : timerRunning ? 'paused' : 'idle')
 
   const SOUNDS = [
     { id: 'none', label: 'Silent' },
@@ -231,18 +233,20 @@
   })
 </script>
 
-<main class="focus-view" class:star-idle={starState === 'idle'} class:star-active={starState === 'active'} class:star-paused={starState === 'paused'}>
-  <div class="starfield">
-    {#each stars as s, i}
+<main class="focus-view" class:breathing={timerStatus === 'running'} class:celebrating={showCelebration}>
+  <div class="bg-layer">
+    <div class="glow" class:glow-active={timerStatus === 'running'} class:glow-celebrate={showCelebration}></div>
+    {#each fireflies as p, i}
       <div
-        class="star"
-        style="left: {s.x}%; top: {s.y}%;
-          width: {s.size}px; height: {s.size}px;
-          opacity: {s.opacity};
-          --drift-x: {s.driftX}px; --drift-y: {s.driftY}px;
-          --twinkle-delay: {s.twinkleDelay}s;
-          --twinkle-duration: {s.twinkleDuration}s;
-          animation-delay: {s.delay}s;"
+        class="firefly"
+        class:drifter={p.drifter}
+        style="left: {p.x}%; top: {p.y}%;
+          width: {p.size}px; height: {p.size}px;
+          opacity: {p.opacity};
+          --delay: {p.delay}s;
+          --drift-x: {p.driftX}px; --drift-y: {p.driftY}px;
+          --glow: {p.glowColor};
+          --to-x: {p.toX}; --to-y: {p.toY};"
       ></div>
     {/each}
   </div>
@@ -346,7 +350,7 @@
 {/if}
 
 <style>
-  .focus-view { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; gap: 14px; position: relative; }
+  .focus-view { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; gap: 14px; position: relative; background: #000; }
   .time-timer { width: 240px; height: 240px; overflow: visible; margin-top: 10px; }
   .tt-bg { fill: none; stroke: rgba(255,255,255,0.08); stroke-width: 8px; }
   .tt-fill { fill: none; stroke: var(--accent); stroke-width: 8px; stroke-linecap: round; transition: stroke-dashoffset 0.5s var(--ease-out); filter: drop-shadow(0 0 24px rgba(var(--accent-rgb), 0.15)); }
@@ -394,27 +398,63 @@
   .celebration-card { background: var(--bg); border-radius: var(--radius-xl); border: 1px solid var(--border); padding: 36px 44px; text-align: center; animation: scaleIn 0.35s var(--ease-spring); }
   .celebration-title { font-size: 20px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
   .celebration-sub { font-size: 13px; color: var(--text-secondary); }
-  .starfield { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
-  .star { position: absolute; border-radius: 50%; background: var(--text); }
-  .star-idle .star, .star-paused .star { animation: none; }
-  .star-active .star {
-    animation: star-drift 28s cubic-bezier(0.45, 0.05, 0.25, 1) infinite alternate;
+  /* --- Focus Bubble Background --- */
+  .bg-layer { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; display: flex; align-items: center; justify-content: center; }
+  .glow {
+    position: absolute;
+    width: 320px; height: 320px;
+    border-radius: 50%;
+    background: radial-gradient(circle at center, rgba(160,180,255,0.04) 0%, transparent 65%);
+    transform: scale(0.92);
+    opacity: 0.4;
+    animation: breathe 7s ease-in-out infinite;
+    transition: opacity 1.5s ease, background 1.5s ease;
   }
-  .star-active .star:nth-child(3n) { animation-duration: 40s; }
-  .star-active .star:nth-child(5n) { animation-duration: 50s; }
-  .star-active .star:nth-child(7n) { animation-duration: 35s; }
-  @keyframes star-drift {
+  .glow-active {
+    opacity: 1;
+    background: radial-gradient(circle at center, rgba(160,180,255,0.08) 0%, transparent 60%);
+  }
+  .glow-celebrate {
+    animation: celebrate-pulse 3s ease-out forwards;
+  }
+  @keyframes breathe {
+    0%, 100% { transform: scale(0.92); opacity: 0.4; }
+    50% { transform: scale(1.06); opacity: 0.8; }
+  }
+  @keyframes celebrate-pulse {
+    0% { transform: scale(0.95); opacity: 1; background: radial-gradient(circle at center, rgba(160,180,255,0.2) 0%, transparent 50%); }
+    100% { transform: scale(1.8); opacity: 0; background: radial-gradient(circle at center, rgba(160,180,255,0.05) 0%, transparent 60%); }
+  }
+  .firefly {
+    position: absolute;
+    border-radius: 50%;
+    background: var(--glow, rgba(255,245,210,0.4));
+    box-shadow: 0 0 5px 2px var(--glow, rgba(255,245,210,0.2));
+    animation: firefly-pulse 6s ease-in-out infinite;
+    animation-delay: var(--delay, 0s);
+    transition: opacity 1.5s ease;
+  }
+  .firefly.drifter {
+    animation: firefly-pulse 6s ease-in-out infinite, firefly-drift 45s ease-in-out infinite alternate;
+    animation-delay: var(--delay, 0s), var(--delay, 0s);
+  }
+  .breathing .firefly.drifter {
+    animation-duration: 6s, 55s;
+  }
+  .celebrating .firefly {
+    animation: firefly-center 2.8s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
+  }
+  @keyframes firefly-pulse {
+    0%, 100% { opacity: 0.15; transform: scale(0.8); }
+    50% { opacity: 0.9; transform: scale(1.15); }
+  }
+  @keyframes firefly-drift {
     0% { transform: translate(0, 0); }
     100% { transform: translate(var(--drift-x), var(--drift-y)); }
   }
-  .star-active .star:nth-child(4n) {
-    animation: star-drift 32s cubic-bezier(0.45, 0.05, 0.25, 1) infinite alternate,
-               star-twinkle 8s ease-in-out infinite;
-    animation-delay: var(--twinkle-delay, 0s), var(--twinkle-delay, 0s);
-  }
-  @keyframes star-twinkle {
-    0%, 100% { opacity: 0.12; }
-    50% { opacity: 0.5; }
+  @keyframes firefly-center {
+    0% { transform: translate(0, 0); opacity: 1; }
+    100% { transform: translate(var(--to-x), var(--to-y)); opacity: 0; }
   }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   @keyframes scaleIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }

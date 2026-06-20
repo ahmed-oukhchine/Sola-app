@@ -16,6 +16,24 @@
     setHighlight,
   } from "./taskStore.svelte.js";
   let { now, onCompleteTask, onCompleteSubtask, onStartFocus, onPlanDay } = $props();
+
+  function playComplete() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)()
+      const g = ctx.createGain()
+      g.connect(ctx.destination)
+      g.gain.setValueAtTime(0.08, ctx.currentTime)
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3)
+      const o = ctx.createOscillator()
+      o.frequency.setValueAtTime(880, ctx.currentTime)
+      o.frequency.linearRampToValueAtTime(1320, ctx.currentTime + 0.1)
+      o.type = 'sine'
+      o.connect(g)
+      o.start()
+      o.stop(ctx.currentTime + 0.3)
+    } catch {}
+    if (navigator.vibrate) navigator.vibrate(12)
+  }
   let todayStr = $derived(new Date().toISOString().split("T")[0]);
   let todayTasks = $derived(
     store.tasks
@@ -220,6 +238,7 @@
       const was = task.completed;
       toggleTask(task.id);
       if (!was) {
+        playComplete();
         onCompleteTask();
       }
     }
@@ -371,7 +390,7 @@
       onclick={() => {
         const nwas = actionTask.completed;
         toggleTask(actionTask.id);
-        if (!nwas) onCompleteTask();
+        if (!nwas) { playComplete(); onCompleteTask(); }
       }}>{actionTask.completed ? "Undo" : "Complete"}</button
     >
   </div>{:else}<div class="status">
@@ -527,6 +546,7 @@
                   const was = task.completed;
                   toggleTask(task.id);
                   if (!was) {
+                    playComplete();
                     onCompleteTask();
                   }
                 }}
@@ -732,6 +752,7 @@
                   const was = task.completed;
                   toggleTask(task.id);
                   if (!was) {
+                    playComplete();
                     onCompleteTask();
                   }
                 }}

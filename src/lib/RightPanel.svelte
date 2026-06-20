@@ -97,8 +97,8 @@
 
 <style>
   .right-panel {
-    width: 260px;
-    min-width: 260px;
+    width: 280px;
+    min-width: 280px;
     display: flex;
     flex-direction: column;
     background: var(--bg);

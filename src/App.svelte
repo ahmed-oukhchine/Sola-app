@@ -73,7 +73,6 @@ import ShutdownRitual from './lib/ShutdownRitual.svelte'
 
   function refreshActivity() {
     lastActivity = Date.now()
-    if (showLock) showLock = false
   }
 
   function toast(message, type = 'success', undo = null) {
@@ -162,6 +161,7 @@ import ShutdownRitual from './lib/ShutdownRitual.svelte'
   function handleUnlock(user) {
     userName = user
     showAccount = false
+    showLock = false
     checkRituals()
     checkWeeklyReview()
     checkBackupReminder()

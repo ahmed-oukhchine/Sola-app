@@ -57,15 +57,37 @@
       return !t.unscheduled && sh * 60 + sm > n;
     }),
   );
-  let nextAction = $state(false);
+  let nextAction = $state(false)
+  let doableNow = $state(false);
   let hideCompleted = $state(false);
+  let minutesUntilNext = $derived.by(() => {
+    const n = now.getHours() * 60 + now.getMinutes()
+    const next = todayTasks.find(t => {
+      if (t.completed || t.unscheduled) return false
+      const [sh, sm] = t.startTime.split(':').map(Number)
+      return sh * 60 + sm > n
+    })
+    if (next) {
+      const [sh, sm] = next.startTime.split(':').map(Number)
+      return sh * 60 + sm - n
+    }
+    return shutdownMinutes
+  })
   let searchQuery = $state("");
+  function doableFilter(t) {
+    if (!doableNow) return true
+    if (t.completed) return false
+    if (t.unscheduled) return true
+    const est = t.estimatedMinutes || 30
+    return est <= minutesUntilNext
+  }
   let timedTasks = $derived(
     todayTasks.filter(
       (t) =>
         !t.unscheduled &&
         (!hideCompleted || !t.completed) &&
         (!mvpMode || mvpIds.includes(t.id)) &&
+        doableFilter(t) &&
         t.title.toLowerCase().includes(searchQuery.toLowerCase()),
     ),
   );
@@ -75,6 +97,7 @@
         t.unscheduled &&
         (!hideCompleted || !t.completed) &&
         (!mvpMode || mvpIds.includes(t.id)) &&
+        doableFilter(t) &&
         t.title.toLowerCase().includes(searchQuery.toLowerCase()),
     ),
   );
@@ -347,7 +370,10 @@
     class:active={hideCompleted}
     onclick={() => (hideCompleted = !hideCompleted)}>Hide done</button
   ><button
-    class="view-btn mvp-btn"
+    class="view-btn"
+    class:active={doableNow}
+    onclick={() => (doableNow = !doableNow)}>Do-able</button
+  ><button class="view-btn mvp-btn"
     class:active={mvpMode}
     onclick={() => (mvpMode = !mvpMode)} title="Show only your 3 must-do tasks">MVP</button
   ><button class="plan-day-btn" onclick={onPlanDay} title="Plan your day">

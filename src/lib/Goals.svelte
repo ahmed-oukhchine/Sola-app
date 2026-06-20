@@ -1,6 +1,6 @@
 <script>
-  import { Plus } from 'lucide-svelte'
-  import { goals, addGoal, removeGoal, updateGoal, getGoalProgress } from './taskStore.svelte.js'
+  import { Plus, Target, ListChecks } from 'lucide-svelte'
+  import { store, goals, addGoal, removeGoal, updateGoal, getGoalProgress } from './taskStore.svelte.js'
 
   let title = $state('')
   let desc = $state('')
@@ -36,6 +36,21 @@
 <div class="view-content">
   <h2 class="view-title">Goals</h2>
   <p class="view-sub">Track what matters. Link tasks to goals to see progress.</p>
+
+  {#if goals.items.filter(g => g.period === 'weekly').length > 0}
+    <div class="weekly-objs">
+      <div class="wo-header">
+        <Target size={16} strokeWidth={1.5} />
+        <span class="wo-title">This week's objectives</span>
+      </div>
+      {#each goals.items.filter(g => g.period === 'weekly') as g}
+        <div class="wo-row">
+          <span class="wo-name">{g.title}</span>
+          <span class="wo-progress">{Math.round(getGoalProgress(g) * 100)}%</span>
+        </div>
+      {/each}
+    </div>
+  {/if}
 
   {#if !showForm}
     <button class="add-trigger" onclick={() => showForm = true}>
@@ -96,6 +111,13 @@
               </div>
               <span class="goal-pct">{Math.round(getGoalProgress(g) * 100)}%</span>
             </div>
+            {#if g.linkedTaskIds.length > 0}
+              <div class="goal-tasks">
+                <ListChecks size={12} strokeWidth={1.5} />
+                <span>{g.linkedTaskIds.length} task{g.linkedTaskIds.length !== 1 ? 's' : ''} linked</span>
+                <span class="goal-tasks-done">{store.tasks.filter(t => g.linkedTaskIds.includes(t.id) && t.completed).length} done</span>
+              </div>
+            {/if}
             <div class="goal-footer">
               <button class="goal-edit-btn" onclick={() => startEdit(g)}>Edit</button>
               <button class="goal-del-btn" onclick={() => removeGoal(g.id)}>Delete</button>
@@ -127,4 +149,12 @@
   .goal-edit-btn:hover { border-color: var(--accent); color: var(--text); }
   .goal-del-btn { font-size: 13px; font-weight: 500; color: var(--text-muted); cursor: pointer; padding: 6px 14px; border-radius: 6px; background: transparent; }
   .goal-del-btn:hover { color: var(--danger); }
+  .weekly-objs { background: linear-gradient(135deg, var(--accent-subtle), transparent); border-radius: var(--radius-lg); border: 1px solid var(--border); padding: 16px 18px; margin-bottom: 16px; }
+  .wo-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; color: var(--accent); }
+  .wo-title { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .wo-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; }
+  .wo-name { font-size: 14px; color: var(--text); }
+  .wo-progress { font-size: 12px; font-weight: 600; color: var(--accent); }
+  .goal-tasks { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); margin-bottom: 10px; }
+  .goal-tasks-done { color: var(--complete); }
 </style>

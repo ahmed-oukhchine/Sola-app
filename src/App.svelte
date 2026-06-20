@@ -22,11 +22,13 @@
   import SearchModal from './lib/Search.svelte'
   import Onboarding from './lib/Onboarding.svelte'
   import Account from './lib/Account.svelte'
-  import { store, someday, addTask, loadAll, exportData, importData, loadPoints, savePoints, computeStreak, requestPermission, scheduleAll, removeTask } from './lib/taskStore.svelte.js'
+  import { store, someday, addTask, loadAll, exportData, importData, loadPoints, savePoints, computeStreak, requestPermission, scheduleAll, removeTask, rolloverIncompleteTasks } from './lib/taskStore.svelte.js'
   import { Menu, Search, CalendarDays, Sunrise, Plus, CircleCheckBig, Download, Star, Flame, Sparkles, Monitor } from 'lucide-svelte'
 import Toast from './lib/Toast.svelte'
 import LockScreen from './lib/LockScreen.svelte'
 import DopamineMenu from './lib/DopamineMenu.svelte'
+import DailyPlanning from './lib/DailyPlanning.svelte'
+import ShutdownRitual from './lib/ShutdownRitual.svelte'
 
   let activeView = $state('dashboard')
   let sidebarOpen = $state(false)
@@ -365,12 +367,12 @@ import DopamineMenu from './lib/DopamineMenu.svelte'
 {/if}
 
 {#if !isDesktop}
-  <Sidebar open={sidebarOpen} {activeView} {streak} {points} {theme} {effectiveTheme} onNavigate={(v) => activeView = v} onClose={() => sidebarOpen = false} onThemeCycle={cycleTheme} onExport={handleExport} onImport={handleImport} {inboxCount} {somedayCount} />
+  <Sidebar open={sidebarOpen} {activeView} {streak} {points} {theme} {effectiveTheme} onNavigate={(v) => activeView = v} onClose={() => sidebarOpen = false} onThemeCycle={cycleTheme} onExport={handleExport} onImport={handleImport} onPlanDay={() => showMorning = true} {inboxCount} {somedayCount} />
 {/if}
 
 <div class="app-layout">
   {#if isDesktop}
-    <DesktopSidebar {activeView} {streak} {points} {theme} {effectiveTheme} onNavigate={(v) => activeView = v} onThemeCycle={cycleTheme} onExport={handleExport} onImport={handleImport} {inboxCount} {somedayCount} onOpenSearch={() => showSearch = true} />
+    <DesktopSidebar {activeView} {streak} {points} {theme} {effectiveTheme} onNavigate={(v) => activeView = v} onThemeCycle={cycleTheme} onExport={handleExport} onImport={handleImport} {inboxCount} {somedayCount} onOpenSearch={() => showSearch = true} onPlanDay={() => showMorning = true} />
   {/if}
 
   <div class="app-main">
@@ -412,7 +414,7 @@ import DopamineMenu from './lib/DopamineMenu.svelte'
       {#if activeView === 'settings'}<div in:fade={{ duration: 200 }} class="view-wrap"><SettingsView {theme} {effectiveTheme} onThemeCycle={cycleTheme} {accentColor} onAccentChange={setAccent} {autoThemeTime} onAutoThemeChange={(t) => autoThemeTime = t} /></div>{/if}
       {#if activeView === 'habits'}<div in:fade={{ duration: 200 }} class="view-wrap"><HabitsView /></div>{/if}
       {#if activeView === 'tags'}<div in:fade={{ duration: 200 }} class="view-wrap"><TagsView /></div>{/if}
-      {#if activeView === 'today'}<div in:fade={{ duration: 200 }} class="view-wrap"><TodayView {now} onCompleteTask={onCompleteTask} onCompleteSubtask={onCompleteSubtask} onStartFocus={(id) => { focusTaskId = id; activeView = 'focus' }} /></div>{/if}
+      {#if activeView === 'today'}<div in:fade={{ duration: 200 }} class="view-wrap"><TodayView {now} onCompleteTask={onCompleteTask} onCompleteSubtask={onCompleteSubtask} onStartFocus={(id) => { focusTaskId = id; activeView = 'focus' }} onPlanDay={() => showMorning = true} /></div>{/if}
       {#if activeView === 'inbox'}<div in:fade={{ duration: 200 }} class="view-wrap"><InboxView /></div>{/if}
       {#if activeView === 'focus'}<div in:fade={{ duration: 200 }} class="view-wrap"><FocusView taskId={focusTaskId} onClearTask={() => focusTaskId = null} /></div>{/if}
       {#if activeView === 'templates'}<div in:fade={{ duration: 200 }} class="view-wrap"><TemplatesView /></div>{/if}
@@ -424,7 +426,7 @@ import DopamineMenu from './lib/DopamineMenu.svelte'
   </div>
 
   {#if isDesktop}
-    <RightPanel {activeView} {points} {streak} {now} {todayTasks} {completedCount} onNavigate={(v) => activeView = v} onStartFocus={(id) => { focusTaskId = id; activeView = 'focus' }} onOpenDopamine={() => showDopamine = true} />
+    <RightPanel {activeView} {points} {streak} {now} {todayTasks} {completedCount} onNavigate={(v) => activeView = v} onStartFocus={(id) => { focusTaskId = id; activeView = 'focus' }} onOpenDopamine={() => showDopamine = true} onPlanDay={() => showMorning = true} />
   {/if}
 </div>
 
@@ -453,42 +455,11 @@ import DopamineMenu from './lib/DopamineMenu.svelte'
 {/if}
 
 {#if showMorning}
-  <div class="ritual-overlay" out:fade={{ duration: 200 }} onclick={skipMorning} role="dialog">
-    <div class="ritual-card" out:fade={{ duration: 150 }} onclick={(e) => e.stopPropagation()}>
-      <div class="ritual-header">
-        <Sunrise size={20} strokeWidth={1.5} color="var(--accent)" />
-        <span class="ritual-title">Good morning</span>
-      </div>
-      <div class="ritual-body">
-        <input type="text" class="ritual-input" placeholder="What are you focusing on today?" bind:value={ritualTitle} onkeydown={(e) => { if (e.key === 'Enter') handleRitualSubmit() }} />
-        <button class="ritual-add-btn" onclick={handleRitualSubmit} disabled={!ritualTitle.trim()} aria-label="Add"><Plus size={16} strokeWidth={1.5} /></button>
-      </div>
-      <div class="ritual-footer">
-        <button class="ritual-btn primary" onclick={completeMorning}>Start the day</button>
-        <button class="ritual-btn secondary" onclick={skipMorning}>Skip</button>
-      </div>
-    </div>
-  </div>
+  <DailyPlanning onDone={completeMorning} onSkip={skipMorning} onNavigate={(v) => activeView = v} />
 {/if}
 
 {#if showEvening}
-  <div class="ritual-overlay" out:fade={{ duration: 200 }} onclick={skipEvening} role="dialog">
-    <div class="ritual-card" out:fade={{ duration: 150 }} onclick={(e) => e.stopPropagation()}>
-      <div class="ritual-header">
-        <CircleCheckBig size={20} strokeWidth={1.5} color="var(--complete)" />
-        <span class="ritual-title">End of day</span>
-        <span class="ritual-stat">{completedCount}/{todayTasks.length} tasks done</span>
-      </div>
-      <div class="ritual-body">
-        <input type="text" class="ritual-input" placeholder="Task for tomorrow..." bind:value={ritualTitle} onkeydown={(e) => { if (e.key === 'Enter') handleRitualSubmit() }} />
-        <button class="ritual-add-btn" onclick={handleRitualSubmit} disabled={!ritualTitle.trim()} aria-label="Add"><Plus size={16} strokeWidth={1.5} /></button>
-      </div>
-      <div class="ritual-footer">
-        <button class="ritual-btn primary" onclick={completeEvening}>Close the day</button>
-        <button class="ritual-btn secondary" onclick={skipEvening}>Skip</button>
-      </div>
-    </div>
-  </div>
+  <ShutdownRitual {completedCount} todayTotal={todayTasks.length} onDone={completeEvening} onSkip={skipEvening} />
 {/if}
 
 {#if showBackupReminder}
@@ -553,17 +524,6 @@ import DopamineMenu from './lib/DopamineMenu.svelte'
   .ritual-card { background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-xl); width: 100%; max-width: 420px; box-shadow: var(--shadow-xl); overflow: hidden; animation: fadeIn 0.15s var(--ease-out); }
   .ritual-header { display: flex; align-items: center; gap: 10px; padding: 18px 22px; border-bottom: 1px solid var(--border); }
   .ritual-title { font-size: 15px; font-weight: 600; color: var(--text); }
-  .ritual-stat { font-size: 13px; color: var(--text-secondary); margin-left: auto; }
-  .ritual-body { display: flex; gap: 8px; padding: 14px 22px; }
-  .ritual-input { flex: 1; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--text); font-size: 15px; outline: none; }
-  .ritual-input:focus { border-color: var(--accent); box-shadow: var(--accent-ring); }
-  .ritual-add-btn { width: 40px; height: 40px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; background: var(--accent); color: #fff; border: none; cursor: pointer; flex-shrink: 0; }
-  .ritual-add-btn:hover { filter: brightness(1.1); }
-  .ritual-add-btn:disabled { opacity: 0.25; filter: none; }
   .ritual-footer { display: flex; gap: 8px; padding: 8px 22px 18px; }
-  .ritual-btn { padding: 9px 20px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s var(--ease); }
-  .ritual-btn.primary { background: var(--accent); color: #fff; border: none; }
-  .ritual-btn.primary:hover { filter: brightness(1.1); }
-  .ritual-btn.secondary { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
-  .ritual-btn.secondary:hover { border-color: var(--accent); color: var(--accent); }
+
 </style>

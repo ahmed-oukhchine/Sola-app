@@ -74,6 +74,7 @@ export function loadAll() {
   } catch {}
   scheduleAll()
   generateRecurringTasks()
+  rolloverIncompleteTasks()
 }
 
 // --- Tasks ---
@@ -110,6 +111,7 @@ export function addTask(title, startTime = '', endTime = '', energy = null, repe
     estimatedMinutes,
     order: maxOrder + 1,
     highlight: false,
+    rolloverCount: 0,
     createdAt: Date.now()
   }
   store.tasks.push(task)
@@ -664,6 +666,26 @@ export function scheduleAll() {
 }
 
 // --- Recurring Tasks ---
+
+export function getTodayAvailableMinutes() {
+  const shutdown = localStorage.getItem('focus-shutdown-time')
+  if (!shutdown) return 600
+  const [h, m] = shutdown.split(':').map(Number)
+  const now = new Date()
+  return Math.max(0, (h * 60 + m) - (now.getHours() * 60 + now.getMinutes()))
+}
+
+export function rolloverIncompleteTasks() {
+  const today = new Date().toISOString().split('T')[0]
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+  const stale = store.tasks.filter(t => !t.completed && t.date !== today && t.date <= yesterday && !t.repeat)
+  for (const t of stale) {
+    t.date = today
+    t.rolloverCount = (t.rolloverCount || 0) + 1
+  }
+  if (stale.length) persist()
+  return stale
+}
 
 export function generateRecurringTasks() {
   const today = new Date().toISOString().split('T')[0]

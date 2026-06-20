@@ -1,8 +1,8 @@
 <script>
   import { fly } from 'svelte/transition'
-  import { LayoutDashboard, CalendarDays, Inbox, Crosshair, ListChecks, Clock, Calendar, Target, Columns3, SquareCheck, Tags, BookOpen, TrendingUp, Settings, ChevronDown, Briefcase, Star, Flame, X } from 'lucide-svelte'
+  import { LayoutDashboard, CalendarDays, Inbox, Crosshair, ListChecks, Clock, Calendar, Target, Columns3, SquareCheck, Tags, BookOpen, TrendingUp, Settings, ChevronDown, Briefcase, Star, Flame, X, Sunrise } from 'lucide-svelte'
 
-  let { open, activeView, streak, points, theme, effectiveTheme, onNavigate, onClose, onThemeCycle, onExport, onImport, inboxCount = 0, somedayCount = 0 } = $props()
+  let { open, activeView, streak, points, theme, effectiveTheme, onNavigate, onClose, onThemeCycle, onExport, onImport, onPlanDay, inboxCount = 0, somedayCount = 0 } = $props()
 
   const GROUPS = [
     {
@@ -62,6 +62,12 @@
                 {/if}
               </button>
             {/each}
+            {#if group.label === 'Plan'}
+              <button class="ios-row" onclick={() => { onPlanDay(); onClose() }}>
+                <Sunrise size={18} strokeWidth={1.5} class="ios-row-icon" />
+                <span class="ios-row-label">Plan Day</span>
+              </button>
+            {/if}
           </div>
         {/each}
       </div>

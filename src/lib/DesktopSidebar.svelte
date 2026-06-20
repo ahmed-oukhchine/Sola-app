@@ -1,7 +1,7 @@
 <script>
-  import { LayoutDashboard, CalendarDays, Inbox, Crosshair, ListChecks, Clock, Calendar, Target, Columns3, SquareCheck, Tags, BookOpen, TrendingUp, Settings, Briefcase, Star, Flame, Search } from 'lucide-svelte'
+  import { LayoutDashboard, CalendarDays, Inbox, Crosshair, ListChecks, Clock, Calendar, Target, Columns3, SquareCheck, Tags, BookOpen, TrendingUp, Settings, Briefcase, Star, Flame, Search, Sunrise } from 'lucide-svelte'
 
-  let { activeView, streak, points, theme, effectiveTheme, onNavigate, onThemeCycle, onExport, onImport, onOpenSearch, inboxCount = 0, somedayCount = 0 } = $props()
+  let { activeView, streak, points, theme, effectiveTheme, onNavigate, onThemeCycle, onExport, onImport, onOpenSearch, onPlanDay, inboxCount = 0, somedayCount = 0 } = $props()
 
   const GROUPS = [
     {
@@ -65,6 +65,12 @@
             {/if}
           </button>
         {/each}
+        {#if group.label === 'Plan'}
+          <button class="ds-row" onclick={onPlanDay}>
+            <Sunrise size={17} strokeWidth={1.5} class="ds-row-icon" />
+            <span class="ds-row-label">Plan Day</span>
+          </button>
+        {/if}
       </div>
     {/each}
   </nav>

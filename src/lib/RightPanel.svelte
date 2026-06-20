@@ -1,8 +1,7 @@
 <script>
-  import { Star, Flame, Sparkles, Circle, Plus, Crosshair, ListTodo, Timer } from 'lucide-svelte'
+  import { Star, Flame, Sparkles, Circle, Plus, Crosshair, ListTodo, Timer, Sunrise } from 'lucide-svelte'
   import { addTask } from './taskStore.svelte.js'
-
-  let { activeView, points, streak, now, todayTasks = [], completedCount, onNavigate, onStartFocus, onOpenDopamine } = $props()
+  let { activeView, points, streak, now, todayTasks = [], completedCount, onNavigate, onStartFocus, onOpenDopamine, onPlanDay } = $props()
 
   let newTask = $state('')
 
@@ -76,6 +75,10 @@
   {/if}
 
   <div class="rp-actions">
+    <button class="rp-action-btn" onclick={onPlanDay}>
+      <Sunrise size={16} strokeWidth={1.5} />
+      Plan
+    </button>
     <button class="rp-action-btn" onclick={() => onStartFocus(null)}>
       <Crosshair size={16} strokeWidth={1.5} />
       Focus

@@ -1,6 +1,6 @@
 <script>
   import { fly } from "svelte/transition";
-  import { Plus, Check, X, Info, Crosshair, Save, Star } from 'lucide-svelte';
+  import { Plus, Check, X, Info, Crosshair, Save, Star, Sunrise } from 'lucide-svelte';
   import {
     store,
     addTask,
@@ -15,7 +15,7 @@
     addTemplate,
     setHighlight,
   } from "./taskStore.svelte.js";
-  let { now, onCompleteTask, onCompleteSubtask, onStartFocus } = $props();
+  let { now, onCompleteTask, onCompleteSubtask, onStartFocus, onPlanDay } = $props();
   let todayStr = $derived(new Date().toISOString().split("T")[0]);
   let todayTasks = $derived(
     store.tasks
@@ -70,12 +70,20 @@
   const TOTAL_H = (END_H - START_H) * HOUR_H;
   const HOURS = Array.from({ length: END_H - START_H }, (_, i) => START_H + i);
   const AVAILABLE_MINUTES = (END_H - START_H) * 60;
+  let shutdownTime = $state(localStorage.getItem('focus-shutdown-time') || '');
+  let shutdownMinutes = $derived.by(() => {
+    if (!shutdownTime) return AVAILABLE_MINUTES
+    const [h, m] = shutdownTime.split(':').map(Number)
+    const nowH = now.getHours(), nowM = now.getMinutes()
+    const remaining = (h * 60 + m) - (nowH * 60 + nowM)
+    return Math.max(60, remaining)
+  })
   let totalEstimatedMinutes = $derived(
     todayTasks.reduce((s, t) => s + (t.estimatedMinutes || 0), 0),
   );
-  let overbooked = $derived(totalEstimatedMinutes > AVAILABLE_MINUTES);
+  let overbooked = $derived(totalEstimatedMinutes > shutdownMinutes);
   let bookRatio = $derived(
-    Math.min(1, totalEstimatedMinutes / AVAILABLE_MINUTES),
+    Math.min(1, totalEstimatedMinutes / shutdownMinutes),
   );
   function taskTop(t) {
     const [sh, sm] = t.startTime.split(":").map(Number);
@@ -299,13 +307,35 @@
     class="view-btn"
     class:active={hideCompleted}
     onclick={() => (hideCompleted = !hideCompleted)}>Hide done</button
-  ><input
+  ><button class="plan-day-btn" onclick={onPlanDay} title="Plan your day">
+    <Sunrise size={14} strokeWidth={1.5} />Plan
+  </button><input
     type="search"
     class="search-input"
     placeholder="Search..."
     bind:value={searchQuery}
   />
 </div>
+{#if todayTasks.length > 0}
+  <div class="workload-bar" title={`${Math.round(bookRatio * 100)}% of available time`}>
+    <div class="wl-row">
+      <span class="wl-label">Workload</span>
+      <span class="wl-value" class:wl-over={overbooked}>
+        {totalEstimatedMinutes}m planned
+        {#if shutdownTime}<span class="wl-muted"> of {shutdownMinutes}m available</span>{/if}
+      </span>
+    </div>
+    <div class="wl-track">
+      <div class="wl-fill" class:wl-warn={bookRatio > 0.8 && !overbooked} class:wl-over={overbooked} style="width: {Math.min(bookRatio * 100, 100)}%"></div>
+    </div>
+    {#if overbooked}
+      <div class="wl-warning-text">Overcommitted by {Math.abs(shutdownMinutes - totalEstimatedMinutes)}m — consider moving tasks</div>
+    {:else if bookRatio > 0.8}
+      <div class="wl-caution-text">Filling up — {shutdownMinutes - totalEstimatedMinutes}m remaining</div>
+    {/if}
+  </div>
+{/if}
+
 <div class="highlight-section">
   {#if todayHighlight}
     <div class="highlight-card">
@@ -892,6 +922,8 @@
     box-shadow: var(--shadow-sm);
     border: 1px solid var(--border);
   }
+  .plan-day-btn { display: flex; align-items: center; gap: 4px; padding: 8px 14px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; color: var(--accent); background: var(--accent-subtle); cursor: pointer; transition: all 0.15s var(--ease); flex-shrink: 0; }
+  .plan-day-btn:hover { filter: brightness(1.1); }
   .search-input {
     flex: 1;
     min-width: 80px;
@@ -1544,6 +1576,25 @@
     color: var(--accent);
     background: var(--accent-subtle);
   }
+  .workload-bar {
+    margin: 0 22px 12px;
+    padding: 12px 16px;
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .wl-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .wl-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; }
+  .wl-value { font-size: 12px; color: var(--text-secondary); }
+  .wl-value.wl-over { color: var(--danger); font-weight: 600; }
+  .wl-muted { color: var(--text-muted); }
+  .wl-track { height: 6px; background: var(--border-light); border-radius: 3px; overflow: hidden; }
+  .wl-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.3s var(--ease); }
+  .wl-fill.wl-warn { background: var(--warning); }
+  .wl-fill.wl-over { background: var(--danger); }
+  .wl-warning-text { font-size: 11px; color: var(--danger); margin-top: 6px; }
+  .wl-caution-text { font-size: 11px; color: var(--warning); margin-top: 6px; }
   .tl-star, .us-star {
     width: 26px; height: 26px; border-radius: var(--radius-sm);
     display: flex; align-items: center; justify-content: center;

@@ -9,6 +9,12 @@
   let dumps = $state(JSON.parse(localStorage.getItem('focus-dumps') || '[]'))
   let selected = $state(new Set())
   let selectMode = $state(false)
+  let inboxPaused = $state(JSON.parse(localStorage.getItem('focus-inbox-paused') || 'false'))
+
+  function togglePause() {
+    inboxPaused = !inboxPaused
+    localStorage.setItem('focus-inbox-paused', JSON.stringify(inboxPaused))
+  }
 
   function toggleSelect(id) {
     const s = new Set(selected)
@@ -55,10 +61,18 @@
   <h2 class="view-title">Inbox</h2>
   <p class="view-sub">Dump everything on your mind. Process later.</p>
 
-  <div class="inbox-add">
-    <input type="text" class="input" placeholder="Quick task idea?" bind:value={title} onkeydown={(e) => { if (e.key === 'Enter') handleAdd() }} />
-    <button class="inbox-add-btn" onclick={handleAdd} disabled={!title.trim()}>Add</button>
+  <div class="inbox-pause-row">
+    <span class="inbox-pause-label">{inboxPaused ? 'Inbox paused' : 'Inbox open'}</span>
+    <button class="inbox-pause-toggle" onclick={togglePause}>{inboxPaused ? 'Resume' : 'Pause'}</button>
   </div>
+  {#if inboxPaused}
+    <div class="inbox-paused-banner">Inbox is paused — new items won't collect</div>
+  {:else}
+    <div class="inbox-add">
+      <input type="text" class="input" placeholder="Quick task idea?" bind:value={title} onkeydown={(e) => { if (e.key === 'Enter') handleAdd() }} />
+      <button class="inbox-add-btn" onclick={handleAdd} disabled={!title.trim()}>Add</button>
+    </div>
+  {/if}
   {#if inbox.items.length === 0}
     <div class="empty"><p style="margin:0">Your inbox is empty</p></div>
   {:else}
@@ -130,6 +144,11 @@
   .dump-date { font-size: 11px; color: var(--text-muted); font-weight: 500; }
   .dump-del { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--text-muted); background: transparent; border: none; cursor: pointer; padding: 0; transition: all 0.2s var(--ease); }
   .dump-del:hover { background: var(--danger-bg); color: var(--danger); }
+  .inbox-pause-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .inbox-pause-label { font-size: 11px; font-weight: 500; color: var(--text-muted); }
+  .inbox-pause-toggle { padding: 3px 12px; border-radius: 14px; font-size: 11px; font-weight: 500; background: transparent; border: 1px solid var(--border); color: var(--text-secondary); cursor: pointer; }
+  .inbox-pause-toggle:hover { border-color: var(--accent-subtle); color: var(--accent); }
+  .inbox-paused-banner { padding: 10px 14px; border-radius: var(--radius-md); background: var(--accent-subtle); border: 1px solid var(--accent); font-size: 13px; color: var(--accent); margin-bottom: 10px; }
   .inbox-toolbar { display: flex; gap: 6px; margin-bottom: 8px; align-items: center; }
   .inbox-bulk-toggle { padding: 4px 12px; border-radius: 16px; font-size: 11px; font-weight: 500; color: var(--text-muted); background: transparent; border: 1px solid var(--border); cursor: pointer; }
   .inbox-bulk-toggle.active { background: var(--accent-subtle); color: var(--accent); border-color: var(--accent-subtle); }

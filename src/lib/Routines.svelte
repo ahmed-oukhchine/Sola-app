@@ -38,10 +38,16 @@
   <p class="view-sub">Morning and evening checklists</p>
   <div class="routine-add-row">
     <input type="text" class="input" placeholder="Routine name..." bind:value={title} />
-    <select class="routine-select" bind:value={type}>
-      <option value="morning">Morning</option>
-      <option value="evening">Evening</option>
-    </select>
+    <div class="routine-type-picker">
+      <button class="routine-type-btn" class:active={type === 'morning'} onclick={() => type = 'morning'}>
+        <Sun size={14} strokeWidth={1.5} />
+        Morning
+      </button>
+      <button class="routine-type-btn" class:active={type === 'evening'} onclick={() => type = 'evening'}>
+        <Moon size={14} strokeWidth={1.5} />
+        Evening
+      </button>
+    </div>
     <button class="inbox-add-btn" onclick={handleAdd} disabled={!title.trim()}>Add</button>
   </div>
   {#if routines.items.length === 0}
@@ -83,7 +89,11 @@
 </div>
 
 <style>
-  .routine-add-row { display: flex; gap: 10px; margin-bottom: 20px; }
+  .routine-add-row { display: flex; gap: 10px; margin-bottom: 20px; align-items: center; }
+  .routine-type-picker { display: flex; gap: 4px; flex-shrink: 0; }
+  .routine-type-btn { display: flex; align-items: center; gap: 5px; padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: 500; color: var(--text-secondary); background: var(--surface); border: 1px solid var(--border); cursor: pointer; transition: all 0.15s var(--ease); }
+  .routine-type-btn:hover { border-color: var(--accent-subtle); color: var(--accent); }
+  .routine-type-btn.active { background: var(--accent-subtle); border-color: var(--accent); color: var(--accent); }
   .routine-type-heading { font-size: 16px; font-weight: 600; color: var(--text); margin: 16px 0 10px; }
   .routine-card { background: var(--surface); border-radius: var(--radius-md); border: 1px solid var(--border); margin-bottom: 12px; padding: 18px 20px; transition: all 0.2s var(--ease); }
   .routine-card:hover { box-shadow: var(--shadow-sm); border-color: var(--accent-subtle); }

@@ -232,6 +232,14 @@
 
   $effect(() => () => { if (tickInterval) clearInterval(tickInterval); stopSound() })
 
+  // Focus insurance
+  let fallbackTask = $state(localStorage.getItem('focus-fallback') || '')
+  let showFallback = $state(false)
+  function saveFallback() {
+    localStorage.setItem('focus-fallback', fallbackTask)
+    showFallback = false
+  }
+
   // --- Body Double ---
   let showBodyDouble = $state(false)
   const bdMessages = ['Right here with you', 'You can do this', 'One step at a time', 'Stay with it', 'Almost there', 'You got this', 'Keep going', 'Breathe and focus']
@@ -333,6 +341,18 @@
       </button>
     {/if}
   </div>
+
+  {#if showFallback}
+    <div class="fallback-row" transition:fade={{ duration: 150 }}>
+      <span class="fallback-label">If you can't focus, do this instead:</span>
+      <input type="text" class="fallback-input" bind:value={fallbackTask} placeholder="e.g. stretch, make tea, tidy desk" onkeydown={(e) => { if (e.key === 'Enter') saveFallback() }} />
+      <button class="fallback-save" onclick={saveFallback}>Save</button>
+    </div>
+  {:else if !fallbackTask && timerStatus === 'ready'}
+    <button class="fallback-set" onclick={() => showFallback = true}>Set a fallback task</button>
+  {:else if fallbackTask && (timerStatus === 'running' || timerStatus === 'paused')}
+    <div class="fallback-active">Fallback: {fallbackTask}</div>
+  {/if}
 
   <button class="pomo-btn" class:active={pomodoroActive} onclick={() => { pomodoroActive = !pomodoroActive; if (!pomodoroActive) resetTimer() }}>
       <Timer size={14} strokeWidth={1.5} />
@@ -477,6 +497,14 @@
     0% { transform: translate(0, 0); opacity: 1; }
     100% { transform: translate(var(--to-x), var(--to-y)); opacity: 0; }
   }
+  .fallback-row { display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); }
+  .fallback-label { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+  .fallback-input { flex: 1; padding: 6px 8px; border: none; border-radius: var(--radius-sm); background: var(--bg); color: var(--text); font-size: 12px; min-width: 0; }
+  .fallback-input:focus { outline: none; }
+  .fallback-save { padding: 4px 12px; border-radius: 14px; font-size: 11px; font-weight: 600; background: var(--accent); color: #fff; border: none; cursor: pointer; }
+  .fallback-set { padding: 4px 14px; border-radius: 14px; font-size: 11px; font-weight: 500; color: var(--text-muted); background: transparent; border: 1px dashed var(--border); cursor: pointer; }
+  .fallback-set:hover { border-color: var(--accent-subtle); color: var(--accent); }
+  .fallback-active { font-size: 11px; color: var(--text-muted); padding: 4px 12px; border: 0.5px solid var(--border-light); border-radius: 12px; }
   .just5-btn { padding: 6px 20px; border-radius: 20px; font-size: 11px; font-weight: 600; color: var(--accent); background: transparent; border: 1px solid var(--accent-subtle); cursor: pointer; transition: all 0.2s var(--ease); }
   .just5-btn:hover:not(:disabled) { background: var(--accent-subtle); }
   .just5-btn:disabled { opacity: 0.35; cursor: default; }

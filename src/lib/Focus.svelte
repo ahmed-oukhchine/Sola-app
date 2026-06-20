@@ -1,6 +1,6 @@
 <script>
   import { fade } from 'svelte/transition'
-  import { Play, Pause, PlusCircle, X, Timer, PartyPopper, UserRound } from 'lucide-svelte';
+  import { Play, Pause, PlusCircle, X, Timer, UserRound } from 'lucide-svelte';
   import { store, logFocusSession } from './taskStore.svelte.js'
   const PRESETS = [5, 15, 25, 45]
   let timerMinutes = $state(25), timerRemaining = $state(25 * 60)
@@ -381,12 +381,9 @@
 </main>
 
 {#if showCelebration}
-  <div class="celebration-overlay" out:fade={{ duration: 200 }} onclick={() => showCelebration = false}>
-    <div class="celebration-card" out:fade={{ duration: 150 }}>
-      <PartyPopper size={56} strokeWidth={1.5} />
-      <div class="celebration-title">Session Complete!</div>
-      <div class="celebration-sub">{timerMinutes} minute{timerMinutes !== 1 ? 's' : ''} focused</div>
-    </div>
+  <div class="whisper-overlay" out:fade={{ duration: 600 }}>
+    <div class="whisper-ring"></div>
+    <div class="whisper-text" out:fade={{ duration: 400 }}><span class="whisper-title">Session Complete</span><span class="whisper-sub">{timerMinutes} min</span></div>
   </div>
 {/if}
 
@@ -435,10 +432,12 @@
   .focus-task-title { font-size: 12px; color: var(--text); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .focus-task-clear { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); background: transparent; border: none; padding: 0; flex-shrink: 0; transition: all 0.2s var(--ease); }
   .focus-task-clear:hover { background: var(--danger-bg); color: var(--danger); }
-  .celebration-overlay { position: fixed; inset: 0; z-index: 300; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); backdrop-filter: blur(16px); animation: fadeIn 0.2s var(--ease-out); }
-  .celebration-card { background: var(--bg); border-radius: var(--radius-xl); border: 1px solid var(--border); padding: 36px 44px; text-align: center; animation: scaleIn 0.35s var(--ease-spring); }
-  .celebration-title { font-size: 20px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
-  .celebration-sub { font-size: 13px; color: var(--text-secondary); }
+  .whisper-overlay { position: fixed; inset: 0; z-index: 300; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; pointer-events: none; }
+  .whisper-ring { width: 280px; height: 280px; border-radius: 50%; border: 1.5px solid rgba(160,180,255,0.15); animation: whisper-ring 3s ease-out forwards; }
+  .whisper-text { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .whisper-title { font-size: 16px; font-weight: 500; color: var(--text); }
+  .whisper-sub { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+  @keyframes whisper-ring { 0% { transform: scale(0.8); opacity: 0; } 20% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.8); opacity: 0; } }
   /* --- Focus Bubble Background --- */
   .bg-layer { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; display: flex; align-items: center; justify-content: center; }
   .glow {

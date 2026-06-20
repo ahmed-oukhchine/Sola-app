@@ -899,7 +899,7 @@
   .view-toolbar {
     display: flex;
     gap: 6px;
-    padding: 0 22px 12px;
+    padding: 12px 22px 12px;
     flex-shrink: 0;
   }
   .view-btn {

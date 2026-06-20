@@ -5,6 +5,9 @@
   const PRESETS = [5, 15, 25, 45]
   let timerMinutes = $state(25), timerRemaining = $state(25 * 60)
   let timerRunning = $state(false), timerPaused = $state(false), timerStart = $state(0)
+  let showMood = $state(false)
+  let lastSessionMins = $state(0)
+  function logMood(mood) { const log = JSON.parse(localStorage.getItem('focus-mood-log') || '[]'); log.unshift({ date: new Date().toISOString().split('T')[0], mood, minutes: lastSessionMins }); localStorage.setItem('focus-mood-log', JSON.stringify(log.slice(0, 100))); showMood = false }
   let timerPauseRemaining = $state(0), tickInterval = $state(null), doTick = $state(false), prevSecond = $state(-1)
   let pomodoroActive = $state(false), pomodoroSession = $state('focus'), pomodoroCount = $state(0)
   let showCelebration = $state(false)
@@ -207,6 +210,8 @@
       playTimerSound()
       const sessionMinutes = timerMinutes
       logFocusSession(sessionMinutes, pomodoroActive ? (pomodoroSession === 'focus' ? 'pomodoro-focus' : 'pomodoro-break') : 'focus')
+      lastSessionMins = sessionMinutes
+      if (!pomodoroActive && !just5Session) { showMood = true; setTimeout(() => showMood = false, 8000) }
       if (just5Session) { just5Session = false; showExtend = true }
       else if (!pomodoroActive) { showCelebration = true; setTimeout(() => showCelebration = false, 3000) }
       if (pomodoroActive) {
@@ -309,6 +314,18 @@
     Just 5 min
   </button>
 
+  {#if showMood}
+    <div class="mood-checkin" transition:fly={{ y: 10, duration: 200, opacity: 0 }}>
+      <span class="mood-label">How was that session?</span>
+      <div class="mood-row">
+        <button class="mood-btn" onclick={() => logMood(1)} title="Terrible">&#128534;</button>
+        <button class="mood-btn" onclick={() => logMood(2)} title="Bad">&#128533;</button>
+        <button class="mood-btn" onclick={() => logMood(3)} title="Okay">&#128528;</button>
+        <button class="mood-btn" onclick={() => logMood(4)} title="Good">&#128578;</button>
+        <button class="mood-btn" onclick={() => logMood(5)} title="Great">&#128513;</button>
+      </div>
+    </div>
+  {/if}
   {#if showExtend}
     <div class="extend-prompt" transition:fade={{ duration: 200 }}>
       <span class="extend-text">Keep going?</span>
@@ -509,6 +526,11 @@
   .just5-btn:disabled { opacity: 0.35; cursor: default; }
   .extend-prompt { display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 50px; }
   .extend-text { font-size: 13px; color: var(--text); font-weight: 500; }
+  .mood-checkin { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 16px; background: var(--surface); border-radius: var(--radius-md); border: 1px solid var(--border); margin-bottom: 12px; }
+  .mood-label { font-size: 12px; font-weight: 500; color: var(--text-secondary); }
+  .mood-row { display: flex; gap: 6px; }
+  .mood-btn { width: 36px; height: 36px; border-radius: 50%; font-size: 18px; background: transparent; border: 1px solid var(--border); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s var(--ease); padding: 0; }
+  .mood-btn:hover { border-color: var(--accent); background: var(--accent-subtle); transform: scale(1.15); }
   .extend-btn { padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; color: #fff; background: var(--accent); border: none; cursor: pointer; }
   .extend-btn.secondary { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }

@@ -448,16 +448,14 @@ import ShutdownRitual from './lib/ShutdownRitual.svelte'
 
 {#if showWeeklyReview && weeklyReviewData}
   <div class="ritual-overlay" out:fade={{ duration: 200 }} onclick={dismissWeeklyReview} role="dialog">
-    <div class="ritual-card" out:fade={{ duration: 150 }} onclick={(e) => e.stopPropagation()}>
-      <div class="ritual-header">
-        <CalendarDays size={20} strokeWidth={1.5} color="var(--accent)" />
-        <span class="ritual-title">Weekly Review</span>
-      </div>
-      <div class="weekly-letter">
+    <div class="letter-card" out:fade={{ duration: 150 }} onclick={(e) => e.stopPropagation()}>
+      <div class="letter-stamp">S</div>
+      <div class="letter-date">Week of {todayStr}</div>
+      <div class="letter-body">
         <p>{weeklyReviewData}</p>
       </div>
-      <div class="ritual-footer">
-        <button class="ritual-btn primary" onclick={dismissWeeklyReview}>Got it</button>
+      <div class="letter-footer">
+        <button class="ritual-btn primary" onclick={dismissWeeklyReview}>Read & reflect</button>
       </div>
     </div>
   </div>
@@ -541,8 +539,12 @@ import ShutdownRitual from './lib/ShutdownRitual.svelte'
     .app-layout { height: 100vh; }
     .app-main { border-left: 0.5px solid var(--border); border-right: 0.5px solid var(--border); }
   }
-  .weekly-letter { padding: 18px 22px; }
-  .weekly-letter p { font-size: 14px; color: var(--text-secondary); line-height: 1.7; }
+  .letter-card { background: var(--surface-raised); border-radius: var(--radius-xl); border: 1px solid var(--border); width: 100%; max-width: 440px; overflow: hidden; animation: scaleIn 0.35s var(--ease-spring); box-shadow: var(--shadow-xl); }
+  .letter-stamp { width: 40px; height: 40px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; margin: 24px auto 4px; }
+  .letter-date { text-align: center; font-size: 11px; color: var(--text-muted); font-weight: 500; letter-spacing: 0.5px; margin-bottom: 16px; }
+  .letter-body { padding: 0 28px 16px; }
+  .letter-body p { font-size: 14px; color: var(--text-secondary); line-height: 1.8; white-space: pre-wrap; }
+  .letter-footer { display: flex; justify-content: center; padding: 4px 24px 24px; }
   .date { font-size: 12px; color: var(--text-muted); font-weight: 500; letter-spacing: 0.3px; }
   .ritual-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: flex-start; justify-content: center; padding: 60px 24px; z-index: 100; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); animation: fadeIn 0.2s var(--ease-out); }
   .ritual-card { background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-xl); width: 100%; max-width: 420px; box-shadow: var(--shadow-xl); overflow: hidden; animation: fadeIn 0.15s var(--ease-out); }
@@ -561,5 +563,6 @@ import ShutdownRitual from './lib/ShutdownRitual.svelte'
   .emergency-go:disabled { opacity: 0.3; cursor: default; }
   .emergency-go:hover:not(:disabled) { filter: brightness(1.1); }
   .emergency-cancel { padding: 8px; border-radius: var(--radius-md); font-size: 13px; font-weight: 500; background: transparent; color: var(--text-muted); border: none; cursor: pointer; }
+  @keyframes scaleIn { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
 </style>

@@ -553,7 +553,7 @@
         >
       </div>
     </form>{:else}<button class="add-trigger" onclick={openForm}
-      ><Plus size={14} strokeWidth={1.5} />Add task</button
+      ><Plus size={18} strokeWidth={1.5} />Add task</button
     >{/if}
   <main class="task-list">
     {#if yesterdayUnfinished.length > 0}
@@ -1745,6 +1745,5 @@
   .tl-star.highlighted, .us-star.highlighted {
     color: #f0b429;
   }
-  .add-trigger { display: inline-flex; align-items: center; gap: 5px; padding: 7px 14px; margin: 8px 0 4px 22px; border-radius: var(--radius-md); font-size: 13px; font-weight: 500; color: var(--accent); background: transparent; border: 1px dashed var(--border); cursor: pointer; transition: all 0.15s var(--ease); }
-  .add-trigger:hover { border-color: var(--accent-subtle); background: var(--accent-subtle); }
+  .add-trigger { margin: 8px 22px 4px; }
 </style>

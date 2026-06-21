@@ -19,6 +19,7 @@
   let step = $state(0)
   let chosenColor = $state('')
   let canvasEl
+  let dayStart = $state(localStorage.getItem('focus-day-start') || '07:00')
 
   let username = $state('')
   let password = $state('')
@@ -89,10 +90,11 @@
   })
 
   function advance() {
-    if (step === 5) { finish(); return }
+    if (step === 6) { finish(); return }
     if (step === 2 && !chosenColor) return
-    if (step === 3) { return }
+    if (step === 3) { localStorage.setItem('focus-day-start', dayStart); step++; return }
     if (step === 4) { return }
+    if (step === 5) { return }
     step++
   }
 
@@ -182,6 +184,22 @@
     {:else if step === 3}
       <div class="ob-center" in:fly={{ y: 30, duration: 450, opacity: 0 }} onclick={(e) => e.stopPropagation()}>
         <div class="ob-icon" style="--i: 0">
+          <CalendarDays size={28} strokeWidth={1.5} color={chosenColor || 'var(--accent)'} />
+        </div>
+        <h2 class="ob-heading" style="--i: 1">When does your day start?</h2>
+        <p class="ob-subline" style="--i: 2; margin-bottom:24px">Your morning planning will begin at this time</p>
+        <div class="ob-form" style="--i: 3">
+          <input type="time" class="ob-input" style="font-size:22px;text-align:center;padding:14px" bind:value={dayStart} />
+          <button class="ob-form-btn" onclick={() => { localStorage.setItem('focus-day-start', dayStart); step++ }}>
+            <span>Continue</span>
+            <ArrowRight size={16} strokeWidth={1.5} />
+          </button>
+        </div>
+      </div>
+
+    {:else if step === 4}
+      <div class="ob-center" in:fly={{ y: 30, duration: 450, opacity: 0 }} onclick={(e) => e.stopPropagation()}>
+        <div class="ob-icon" style="--i: 0">
           <UserRound size={28} strokeWidth={1.5} color={chosenColor || 'var(--accent)'} />
         </div>
         <h2 class="ob-heading" style="--i: 1">Choose a username</h2>
@@ -198,7 +216,7 @@
         </div>
       </div>
 
-    {:else if step === 4}
+    {:else if step === 5}
       <div class="ob-center" in:fly={{ y: 30, duration: 450, opacity: 0 }} onclick={(e) => e.stopPropagation()}>
         <div class="ob-icon" style="--i: 0">
           <LockKeyhole size={28} strokeWidth={1.5} color={chosenColor || 'var(--accent)'} />
@@ -226,7 +244,7 @@
         </div>
       </div>
 
-    {:else if step === 5}
+    {:else if step === 6}
       <div class="ob-center" in:fly={{ y: 30, duration: 450, opacity: 0 }}>
         <div class="ob-icon" style="--i: 0">
           <Sparkles size={32} strokeWidth={1.5} color={chosenColor || 'var(--accent)'} />
@@ -245,7 +263,7 @@
   {/key}
 
   <div class="ob-dots">
-    {#each { length: 6 } as _, i}
+    {#each { length: 7 } as _, i}
       <span class="ob-dot-ind" class:active={i === step}></span>
     {/each}
   </div>

@@ -1,6 +1,6 @@
 <script>
   import { fly } from 'svelte/transition'
-  import { LayoutDashboard, CalendarDays, Inbox, Crosshair, ListChecks, Clock, Calendar, Target, Columns3, SquareCheck, Tags, BookOpen, TrendingUp, Settings, ChevronDown, Briefcase, Star, Flame, X, Sunrise } from 'lucide-svelte'
+  import { LayoutDashboard, CalendarDays, Inbox, Crosshair, ListChecks, Clock, Calendar, Target, Columns3, SquareCheck, Tags, BookOpen, TrendingUp, Settings, ChevronDown, Briefcase, Star, Flame, X, Sunrise, Moon, Sun, Monitor, Download, Upload } from 'lucide-svelte'
 
   let { open, activeView, streak, points, theme, effectiveTheme, onNavigate, onClose, onThemeCycle, onExport, onImport, onPlanDay, inboxCount = 0, somedayCount = 0 } = $props()
 
@@ -72,11 +72,14 @@
         {/each}
       </div>
       <div class="ios-sheet-footer">
-        <button class="ios-footer-btn" onclick={onThemeCycle}>
-          {effectiveTheme === 'dark' ? 'Dark' : 'Light'} mode
+        <button class="ios-footer-btn" onclick={onThemeCycle} title="Toggle theme">
+          {#if theme === 'dark'}<Moon size={14} strokeWidth={1.5} />
+          {:else if theme === 'light'}<Sun size={14} strokeWidth={1.5} />
+          {:else}<Monitor size={14} strokeWidth={1.5} />
+          {/if}
         </button>
-        <button class="ios-footer-btn" onclick={onExport}>Export</button>
-        <button class="ios-footer-btn" onclick={onImport}>Import</button>
+        <button class="ios-footer-btn" onclick={onExport} title="Export"><Download size={14} strokeWidth={1.5} /></button>
+        <button class="ios-footer-btn" onclick={onImport} title="Import"><Upload size={14} strokeWidth={1.5} /></button>
       </div>
     </div>
   </div>

@@ -487,8 +487,8 @@ import ShutdownRitual from './lib/ShutdownRitual.svelte'
         <Download size={20} strokeWidth={1.5} color="var(--accent)" />
         <span class="ritual-title">Backup reminder</span>
       </div>
-      <div class="ritual-body" style="flex-direction:column;gap:4px;padding-bottom:4px">
-        <p style="font-size:14px;color:var(--text-secondary);line-height:1.5">It's Sunday — consider exporting your data to keep a safe backup.</p>
+      <div class="ritual-body">
+        <p>It's Sunday — consider exporting your data to keep a safe backup.</p>
       </div>
       <div class="ritual-footer">
         <button class="ritual-btn primary" onclick={() => { handleExport(); showBackupReminder = false; localStorage.setItem('focus-backup-reminder', todayStr) }}>Export now</button>
@@ -557,11 +557,18 @@ import ShutdownRitual from './lib/ShutdownRitual.svelte'
   .letter-body p { font-size: 14px; color: var(--text-secondary); line-height: 1.8; white-space: pre-wrap; }
   .letter-footer { display: flex; justify-content: center; padding: 4px 24px 24px; }
   .date { font-size: 12px; color: var(--text-muted); font-weight: 500; letter-spacing: 0.3px; }
-  .ritual-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: flex-start; justify-content: center; padding: 60px 24px; z-index: 100; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); animation: fadeIn 0.2s var(--ease-out); }
-  .ritual-card { background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-xl); width: 100%; max-width: 420px; box-shadow: var(--shadow-xl); overflow: hidden; animation: fadeIn 0.15s var(--ease-out); }
+  .ritual-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; padding: 24px; z-index: 100; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); animation: fadeIn 0.2s var(--ease-out); }
+  .ritual-card { background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-xl); width: 100%; max-width: 420px; box-shadow: var(--shadow-xl); overflow: hidden; animation: scaleIn 0.35s var(--ease-spring); }
   .ritual-header { display: flex; align-items: center; gap: 10px; padding: 18px 22px; border-bottom: 1px solid var(--border); }
   .ritual-title { font-size: 15px; font-weight: 600; color: var(--text); }
+  .ritual-body { padding: 10px 22px; }
+  .ritual-body p { font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin: 0; }
   .ritual-footer { display: flex; gap: 8px; padding: 8px 22px 18px; }
+  .ritual-btn { padding: 8px 18px; border-radius: var(--radius-md); font-size: 13px; font-weight: 600; border: none; cursor: pointer; transition: all 0.15s var(--ease); }
+  .ritual-btn.primary { background: var(--accent); color: #fff; }
+  .ritual-btn.primary:hover { filter: brightness(1.1); }
+  .ritual-btn.secondary { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
+  .ritual-btn.secondary:hover { background: var(--surface-hover); }
   .emergency-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; padding: 24px; z-index: 200; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
   .emergency-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 36px 32px; width: 100%; max-width: 380px; text-align: center; animation: fadeIn 0.25s var(--ease-out); }
   .emergency-icon { font-size: 32px; margin-bottom: 12px; }

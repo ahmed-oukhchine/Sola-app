@@ -1,5 +1,5 @@
 <script>
-  import { LayoutDashboard, CalendarDays, Inbox, Crosshair, ListChecks, Clock, Calendar, Target, Columns3, SquareCheck, Tags, BookOpen, TrendingUp, Settings, Briefcase, Star, Flame, Search, Sunrise } from 'lucide-svelte'
+  import { LayoutDashboard, CalendarDays, Inbox, Crosshair, ListChecks, Clock, Calendar, Target, Columns3, SquareCheck, Tags, BookOpen, TrendingUp, Settings, Briefcase, Star, Flame, Search, Sunrise, Moon, Download, Upload } from 'lucide-svelte'
 
   let { activeView, streak, points, theme, effectiveTheme, onNavigate, onThemeCycle, onExport, onImport, onOpenSearch, onPlanDay, inboxCount = 0, somedayCount = 0 } = $props()
 
@@ -76,11 +76,15 @@
   </nav>
 
   <div class="ds-footer">
-    <button class="ds-footer-btn" onclick={onThemeCycle}>
-      {effectiveTheme === 'dark' ? 'Dark' : 'Light'} mode
+    <button class="ds-footer-btn" onclick={onThemeCycle} title="Toggle theme">
+      <Moon size={14} strokeWidth={1.5} />
     </button>
-    <button class="ds-footer-btn" onclick={onExport}>Export</button>
-    <button class="ds-footer-btn" onclick={onImport}>Import</button>
+    <button class="ds-footer-btn" onclick={onExport} title="Export data">
+      <Download size={14} strokeWidth={1.5} />
+    </button>
+    <button class="ds-footer-btn" onclick={onImport} title="Import data">
+      <Upload size={14} strokeWidth={1.5} />
+    </button>
   </div>
 </div>
 

@@ -1,7 +1,8 @@
 <script>
-  import { LayoutDashboard, CalendarDays, Inbox, Crosshair, ListChecks, Clock, Calendar, Target, Columns3, SquareCheck, Tags, BookOpen, TrendingUp, Settings, Briefcase, Star, Flame, Search, Sunrise, Moon, Sun, Monitor, Download, Upload } from 'lucide-svelte'
+  import { LayoutDashboard, CalendarDays, Inbox, Crosshair, ListChecks, Clock, Calendar, Target, Columns3, SquareCheck, Tags, BookOpen, TrendingUp, Settings, Briefcase, Star, Flame, Search, Sunrise, Moon, Sun, Monitor, Smartphone, Download, Upload } from 'lucide-svelte'
 
   let { activeView, streak, points, theme, effectiveTheme, onNavigate, onThemeCycle, onExport, onImport, onOpenSearch, onPlanDay, inboxCount = 0, somedayCount = 0 } = $props()
+  let isTouch = $state(window.matchMedia('(pointer:coarse)').matches)
 
   const GROUPS = [
     {
@@ -79,7 +80,7 @@
     <button class="ds-footer-btn" onclick={onThemeCycle} title="Toggle theme">
       {#if theme === 'dark'}<Moon size={14} strokeWidth={1.5} />
       {:else if theme === 'light'}<Sun size={14} strokeWidth={1.5} />
-      {:else}<Monitor size={14} strokeWidth={1.5} />
+      {:else}{#if isTouch}<Smartphone size={14} strokeWidth={1.5} />{:else}<Monitor size={14} strokeWidth={1.5} />{/if}
       {/if}
     </button>
     <button class="ds-footer-btn" onclick={onExport} title="Export data">

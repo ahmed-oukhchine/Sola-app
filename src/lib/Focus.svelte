@@ -6,6 +6,16 @@
   let timerMinutes = $state(25), timerRemaining = $state(25 * 60)
   let timerRunning = $state(false), timerPaused = $state(false), timerStart = $state(0)
   let showMood = $state(false)
+  let showRitual = $state(false)
+  let ritualPhase = $state('')
+
+  function startWithRitual() {
+    if (timerRemaining <= 0) return
+    showRitual = true; ritualPhase = 'breathe in'
+    setTimeout(() => { ritualPhase = 'hold' }, 1000)
+    setTimeout(() => { ritualPhase = 'breathe out' }, 2000)
+    setTimeout(() => { showRitual = false; startTimerv() }, 3200)
+  }
   let lastSessionMins = $state(0)
   function logMood(mood) { const log = JSON.parse(localStorage.getItem('focus-mood-log') || '[]'); log.unshift({ date: new Date().toISOString().split('T')[0], mood, minutes: lastSessionMins }); localStorage.setItem('focus-mood-log', JSON.stringify(log.slice(0, 100))); showMood = false }
   let timerPauseRemaining = $state(0), tickInterval = $state(null), doTick = $state(false), prevSecond = $state(-1)
@@ -310,10 +320,17 @@
       <button class="preset-btn" class:active={timerMinutes === m && timerStatus === 'ready'} onclick={() => setPreset(m)} disabled={timerRunning || timerPaused}>{m}</button>
     {/each}
   </div>
-  <button class="just5-btn" onclick={() => { if (timerStatus === 'ready') { just5Session = true; timerMinutes = 5; timerRemaining = 5 * 60; startTimerv() } }} disabled={timerRunning || timerPaused}>
+  <button class="just5-btn" onclick={() => { if (timerStatus === 'ready') { just5Session = true; timerMinutes = 5; timerRemaining = 5 * 60; startWithRitual() } }} disabled={timerRunning || timerPaused}>
     Just 5 min
   </button>
 
+  {#if showRitual}
+    <div class="ritual-overlay" role="dialog">
+      <div class="ritual-circle" class:phase-in={ritualPhase === 'breathe in'} class:phase-hold={ritualPhase === 'hold'} class:phase-out={ritualPhase === 'breathe out'}>
+        <span class="ritual-phase">{ritualPhase}</span>
+      </div>
+    </div>
+  {/if}
   {#if showMood}
     <div class="mood-checkin" transition:fly={{ y: 10, duration: 200, opacity: 0 }}>
       <span class="mood-label">How was that session?</span>
@@ -336,7 +353,7 @@
 
   <div class="focus-controls">
     {#if timerStatus === 'ready'}
-      <button class="focus-btn primary" onclick={startTimerv} disabled={timerMinutes <= 0}>
+      <button class="focus-btn primary" onclick={startWithRitual} disabled={timerMinutes <= 0}>
         <Play size={16} strokeWidth={1.5} />
         Start
       </button>
@@ -533,6 +550,13 @@
   .mood-btn:hover { border-color: var(--accent); background: var(--accent-subtle); transform: scale(1.15); }
   .extend-btn { padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; color: #fff; background: var(--accent); border: none; cursor: pointer; }
   .extend-btn.secondary { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
+  .ritual-overlay { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 300; animation: fadeInR 0.3s var(--ease-out); }
+  .ritual-circle { width: 100px; height: 100px; border-radius: 50%; border: 2px solid var(--accent); display: flex; align-items: center; justify-content: center; transition: all 1s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  .ritual-circle.phase-in { transform: scale(1); border-width: 2px; opacity: 1; }
+  .ritual-circle.phase-hold { transform: scale(1.6); border-width: 1px; opacity: 0.6; }
+  .ritual-circle.phase-out { transform: scale(0.6); border-width: 3px; opacity: 0.8; }
+  .ritual-phase { font-size: 13px; font-weight: 500; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; }
+  @keyframes fadeInR { from { opacity: 0; } to { opacity: 1; } }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   @keyframes scaleIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 </style>

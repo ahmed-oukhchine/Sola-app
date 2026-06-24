@@ -58,9 +58,16 @@
     upcoming: { label: 'Upcoming' },
     starred: { label: 'Starred' },
     'micro-wins': { label: 'Micro-Wins' },
-    sessions: { label: 'Sessions' }
+    sessions: { label: 'Sessions' },
+    random: { label: 'Random Task' }
   }
   let starredTasks = $derived(store.tasks.filter(t => t.highlight).reverse())
+  let randomTask = $state(null)
+  function pickRandom() {
+    const undone = store.tasks.filter(t => !t.completed)
+    if (undone.length === 0) { randomTask = null; return }
+    randomTask = undone[Math.floor(Math.random() * undone.length)]
+  }
   let recentSessions = $derived([...focusSessions.items].reverse().slice(0, 5))
   let microWins = $state(JSON.parse(localStorage.getItem('focus-micro-wins') || '[]'))
   let winText = $state('')
@@ -85,7 +92,7 @@
   const ALL_IDS = Object.keys(WIDGET_META)
 
   let widgetOrder = $state(JSON.parse(localStorage.getItem('focus-db-widgets') || JSON.stringify(DEFAULT_ORDER)))
-  let enabledWidgets = $state(JSON.parse(localStorage.getItem('focus-db-enabled') || '{"stats":true,"current":true,"quick-add":true,"nav":true,"recent":true,"upcoming":true,"starred":true,"micro-wins":true,"sessions":true}'))
+  let enabledWidgets = $state(JSON.parse(localStorage.getItem('focus-db-enabled') || '{"stats":true,"current":true,"quick-add":true,"nav":true,"recent":true,"upcoming":true,"starred":true,"micro-wins":true,"sessions":true,"random":true}'))
 
   let showConfig = $state(false)
 
@@ -227,6 +234,7 @@
             {:else if id === 'starred'}<Star size={12} strokeWidth={1.5} />
             {:else if id === 'micro-wins'}<Zap size={12} strokeWidth={1.5} />
             {:else if id === 'sessions'}<Clock size={12} strokeWidth={1.5} />
+            {:else if id === 'random'}<Zap size={12} strokeWidth={1.5} />
             {/if}
             {WIDGET_META[id].label}
           </button>
@@ -379,6 +387,20 @@
               </div>
             {/if}
 
+          {:else if wid === 'random'}
+            {#if randomTask}
+              <div class="db-random-row">
+                <span class="db-random-title">{randomTask.title}</span>
+                <span class="db-random-date">{randomTask.date}</span>
+                <button class="db-random-btn" onclick={pickRandom}>Another</button>
+              </div>
+            {:else}
+              <div class="db-random-row">
+                <span class="db-random-empty">Pick a random undone task</span>
+                <button class="db-random-btn" onclick={pickRandom}>Pick</button>
+              </div>
+            {/if}
+
           {:else if wid === 'micro-wins'}
             <div class="db-win-row">
               <input type="text" class="input" placeholder="A small win..." bind:value={winText} onkeydown={(e) => { if (e.key === 'Enter') addWin() }} />
@@ -485,6 +507,11 @@
   .db-session-icon { flex-shrink: 0; font-size: 12px; }
   .db-session-min { font-size: 12px; font-weight: 600; color: var(--accent); min-width: 30px; }
   .db-session-date { font-size: 11px; color: var(--text-muted); }
+  .db-random-row { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
+  .db-random-title { flex: 1; font-size: 13px; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .db-random-date { font-size: 10px; color: var(--text-muted); }
+  .db-random-empty { flex: 1; font-size: 13px; color: var(--text-muted); }
+  .db-random-btn { padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 500; background: var(--accent); color: #fff; border: none; cursor: pointer; white-space: nowrap; }
   .affirmation-banner { display: flex; align-items: center; gap: 10px; padding: 14px 16px; background: linear-gradient(135deg, var(--accent-subtle), transparent); border: 1px solid var(--accent); border-radius: var(--radius-md); margin-bottom: 8px; }
   .affirmation-icon { font-size: 18px; flex-shrink: 0; }
   .affirmation-text { font-size: 13px; color: var(--text); line-height: 1.4; }

@@ -164,7 +164,7 @@
   let title = $state(""),
     startTime = $state(""),
     endTime = $state(""),
-    taskEnergy = $state(null),
+    taskEnergy = $state(localStorage.getItem('focus-default-energy') || null),
     taskRepeat = $state(null),
     showForm = $state(false);
   let mvpMode = $state(false)
@@ -190,10 +190,11 @@
   function handleSubmit() {
     if (!title.trim()) return;
     addTask(title.trim(), startTime, endTime, taskEnergy, taskRepeat);
+    if (taskEnergy) localStorage.setItem('focus-default-energy', taskEnergy)
     title = "";
     startTime = "";
     endTime = "";
-    taskEnergy = null;
+    taskEnergy = localStorage.getItem('focus-default-energy') || null;
     showForm = false;
   }
   function timeDisplay(t) {

@@ -1,6 +1,6 @@
 <script>
   import { fly } from "svelte/transition";
-  import { Plus, Check, X, Info, Crosshair, Save, Star, Sunrise } from 'lucide-svelte';
+  import { Plus, Check, X, Info, Crosshair, Save, Star, Sunrise, Timer, Target, CalendarCheck } from 'lucide-svelte';
   import {
     store,
     addTask,
@@ -119,7 +119,7 @@
   );
   const START_H = 5,
     END_H = 23,
-    HOUR_H = 76;
+    HOUR_H = 72;
   const TOTAL_H = (END_H - START_H) * HOUR_H;
   const HOURS = Array.from({ length: END_H - START_H }, (_, i) => START_H + i);
   const AVAILABLE_MINUTES = (END_H - START_H) * 60;
@@ -134,10 +134,39 @@
   let totalEstimatedMinutes = $derived(
     todayTasks.reduce((s, t) => s + (t.estimatedMinutes || 0), 0),
   );
-  let overbooked = $derived(totalEstimatedMinutes > shutdownMinutes);
-  let bookRatio = $derived(
-    Math.min(1, totalEstimatedMinutes / shutdownMinutes),
+
+  let completedMinutes = $derived(
+    todayTasks.filter(t => t.completed).reduce((s, t) => s + (t.estimatedMinutes || 0), 0)
   );
+  let remainingMinutes = $derived(Math.max(0, totalEstimatedMinutes - completedMinutes));
+  let overbooked = $derived(totalEstimatedMinutes > shutdownMinutes);
+  let bookRatio = $derived(Math.min(1, totalEstimatedMinutes / shutdownMinutes));
+  let focusScore = $derived(
+    todayTasks.length > 0
+      ? Math.round((todayTasks.filter(t => t.completed).length / todayTasks.filter(t => !t.unscheduled).length) * 100)
+      : 0
+  );
+  let totalCompleted = $derived(todayTasks.filter(t => t.completed).length);
+  let totalTimed = $derived(todayTasks.filter(t => !t.unscheduled).length);
+
+  let currentTaskProgress = $derived.by(() => {
+    if (!currentTask) return 0;
+    const [sh, sm] = currentTask.startTime.split(":").map(Number);
+    const [eh, em] = currentTask.endTime ? currentTask.endTime.split(":").map(Number) : [sh + 1, sm];
+    const startM = sh * 60 + sm;
+    const endM = eh * 60 + em;
+    const nowM = now.getHours() * 60 + now.getMinutes();
+    const elapsed = nowM - startM;
+    const total = endM - startM;
+    return Math.min(1, Math.max(0, elapsed / total));
+  });
+  let currentTaskRemaining = $derived.by(() => {
+    if (!currentTask) return 0;
+    const [eh, em] = currentTask.endTime ? currentTask.endTime.split(":").map(Number) : [0, 0];
+    const nowM = now.getHours() * 60 + now.getMinutes();
+    return Math.max(0, eh * 60 + em - nowM);
+  });
+
   let todayTip = $derived.by(() => {
     if (todayTasks.length === 0) return 'Start by adding one small task'
     if (todayTasks.every(t => t.completed)) return 'All done! Time to rest.'
@@ -156,7 +185,7 @@
     const [eh, em] = t.endTime
       ? t.endTime.split(":").map(Number)
       : [sh + 1, sm];
-    return Math.max(((eh * 60 + em - sh * 60 - sm) / 60) * HOUR_H, 42);
+    return Math.max(((eh * 60 + em - sh * 60 - sm) / 60) * HOUR_H, 40);
   }
   let nowLineTop = $derived(
     ((now.getHours() * 60 + now.getMinutes() - START_H * 60) / 60) * HOUR_H,
@@ -187,7 +216,8 @@
     const eh = r + 30 >= 60 ? (r >= 60 ? h + 1 : h) + 1 : r >= 60 ? h + 1 : h;
     endTime = `${String(eh).padStart(2, "0")}:${String(r + 30 >= 60 ? r + 30 - 60 : r + 30).padStart(2, "0")}`;
   }
-  function handleSubmit() {
+  function handleSubmit(e) {
+    e.preventDefault();
     if (!title.trim()) return;
     addTask(title.trim(), startTime, endTime, taskEnergy, taskRepeat);
     if (taskEnergy) localStorage.setItem('focus-default-energy', taskEnergy)
@@ -368,444 +398,289 @@
 </script>
 
 <div class="view-toolbar">
-  <button
-    class="view-btn"
-    class:active={!nextAction}
-    onclick={() => (nextAction = false)}>All</button
-  ><button
-    class="view-btn"
-    class:active={nextAction}
-    onclick={() => (nextAction = true)}>Next action</button
-  ><button
-    class="view-btn"
-    class:active={hideCompleted}
-    onclick={() => (hideCompleted = !hideCompleted)}>Hide done</button
-  ><button
-    class="view-btn"
-    class:active={doableNow}
-    onclick={() => (doableNow = !doableNow)}>Do-able</button
-  ><button class="view-btn mvp-btn"
-    class:active={mvpMode}
-    onclick={() => (mvpMode = !mvpMode)} title="Show only your 3 must-do tasks">MVP</button
-  ><button class="plan-day-btn" onclick={onPlanDay} title="Plan your day">
-    <Sunrise size={14} strokeWidth={1.5} />Plan
-  </button><input
-    type="search"
-    class="search-input"
-    placeholder="Search..."
-    bind:value={searchQuery}
-  />
-</div>
-{#if todayTasks.length > 0}
-  <div class="workload-bar" title={`${Math.round(bookRatio * 100)}% of available time`}>
-    <div class="wl-row">
-      <span class="wl-label">Workload</span>
-      <span class="wl-value" class:wl-over={overbooked}>
-        {totalEstimatedMinutes}m planned
-        {#if shutdownTime}<span class="wl-muted"> of {shutdownMinutes}m available</span>{/if}
-      </span>
-    </div>
-    <div class="wl-track">
-      <div class="wl-fill" class:wl-warn={bookRatio > 0.8 && !overbooked} class:wl-over={overbooked} style="width: {Math.min(bookRatio * 100, 100)}%"></div>
-    </div>
-    {#if overbooked}
-      <div class="wl-warning-text">Overcommitted by {Math.abs(shutdownMinutes - totalEstimatedMinutes)}m — consider moving tasks</div>
-    {:else if bookRatio > 0.8}
-      <div class="wl-caution-text">Filling up — {shutdownMinutes - totalEstimatedMinutes}m remaining</div>
-    {/if}
+  <div class="tb-filters">
+    <button class="tb-btn" class:active={!nextAction} onclick={() => (nextAction = false)}>All</button>
+    <button class="tb-btn" class:active={nextAction} onclick={() => (nextAction = true)}>Next</button>
+    <button class="tb-btn" class:active={hideCompleted} onclick={() => (hideCompleted = !hideCompleted)}>Hide done</button>
+    <button class="tb-btn" class:active={doableNow} onclick={() => (doableNow = !doableNow)}>Doable</button>
+    <button class="tb-btn mvp-btn" class:active={mvpMode} onclick={() => (mvpMode = !mvpMode)} title="Show only your 3 must-do tasks">MVP</button>
   </div>
-{/if}
+  <div class="tb-actions">
+    <button class="tb-plan-btn" onclick={onPlanDay} title="Plan your day">
+      <Sunrise size={13} strokeWidth={1.5} />Plan
+    </button>
+    <input type="search" class="tb-search" placeholder="Search..." bind:value={searchQuery} />
+  </div>
+</div>
 
-<div class="highlight-section">
-  {#if todayHighlight}
-    <div class="highlight-card">
-      <div class="highlight-star"><Star size={18} strokeWidth={1.5} fill="currentColor" /></div>
-      <div class="highlight-body">
-        <span class="highlight-label">Today's Highlight</span>
-        <span class="highlight-title">{todayHighlight.title}</span>
+<div class="today-scroll">
+  {#if todayTasks.length > 0}
+    <div class="metrics-bar">
+      <div class="metrics-track">
+        <div class="metrics-fill" class:warn={bookRatio > 0.8 && !overbooked} class:over={overbooked}
+          style="width: {Math.min(bookRatio * 100, 100)}%"></div>
       </div>
-      <button
-        class="highlight-unmark"
-        onclick={() => setHighlight('', todayStr)}
-        aria-label="Unmark highlight"
-      ><X size={14} strokeWidth={1.5} /></button>
+      <div class="metrics-items">
+        <div class="metric">
+          <span class="metric-value">{Math.round(totalEstimatedMinutes / 60)}h</span>
+          <span class="metric-label">Planned</span>
+        </div>
+        <div class="metric">
+          <span class="metric-value" class:metric-done={completedMinutes > 0}>{Math.round(completedMinutes / 60)}h</span>
+          <span class="metric-label">Done</span>
+        </div>
+        <div class="metric">
+          <span class="metric-value" class:metric-warn={overbooked}>{Math.round(remainingMinutes / 60)}h</span>
+          <span class="metric-label">Remaining</span>
+        </div>
+        <div class="metric metric-score">
+          <span class="metric-value metric-score-val">{isNaN(focusScore) ? 0 : focusScore}%</span>
+          <span class="metric-label">Focus</span>
+        </div>
+      </div>
+    </div>
+  {/if}
+
+  {#if currentTask}
+    <div class="focus-card">
+      <div class="fc-glow"></div>
+      <div class="fc-header">
+        <span class="fc-dot"></span>
+        <span class="fc-label">Now Working On</span>
+      </div>
+      <h3 class="fc-title">{currentTask.title}</h3>
+      <div class="fc-progress">
+        <div class="fc-progress-track">
+          <div class="fc-progress-fill" style="width: {Math.round(currentTaskProgress * 100)}%"></div>
+        </div>
+        <span class="fc-progress-pct">{Math.round(currentTaskProgress * 100)}%</span>
+      </div>
+      <div class="fc-info">
+        <div class="fc-info-item">
+          <Timer size={12} strokeWidth={1.5} />
+          <span>{currentTaskRemaining} min left</span>
+        </div>
+        <div class="fc-info-item">
+          <Target size={12} strokeWidth={1.5} />
+          <span>ends at {timeDisplay(currentTask.endTime)}</span>
+        </div>
+      </div>
+      {#if currentTask.subtasks.length > 0}
+        <div class="fc-next">
+          <span class="fc-next-label">Next step:</span>
+          <span class="fc-next-title">{currentTask.subtasks.find(s => !s.completed)?.title || 'All complete'}</span>
+        </div>
+      {/if}
+      <div class="fc-actions">
+        <button class="fc-btn fc-btn-complete" onclick={() => {
+          const was = currentTask.completed;
+          toggleTask(currentTask.id);
+          if (!was) { playComplete(); onCompleteTask(); }
+        }}>
+          <Check size={14} strokeWidth={1.5} />Complete
+        </button>
+        <button class="fc-btn fc-btn-focus" onclick={() => onStartFocus?.(currentTask.id)}>
+          <Crosshair size={14} strokeWidth={1.5} />Focus
+        </button>
+      </div>
     </div>
   {:else if todayTasks.length > 0}
-    <button class="highlight-pick" onclick={() => {}}>
-      <Star size={14} strokeWidth={1.5} />
-      Pick your main focus
-    </button>
-  {/if}
-</div>
-
-{#if nextAction && actionTask}<div class="next-action-card">
-    <div class="na-label">Next action</div>
-    <div class="na-title">{actionTask.title}</div>
-    <div class="na-time">
-      {actionTask.startTime
-        ? `${timeDisplay(actionTask.startTime)} → ${timeDisplay(actionTask.endTime)}`
-        : "Unscheduled"}
+    <div class="status-bar">
+      <div class="status-bar-content">
+        {#if nextTask}
+          <span class="sb-dot sb-dot-next"></span>
+          <span class="sb-text">Next: <strong>{nextTask.title}</strong> &middot; {timeDisplay(nextTask.startTime)}</span>
+        {:else if totalCompleted > 0}
+          <span class="sb-dot sb-done"></span>
+          <span class="sb-text">All done &middot; {totalCompleted}/{todayTasks.length} tasks</span>
+        {:else}
+          <span class="sb-dot"></span>
+          <span class="sb-text">No tasks scheduled yet</span>
+        {/if}
+      </div>
     </div>
-    <button
-      class="na-btn"
-      onclick={() => {
-        const nwas = actionTask.completed;
-        toggleTask(actionTask.id);
-        if (!nwas) { playComplete(); onCompleteTask(); }
-      }}>{actionTask.completed ? "Undo" : "Complete"}</button
-    >
-  </div>{:else}<div class="status">
-    {#if currentTask}<span class="status-dot live"></span><span
-        >Now: <strong>{currentTask.title}</strong> · ends {timeDisplay(
-          currentTask.endTime,
-        )}</span
-      >{:else if nextTask}<span class="status-dot"></span><span
-        >Next: <strong>{nextTask.title}</strong> at {timeDisplay(
-          nextTask.startTime,
-        )}</span
-      >{:else if todayTasks.filter((t) => t.completed).length > 0}<span
-        class="status-dot done"
-      ></span><span>All done for today</span>{:else}<span class="status-dot"
-      ></span><span>No tasks yet</span>{/if}
-  </div>
-  {#if showForm}<form
-      class="form"
-      transition:fly={{ y: 8, duration: 200, opacity: 0 }}
-      onsubmit={handleSubmit}
-    >
-      <input
-        type="text"
-        class="input title-input"
-        placeholder="What do you want to do?"
-        bind:value={title}
-      />
-      <div class="time-row">
-        <div class="time-field">
-          <label class="time-label" for="st">Start</label><input
-            id="st"
-            type="time"
-            class="input"
-            bind:value={startTime}
-          />
-        </div>
-        <span class="time-arrow">→</span>
-        <div class="time-field">
-          <label class="time-label" for="et">End</label><input
-            id="et"
-            type="time"
-            class="input"
-            bind:value={endTime}
-          />
-        </div>
-      </div>
-      <p class="time-optional">Leave times blank for unscheduled</p>
-      <div class="energy-row">
-        <span class="energy-label">Energy</span><button
-          type="button"
-          class="energy-btn"
-          class:selected={taskEnergy === "low"}
-          onclick={() => (taskEnergy = taskEnergy === "low" ? null : "low")}
-          >Low</button
-        ><button
-          type="button"
-          class="energy-btn"
-          class:selected={taskEnergy === "medium"}
-          onclick={() =>
-            (taskEnergy = taskEnergy === "medium" ? null : "medium")}
-          >Med</button
-        ><button
-          type="button"
-          class="energy-btn"
-          class:selected={taskEnergy === "high"}
-          onclick={() => (taskEnergy = taskEnergy === "high" ? null : "high")}
-          >High</button
-        >
-      </div>
-      <div class="repeat-row">
-        <span class="energy-label">Repeat</span><button
-          type="button"
-          class="energy-btn"
-          class:selected={taskRepeat === null}
-          onclick={() => (taskRepeat = null)}>None</button
-        ><button
-          type="button"
-          class="energy-btn"
-          class:selected={taskRepeat === "daily"}
-          onclick={() => (taskRepeat = "daily")}>Daily</button
-        ><button
-          type="button"
-          class="energy-btn"
-          class:selected={taskRepeat === "weekday"}
-          onclick={() => (taskRepeat = "weekday")}>Weekdays</button
-        ><button
-          type="button"
-          class="energy-btn"
-          class:selected={taskRepeat === "weekly"}
-          onclick={() => (taskRepeat = "weekly")}>Weekly</button
-        >
-      </div>
-      <div class="form-actions">
-        <button
-          type="button"
-          class="btn btn-cancel"
-          onclick={() => (showForm = false)}>Cancel</button
-        ><button type="submit" class="btn btn-save" disabled={!title.trim()}
-          >Save</button
-        >
-      </div>
-    </form>{:else}<button class="add-trigger" onclick={openForm}
-      ><Plus size={18} strokeWidth={1.5} />Add task</button
-    >{/if}
-  <main class="task-list">
-    {#if yesterdayUnfinished.length > 0}
-      <div class="yesterday-banner" transition:fly={{ y: -6, duration: 200, opacity: 0 }}>
-        <span class="yesterday-label">{yesterdayUnfinished.length} task{yesterdayUnfinished.length !== 1 ? 's' : ''}
-          left from yesterday</span>
-        <button class="yesterday-bring" onclick={() => {
-          yesterdayUnfinished.forEach(t => updateTask(t.id, { date: todayStr }));
-        }}>Bring to today</button>
-        <button class="yesterday-dismiss" onclick={() => {
-          yesterdayUnfinished.forEach(t => updateTask(t.id, { date: todayStr }));
-        }}>✓</button>
+  {/if}
+
+  <div class="quick-add-bar">
+    <button class="qa-add-btn" onclick={openForm}>
+      <Plus size={16} strokeWidth={1.5} />
+      <span>Add task</span>
+    </button>
+    {#if todayTasks.length > 0}
+      <div class="qa-stats">
+        <span class="qa-stat"><Check size={12} strokeWidth={1.5} />{totalCompleted}/{todayTasks.length}</span>
       </div>
     {/if}
-    {#if timedTasks.length > 0}<div
-        class="timeline"
-        style="height: {TOTAL_H}px"
-      >
-        <div class="timeline-bg">
-          {#each HOURS as h}<div
-              class="tl-hour"
-              style="top: {(h - START_H) * HOUR_H}px"
-            >
-              <span class="tl-label">{h % 12 || 12}{h >= 12 ? "p" : "a"}</span>
-            </div>{/each}
+  </div>
+
+  {#if showForm}
+    <form class="task-form" transition:fly={{ y: 8, duration: 200, opacity: 0 }} onsubmit={handleSubmit}>
+      <input type="text" class="tf-input" placeholder="What do you want to do?" bind:value={title} />
+      <div class="tf-row">
+        <div class="tf-field">
+          <label class="tf-label" for="tf-st">Start</label>
+          <input id="tf-st" type="time" class="tf-time" bind:value={startTime} />
         </div>
-        {#if nowLineTop >= 0 && nowLineTop <= TOTAL_H}<div
-            class="now-line"
-            style="top: {nowLineTop}px"
-          ></div>{/if}{#each timedTasks as task (task.id)}<div
-            class="tl-task"
-            role="button"
-            tabindex="-1"
+        <span class="tf-arrow">&rarr;</span>
+        <div class="tf-field">
+          <label class="tf-label" for="tf-et">End</label>
+          <input id="tf-et" type="time" class="tf-time" bind:value={endTime} />
+        </div>
+      </div>
+      <p class="tf-hint">Leave times blank for unscheduled</p>
+      <div class="tf-row">
+        <span class="tf-label">Energy</span>
+        <button type="button" class="tf-chip" class:selected={taskEnergy === "low"} onclick={() => (taskEnergy = taskEnergy === "low" ? null : "low")}>Low</button>
+        <button type="button" class="tf-chip" class:selected={taskEnergy === "medium"} onclick={() => (taskEnergy = taskEnergy === "medium" ? null : "medium")}>Med</button>
+        <button type="button" class="tf-chip" class:selected={taskEnergy === "high"} onclick={() => (taskEnergy = taskEnergy === "high" ? null : "high")}>High</button>
+      </div>
+      <div class="tf-row">
+        <span class="tf-label">Repeat</span>
+        <button type="button" class="tf-chip" class:selected={taskRepeat === null} onclick={() => (taskRepeat = null)}>None</button>
+        <button type="button" class="tf-chip" class:selected={taskRepeat === "daily"} onclick={() => (taskRepeat = "daily")}>Daily</button>
+        <button type="button" class="tf-chip" class:selected={taskRepeat === "weekday"} onclick={() => (taskRepeat = "weekday")}>Weekdays</button>
+        <button type="button" class="tf-chip" class:selected={taskRepeat === "weekly"} onclick={() => (taskRepeat = "weekly")}>Weekly</button>
+      </div>
+      <div class="tf-actions">
+        <button type="button" class="tf-btn tf-btn-cancel" onclick={() => (showForm = false)}>Cancel</button>
+        <button type="submit" class="tf-btn tf-btn-save" disabled={!title.trim()}>Save</button>
+      </div>
+    </form>
+  {/if}
+
+  <div class="today-content">
+    {#if yesterdayUnfinished.length > 0}
+      <div class="yb-banner">
+        <span class="yb-label">{yesterdayUnfinished.length} task{yesterdayUnfinished.length !== 1 ? 's' : ''} left from yesterday</span>
+        <button class="yb-btn" onclick={() => { yesterdayUnfinished.forEach(t => updateTask(t.id, { date: todayStr })); }}>Bring to today</button>
+        <button class="yb-dismiss" onclick={() => { yesterdayUnfinished.forEach(t => updateTask(t.id, { date: todayStr })); }}>&check;</button>
+      </div>
+    {/if}
+
+    {#if timedTasks.length > 0}
+      <div class="timeline" style="height: {TOTAL_H}px">
+        <div class="tl-bg">
+          {#each HOURS as h}
+            <div class="tl-hour" style="top: {(h - START_H) * HOUR_H}px">
+              <span class="tl-label">{h % 12 || 12}{h >= 12 ? "p" : "a"}</span>
+            </div>
+          {/each}
+        </div>
+        {#if nowLineTop >= 0 && nowLineTop <= TOTAL_H}
+          <div class="now-line" style="top: {nowLineTop}px">
+            <div class="now-line-dot"></div>
+          </div>
+        {/if}
+        {#each timedTasks as task (task.id)}
+          <div class="tl-task"
+            class:t-current={task.id === currentTask?.id}
             class:completed={task.completed}
             class:expanded={task.expanded}
             class:dragging={dragTask === task.id}
-            style="top: {taskTop(task)}px; height: {taskHeight(
-              task,
-            )}px; touch-action:pan-y"
+            style="top: {taskTop(task)}px; height: {taskHeight(task)}px; touch-action:pan-y"
             transition:fly={{ y: 8, duration: 200, opacity: 0 }}
-            onmousedown={(e) => {
-              if (!task.unscheduled) dragStart(e, task);
-            }}
+            onmousedown={(e) => { if (!task.unscheduled) dragStart(e, task); }}
             ontouchstart={(e) => touchStart(e, task.id)}
             ontouchmove={touchMove}
             ontouchend={(e) => touchEnd(e, task)}
           >
-            <div
-              class="tl-main"
-              role="button"
-              tabindex="0"
+            <div class="tl-accent-bar" class:accent-current={task.id === currentTask?.id} class:accent-done={task.completed}></div>
+            <div class="tl-main"
+              role="button" tabindex="0"
               onclick={() => toggleExpand(task.id)}
-              onkeydown={(e) => {
-                if (e.key === "Enter") toggleExpand(task.id);
-              }}
+              onkeydown={(e) => { if (e.key === "Enter") toggleExpand(task.id); }}
             >
-              <button
-                class="tl-check"
-                class:checked={task.completed}
+              <button class="tl-check" class:checked={task.completed}
                 onclick={(e) => {
                   e.stopPropagation();
                   const was = task.completed;
                   toggleTask(task.id);
-                  if (!was) {
-                    playComplete();
-                    onCompleteTask();
-                  }
+                  if (!was) { playComplete(); onCompleteTask(); }
                 }}
-                >{#if task.completed}<Check size={12} strokeWidth={1.5} />{/if}</button
-              >{#if editTask === task.id}<div class="tl-body">
-                  <input
-                    type="text"
-                    class="edit-input"
-                    bind:value={editTitle}
-                  />
+              >{#if task.completed}<Check size={11} strokeWidth={1.5} />{/if}</button>
+              {#if editTask === task.id}
+                <div class="tl-body">
+                  <input type="text" class="edit-input" bind:value={editTitle} />
                   <div class="edit-time-row">
-                    <input
-                      type="time"
-                      class="edit-time"
-                      bind:value={editStart}
-                    /><span class="time-arrow">→</span><input
-                      type="time"
-                      class="edit-time"
-                      bind:value={editEnd}
-                    />
+                    <input type="time" class="edit-time" bind:value={editStart} />
+                    <span class="time-arrow">&rarr;</span>
+                    <input type="time" class="edit-time" bind:value={editEnd} />
                   </div>
                   <div class="edit-energy-row">
-                    <button
-                      type="button"
-                      class="energy-btn sm"
-                      class:selected={editEnergy === "low"}
-                      onclick={() =>
-                        (editEnergy = editEnergy === "low" ? null : "low")}
-                      >Low</button
-                    ><button
-                      type="button"
-                      class="energy-btn sm"
-                      class:selected={editEnergy === "medium"}
-                      onclick={() =>
-                        (editEnergy =
-                          editEnergy === "medium" ? null : "medium")}
-                      >Med</button
-                    ><button
-                      type="button"
-                      class="energy-btn sm"
-                      class:selected={editEnergy === "high"}
-                      onclick={() =>
-                        (editEnergy = editEnergy === "high" ? null : "high")}
-                      >High</button
-                    >
+                    <button type="button" class="energy-btn sm" class:selected={editEnergy === "low"} onclick={() => (editEnergy = editEnergy === "low" ? null : "low")}>Low</button>
+                    <button type="button" class="energy-btn sm" class:selected={editEnergy === "medium"} onclick={() => (editEnergy = editEnergy === "medium" ? null : "medium")}>Med</button>
+                    <button type="button" class="energy-btn sm" class:selected={editEnergy === "high"} onclick={() => (editEnergy = editEnergy === "high" ? null : "high")}>High</button>
                   </div>
                   <div class="edit-actions">
-                    <button
-                      class="edit-save"
-                      onclick={(e) => {
-                        e.stopPropagation();
-                        saveEdit();
-                      }}>Save</button
-                    ><button
-                      class="edit-cancel"
-                      onclick={(e) => {
-                        e.stopPropagation();
-                        cancelEdit();
-                      }}>Cancel</button
-                    >
+                    <button class="edit-save" onclick={(e) => { e.stopPropagation(); saveEdit(); }}>Save</button>
+                    <button class="edit-cancel" onclick={(e) => { e.stopPropagation(); cancelEdit(); }}>Cancel</button>
                   </div>
-                </div>{:else}<div
-                  class="tl-body"
-                  role="button"
-                  tabindex="-1"
-                  ondblclick={(e) => {
-                    e.stopPropagation();
-                    startEdit(task);
-                  }}
+                </div>
+              {:else}
+                <div class="tl-body"
+                  role="button" tabindex="-1"
+                  ondblclick={(e) => { e.stopPropagation(); startEdit(task); }}
                 >
-                  <span class="tl-title">{task.title}{#if mvpIds.includes(task.id)}<span class="mvp-dot">★</span>{/if}</span>{#if task.rolloverCount > 0}<span class="rollover-badge"
-                    >{task.rolloverCount}x</span
-                  >{/if}<span class="tl-time"
-                    >{timeDisplay(task.startTime)} → {timeDisplay(
-                      task.endTime,
-                    )}{#if task.estimatedMinutes}<span class="tl-est"
-                        >{task.estimatedMinutes}m</span
-                      >{/if}</span
-                  >
+                  <div class="tl-title-row">
+                    <span class="tl-title">{task.title}</span>
+                    {#if mvpIds.includes(task.id)}<span class="tl-mvp-badge">&#9733;</span>{/if}
+                    {#if task.rolloverCount > 0}<span class="tl-rollover">{task.rolloverCount}x</span>{/if}
+                  </div>
+                  <div class="tl-meta">
+                    <span class="tl-time">{timeDisplay(task.startTime)} &rarr; {timeDisplay(task.endTime)}</span>
+                    {#if task.estimatedMinutes}<span class="tl-dur">{task.estimatedMinutes}m</span>{/if}
+                    {#if task.energy}<span class="tl-energy" class:en-low={task.energy === "low"} class:en-med={task.energy === "medium"} class:en-high={task.energy === "high"}>{task.energy}</span>{/if}
+                    {#if task.repeat}<span class="tl-repeat">{task.repeat === "daily" ? "D" : task.repeat === "weekday" ? "W" : "7"}</span>{/if}
+                  </div>
                 </div>
-                {#if task.energy}<span
-                    class="tl-energy"
-                    class:en-low={task.energy === "low"}
-                    class:en-med={task.energy === "medium"}
-                    class:en-high={task.energy === "high"}>{task.energy}</span
-                  >{/if}{#if task.repeat}<span class="tl-repeat"
-                    >{task.repeat === "daily"
-                      ? "D"
-                      : task.repeat === "weekday"
-                        ? "W"
-                        : "7"}</span
-                  >{/if}<button
-                  class="tl-star"
-                  class:highlighted={task.highlight}
-                  aria-label="Mark as highlight"
-                  onclick={(e) => {
-                    e.stopPropagation();
-                    setHighlight(task.id, todayStr);
-                  }}
-                  ><Star size={11} strokeWidth={1.5} fill={task.highlight ? 'currentColor' : 'none'} /></button
-                ><button
-                  class="tl-mvp"
-                  class:mvp-on={mvpIds.includes(task.id)}
-                  aria-label="Mark as must-do"
-                  onclick={(e) => { e.stopPropagation(); toggleMvp(task.id) }}>{mvpIds.includes(task.id) ? '★' : '☆'}</button
-                ><button class="tl-focus"
-                  aria-label="Focus"
-                  onclick={(e) => {
-                    e.stopPropagation();
-                    onStartFocus?.(task.id);
-                  }}
-                  ><Crosshair size={11} strokeWidth={1.5} /></button
-                ><button
-                  class="tl-save"
-                  aria-label="Save as template"
-                  onclick={(e) => {
-                    e.stopPropagation();
-                    addTemplate({ title: task.title, items: task.subtasks.map(s => ({ title: s.title })) });
-                  }}
-                  ><Save size={11} strokeWidth={1.5} /></button
-                ><button
-                  class="tl-tomorrow"
-                  aria-label="Move to tomorrow"
-                  title="Reschedule to tomorrow"
-                  onclick={(e) => { e.stopPropagation(); moveToTomorrow(task); }}
-                  ><Sunrise size={11} strokeWidth={1.5} /></button
-                ><button
-                  class="tl-del"
-                  aria-label="Delete"
-                  onclick={(e) => {
-                    e.stopPropagation();
-                    removeTask(task.id);
-                  }}
-                  ><X size={12} strokeWidth={1.5} /></button
-                >{/if}
+                <div class="tl-actions">
+                  <button class="tl-action-btn tl-star-btn" class:starred={task.highlight} aria-label="Highlight" onclick={(e) => { e.stopPropagation(); setHighlight(task.id, todayStr); }}>
+                    <Star size={11} strokeWidth={1.5} fill={task.highlight ? 'currentColor' : 'none'} />
+                  </button>
+                  <button class="tl-action-btn tl-mvp-action" class:mvp-on={mvpIds.includes(task.id)} aria-label="Must-do" onclick={(e) => { e.stopPropagation(); toggleMvp(task.id) }}>{mvpIds.includes(task.id) ? '\u2605' : '\u2606'}</button>
+                  <button class="tl-action-btn" aria-label="Focus" onclick={(e) => { e.stopPropagation(); onStartFocus?.(task.id); }}><Crosshair size={11} strokeWidth={1.5} /></button>
+                  <button class="tl-action-btn" aria-label="Save as template" onclick={(e) => { e.stopPropagation(); addTemplate({ title: task.title, items: task.subtasks.map(s => ({ title: s.title })) }); }}><Save size={11} strokeWidth={1.5} /></button>
+                  <button class="tl-action-btn" aria-label="Move to tomorrow" title="Reschedule to tomorrow" onclick={(e) => { e.stopPropagation(); moveToTomorrow(task); }}><Sunrise size={11} strokeWidth={1.5} /></button>
+                  <button class="tl-action-btn tl-del-btn" aria-label="Delete" onclick={(e) => { e.stopPropagation(); removeTask(task.id); }}><X size={11} strokeWidth={1.5} /></button>
+                </div>
+              {/if}
             </div>
-            {#if task.expanded}<div
-                class="subtask-list"
-                transition:fly={{ y: 6, duration: 150, opacity: 0 }}
-              >
-                {#each task.subtasks as st}<div
-                    class="subtask-item"
-                    class:st-done={st.completed}
-                  >
-                    <button
-                      class="st-check"
-                      class:checked={st.completed}
-                      onclick={(e) => {
-                        e.stopPropagation();
-                        const swas = st.completed;
-                        toggleSubtask(task.id, st.id);
-                        if (!swas) onCompleteSubtask();
-                      }}
-                      >{#if st.completed}<Check size={10} strokeWidth={1.5} />{/if}</button
-                    ><span class="st-title">{st.title}</span><button
-                      class="st-del"
-                      aria-label="Remove"
-                      onclick={(e) => {
-                        e.stopPropagation();
-                        removeSubtask(task.id, st.id);
-                      }}
-                      ><X size={10} strokeWidth={1.5} /></button
-                    >
-                  </div>{/each}
+            {#if task.expanded}
+              <div class="subtask-list" transition:fly={{ y: 6, duration: 150, opacity: 0 }}>
+                {#each task.subtasks as st}
+                  <div class="st-item" class:st-done={st.completed}>
+                    <button class="st-check st-check-sm" class:checked={st.completed}
+                      onclick={(e) => { e.stopPropagation(); const swas = st.completed; toggleSubtask(task.id, st.id); if (!swas) onCompleteSubtask(); }}
+                    >{#if st.completed}<Check size={9} strokeWidth={1.5} />{/if}</button>
+                    <span class="st-title">{st.title}</span>
+                    <button class="st-del" aria-label="Remove" onclick={(e) => { e.stopPropagation(); removeSubtask(task.id, st.id); }}><X size={10} strokeWidth={1.5} /></button>
+                  </div>
+                {/each}
                 <div class="st-add">
-                  <input
-                    type="text"
-                    class="st-input"
-                    placeholder="Add a step..."
-                    bind:value={subtaskInputs[task.id]}
-                    onkeydown={(e) => handleSubtaskKey(e, task.id)}
-                  />
+                  <input type="text" class="st-input" placeholder="Add a step..." bind:value={subtaskInputs[task.id]} onkeydown={(e) => handleSubtaskKey(e, task.id)} />
                 </div>
-              </div>{/if}
-          </div>{/each}
-      </div>{:else if todayTasks.length === 0}<div class="empty">
-        <p>Nothing planned today</p>
+              </div>
+            {/if}
+          </div>
+        {/each}
+      </div>
+    {:else if todayTasks.length === 0}
+      <div class="empty-state">
+        <div class="empty-icon"><CalendarCheck size={32} strokeWidth={1.5} /></div>
+        <p class="empty-title">Nothing planned today</p>
         <p class="empty-sub">Tap "Add task" to get started</p>
-      </div>{/if}{#if unscheduledTasks.length > 0}<div class="unscheduled">
+      </div>
+    {/if}
+
+    {#if unscheduledTasks.length > 0}
+      <div class="unscheduled">
         <div class="us-header">
-          <Info size={14} strokeWidth={1.5} />Unscheduled
+          <Info size={13} strokeWidth={1.5} />
+          <span>Unscheduled</span>
+          <span class="us-count">{unscheduledTasks.length}</span>
         </div>
-        {#each unscheduledTasks as task (task.id)}<div
-            class="us-task"
-            role="button"
-            tabindex="-1"
+        {#each unscheduledTasks as task (task.id)}
+          <div class="us-task"
             data-id={task.id}
             class:completed={task.completed}
             class:expanded={task.expanded}
@@ -818,387 +693,524 @@
             ontouchmove={touchMove}
             ontouchend={(e) => touchEnd(e, task)}
           >
-            <div
-              class="us-main"
-              role="button"
-              tabindex="0"
+            <div class="us-main"
+              role="button" tabindex="0"
               onclick={() => toggleExpand(task.id)}
-              onkeydown={(e) => {
-                if (e.key === "Enter") toggleExpand(task.id);
-              }}
+              onkeydown={(e) => { if (e.key === "Enter") toggleExpand(task.id); }}
             >
-              <button
-                class="check"
-                class:checked={task.completed}
+              <button class="check" class:checked={task.completed}
                 onclick={(e) => {
                   e.stopPropagation();
                   const was = task.completed;
                   toggleTask(task.id);
-                  if (!was) {
-                    playComplete();
-                    onCompleteTask();
-                  }
+                  if (!was) { playComplete(); onCompleteTask(); }
                 }}
-                >{#if task.completed}<Check size={12} strokeWidth={1.5} />{/if}</button
-              >{#if editTask === task.id}<div class="us-body">
-                  <input
-                    type="text"
-                    class="edit-input"
-                    bind:value={editTitle}
-                  />
+              >{#if task.completed}<Check size={12} strokeWidth={1.5} />{/if}</button>
+              {#if editTask === task.id}
+                <div class="us-body">
+                  <input type="text" class="edit-input" bind:value={editTitle} />
                   <div class="edit-time-row">
-                    <input
-                      type="time"
-                      class="edit-time"
-                      bind:value={editStart}
-                    /><span class="time-arrow">→</span><input
-                      type="time"
-                      class="edit-time"
-                      bind:value={editEnd}
-                    />
+                    <input type="time" class="edit-time" bind:value={editStart} />
+                    <span class="time-arrow">&rarr;</span>
+                    <input type="time" class="edit-time" bind:value={editEnd} />
                   </div>
                   <div class="edit-energy-row">
-                    <button
-                      type="button"
-                      class="energy-btn sm"
-                      class:selected={editEnergy === "low"}
-                      onclick={() =>
-                        (editEnergy = editEnergy === "low" ? null : "low")}
-                      >Low</button
-                    ><button
-                      type="button"
-                      class="energy-btn sm"
-                      class:selected={editEnergy === "medium"}
-                      onclick={() =>
-                        (editEnergy =
-                          editEnergy === "medium" ? null : "medium")}
-                      >Med</button
-                    ><button
-                      type="button"
-                      class="energy-btn sm"
-                      class:selected={editEnergy === "high"}
-                      onclick={() =>
-                        (editEnergy = editEnergy === "high" ? null : "high")}
-                      >High</button
-                    >
+                    <button type="button" class="energy-btn sm" class:selected={editEnergy === "low"} onclick={() => (editEnergy = editEnergy === "low" ? null : "low")}>Low</button>
+                    <button type="button" class="energy-btn sm" class:selected={editEnergy === "medium"} onclick={() => (editEnergy = editEnergy === "medium" ? null : "medium")}>Med</button>
+                    <button type="button" class="energy-btn sm" class:selected={editEnergy === "high"} onclick={() => (editEnergy = editEnergy === "high" ? null : "high")}>High</button>
                   </div>
                   <div class="edit-actions">
-                    <button
-                      class="edit-save"
-                      onclick={(e) => {
-                        e.stopPropagation();
-                        saveEdit();
-                      }}>Save</button
-                    ><button
-                      class="edit-cancel"
-                      onclick={(e) => {
-                        e.stopPropagation();
-                        cancelEdit();
-                      }}>Cancel</button
-                    >
+                    <button class="edit-save" onclick={(e) => { e.stopPropagation(); saveEdit(); }}>Save</button>
+                    <button class="edit-cancel" onclick={(e) => { e.stopPropagation(); cancelEdit(); }}>Cancel</button>
                   </div>
-                </div>{:else}<div
-                  class="us-body"
-                  role="button"
-                  tabindex="-1"
-                  ondblclick={(e) => {
-                    e.stopPropagation();
-                    startEdit(task);
-                  }}
+                </div>
+              {:else}
+                <div class="us-body"
+                  role="button" tabindex="-1"
+                  ondblclick={(e) => { e.stopPropagation(); startEdit(task); }}
                 >
-                  <span class="us-title"
-                    >{task.title}{#if mvpIds.includes(task.id)}<span class="mvp-dot">★</span>{/if}{#if task.estimatedMinutes}<span class="us-est"
-                        >{task.estimatedMinutes}m</span
-                      >{/if}{#if task.rolloverCount > 0}<span class="rollover-badge"
-                        >{task.rolloverCount}x</span
-                      >{/if}</span
-                  >
+                  <div class="us-title-row">
+                    <span class="us-title">{task.title}</span>
+                    {#if mvpIds.includes(task.id)}<span class="tl-mvp-badge">&#9733;</span>{/if}
+                    {#if task.rolloverCount > 0}<span class="tl-rollover">{task.rolloverCount}x</span>{/if}
+                  </div>
+                  <div class="us-meta">
+                    {#if task.estimatedMinutes}<span class="tl-dur">{task.estimatedMinutes}m</span>{/if}
+                    {#if task.energy}<span class="tl-energy" class:en-low={task.energy === "low"} class:en-med={task.energy === "medium"} class:en-high={task.energy === "high"}>{task.energy}</span>{/if}
+                    {#if task.repeat}<span class="tl-repeat">{task.repeat === "daily" ? "D" : task.repeat === "weekday" ? "W" : "7"}</span>{/if}
+                  </div>
                 </div>
-                {#if task.energy}<span
-                    class="tl-energy"
-                    class:en-low={task.energy === "low"}
-                    class:en-med={task.energy === "medium"}
-                    class:en-high={task.energy === "high"}>{task.energy}</span
-                  >{/if}{#if task.repeat}<span class="tl-repeat"
-                    >{task.repeat === "daily"
-                      ? "D"
-                      : task.repeat === "weekday"
-                        ? "W"
-                        : "7"}</span
-                  >{/if}<button
-                  class="us-star"
-                  class:highlighted={task.highlight}
-                  aria-label="Mark as highlight"
-                  onclick={(e) => {
-                    e.stopPropagation();
-                    setHighlight(task.id, todayStr);
-                  }}
-                  ><Star size={11} strokeWidth={1.5} fill={task.highlight ? 'currentColor' : 'none'} /></button
-                ><button
-                  class="tl-mvp"
-                  class:mvp-on={mvpIds.includes(task.id)}
-                  aria-label="Mark as must-do"
-                  onclick={(e) => { e.stopPropagation(); toggleMvp(task.id) }}>{mvpIds.includes(task.id) ? '★' : '☆'}</button
-                ><button class="us-focus"
-                  aria-label="Focus"
-                  onclick={(e) => {
-                    e.stopPropagation();
-                    onStartFocus?.(task.id);
-                  }}
-                  ><Crosshair size={11} strokeWidth={1.5} /></button
-                ><button
-                  class="us-save"
-                  aria-label="Save as template"
-                  onclick={(e) => {
-                    e.stopPropagation();
-                    addTemplate({ title: task.title, items: task.subtasks.map(s => ({ title: s.title })) });
-                  }}
-                  ><Save size={11} strokeWidth={1.5} /></button
-                ><button
-                  class="delete"
-                  aria-label="Delete"
-                  onclick={(e) => {
-                    e.stopPropagation();
-                    removeTask(task.id);
-                  }}
-                  ><X size={12} strokeWidth={1.5} /></button
-                >{/if}
+                <button class="tl-action-btn tl-star-btn" class:starred={task.highlight} aria-label="Highlight" onclick={(e) => { e.stopPropagation(); setHighlight(task.id, todayStr); }}>
+                  <Star size={11} strokeWidth={1.5} fill={task.highlight ? 'currentColor' : 'none'} />
+                </button>
+                <button class="tl-action-btn tl-mvp-action" class:mvp-on={mvpIds.includes(task.id)} aria-label="Must-do" onclick={(e) => { e.stopPropagation(); toggleMvp(task.id) }}>{mvpIds.includes(task.id) ? '\u2605' : '\u2606'}</button>
+                <button class="tl-action-btn" aria-label="Focus" onclick={(e) => { e.stopPropagation(); onStartFocus?.(task.id); }}><Crosshair size={11} strokeWidth={1.5} /></button>
+                <button class="tl-action-btn" aria-label="Save as template" onclick={(e) => { e.stopPropagation(); addTemplate({ title: task.title, items: task.subtasks.map(s => ({ title: s.title })) }); }}><Save size={11} strokeWidth={1.5} /></button>
+                <button class="tl-action-btn tl-del-btn" aria-label="Delete" onclick={(e) => { e.stopPropagation(); removeTask(task.id); }}><X size={11} strokeWidth={1.5} /></button>
+              {/if}
             </div>
-            {#if task.expanded}<div
-                class="subtask-list"
-                transition:fly={{ y: 6, duration: 150, opacity: 0 }}
-              >
-                {#each task.subtasks as st}<div
-                    class="subtask-item"
-                    class:st-done={st.completed}
-                  >
-                    <button
-                      class="st-check"
-                      class:checked={st.completed}
-                      onclick={(e) => {
-                        e.stopPropagation();
-                        const swas = st.completed;
-                        toggleSubtask(task.id, st.id);
-                        if (!swas) onCompleteSubtask();
-                      }}
-                      >{#if st.completed}<Check size={10} strokeWidth={1.5} />{/if}</button
-                    ><span class="st-title">{st.title}</span><button
-                      class="st-del"
-                      aria-label="Remove"
-                      onclick={(e) => {
-                        e.stopPropagation();
-                        removeSubtask(task.id, st.id);
-                      }}
-                      ><X size={10} strokeWidth={1.5} /></button
-                    >
-                  </div>{/each}
+            {#if task.expanded}
+              <div class="subtask-list" transition:fly={{ y: 6, duration: 150, opacity: 0 }}>
+                {#each task.subtasks as st}
+                  <div class="st-item" class:st-done={st.completed}>
+                    <button class="st-check st-check-sm" class:checked={st.completed}
+                      onclick={(e) => { e.stopPropagation(); const swas = st.completed; toggleSubtask(task.id, st.id); if (!swas) onCompleteSubtask(); }}
+                    >{#if st.completed}<Check size={9} strokeWidth={1.5} />{/if}</button>
+                    <span class="st-title">{st.title}</span>
+                    <button class="st-del" aria-label="Remove" onclick={(e) => { e.stopPropagation(); removeSubtask(task.id, st.id); }}><X size={10} strokeWidth={1.5} /></button>
+                  </div>
+                {/each}
                 <div class="st-add">
-                  <input
-                    type="text"
-                    class="st-input"
-                    placeholder="Add a step..."
-                    bind:value={subtaskInputs[task.id]}
-                    onkeydown={(e) => handleSubtaskKey(e, task.id)}
-                  />
+                  <input type="text" class="st-input" placeholder="Add a step..." bind:value={subtaskInputs[task.id]} onkeydown={(e) => handleSubtaskKey(e, task.id)} />
                 </div>
-              </div>{/if}
-          </div>{/each}
-          </div>{/if}
-  {#if todayTip}<div class="today-tip">{todayTip}</div>{/if}
-  </main>{/if}
+              </div>
+            {/if}
+          </div>
+        {/each}
+      </div>
+    {/if}
+
+    {#if todayTasks.length > 0 && todayTip}
+      <div class="today-tip">{todayTip}</div>
+    {/if}
+  </div>
+</div>
 
 <style>
   .view-toolbar {
     display: flex;
-    gap: 6px;
-    padding: 12px 22px 12px;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 22px 8px;
     flex-shrink: 0;
   }
-  .view-btn {
-    padding: 8px 18px;
-    border-radius: var(--radius-sm);
-    font-size: 13px;
+  .tb-filters { display: flex; gap: 4px; flex: 1; }
+  .tb-btn {
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 12px;
     font-weight: 500;
     color: var(--text-secondary);
     cursor: pointer;
     background: transparent;
-    transition: all 0.2s var(--ease);
+    transition: all 0.15s var(--ease);
+    white-space: nowrap;
   }
-  .view-btn:hover {
-    background: var(--surface-hover);
-    color: var(--text);
-  }
-  .view-btn.active {
+  .tb-btn:hover { background: var(--surface-hover); color: var(--text); }
+  .tb-btn.active {
     background: var(--surface);
     color: var(--text);
     box-shadow: var(--shadow-sm);
-    border: 1px solid var(--border);
+    border: 0.5px solid var(--border);
   }
-  .plan-day-btn { display: flex; align-items: center; gap: 4px; padding: 8px 14px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; color: var(--accent); background: var(--accent-subtle); cursor: pointer; transition: all 0.15s var(--ease); flex-shrink: 0; }
-  .plan-day-btn:hover { filter: brightness(1.1); }
-  .search-input {
-    flex: 1;
-    min-width: 80px;
-    padding: 7px 14px;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border);
+  .tb-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .tb-plan-btn {
+    display: flex; align-items: center; gap: 4px;
+    padding: 6px 12px; border-radius: 8px;
+    font-size: 12px; font-weight: 500;
+    color: var(--accent); background: var(--accent-subtle);
+    cursor: pointer; transition: all 0.15s var(--ease);
+  }
+  .tb-plan-btn:hover { filter: brightness(1.1); }
+  .tb-search {
+    width: 120px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 0.5px solid var(--border);
     background: var(--surface);
     color: var(--text);
-    font-size: 13px;
-    transition: all 0.2s var(--ease);
+    font-size: 12px;
+    transition: all 0.15s var(--ease);
   }
-  .search-input:focus {
-    border-color: var(--accent);
-    box-shadow: var(--accent-ring);
+  .tb-search:focus { border-color: var(--accent); box-shadow: var(--accent-ring); }
+
+  .today-scroll {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
-  .next-action-card {
-    margin: 0 22px 16px;
-    padding: 24px;
+  .today-content {
+    padding: 0 22px 24px;
+  }
+
+  /* ---- Metrics Bar ---- */
+  .metrics-bar {
+    margin: 4px 22px 12px;
+    padding: 10px 16px 8px;
     background: var(--surface);
     border-radius: var(--radius-lg);
-    border: 1px solid var(--border);
-    text-align: center;
-    box-shadow: var(--shadow-md);
+    border: 0.5px solid var(--border);
     flex-shrink: 0;
-    animation: fadeIn 0.35s var(--ease-out);
   }
-  .na-label {
+  .metrics-track {
+    height: 3px;
+    background: var(--border-light);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .metrics-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.4s var(--ease);
+  }
+  .metrics-fill.warn { background: var(--warning); }
+  .metrics-fill.over { background: var(--danger); }
+  .metrics-items {
+    display: flex;
+    justify-content: space-between;
+  }
+  .metric { text-align: center; flex: 1; }
+  .metric-value {
+    display: block;
+    font-size: 15px;
+    font-weight: 650;
+    color: var(--text);
+    letter-spacing: -0.3px;
+    line-height: 1.2;
+  }
+  .metric-value.metric-done { color: var(--complete); }
+  .metric-value.metric-warn { color: var(--danger); }
+  .metric-label {
+    display: block;
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-top: 1px;
+  }
+  .metric-score-val { color: var(--accent); }
+
+  /* ---- Focus Card ---- */
+  .focus-card {
+    position: relative;
+    margin: 0 22px 14px;
+    padding: 20px 22px;
+    background: var(--surface-raised);
+    border-radius: var(--radius-xl);
+    border: 0.5px solid var(--accent);
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .fc-glow {
+    position: absolute;
+    top: -50%;
+    right: -30%;
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, rgba(var(--accent-rgb), 0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .fc-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .fc-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.15);
+    animation: fcPulse 2s ease-in-out infinite;
+  }
+  .fc-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+  .fc-title {
+    font-size: 22px;
+    font-weight: 650;
+    color: var(--text);
+    letter-spacing: -0.4px;
+    line-height: 1.25;
+    margin-bottom: 12px;
+  }
+  .fc-progress {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .fc-progress-track {
+    flex: 1;
+    height: 4px;
+    background: var(--border-light);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .fc-progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.5s var(--ease);
+  }
+  .fc-progress-pct {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+  .fc-info {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 10px;
+  }
+  .fc-info-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+  .fc-next {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+    margin-bottom: 14px;
+  }
+  .fc-next-label {
     font-size: 11px;
     font-weight: 600;
     color: var(--text-muted);
     text-transform: uppercase;
-    letter-spacing: 1.2px;
-    margin-bottom: 10px;
+    letter-spacing: 0.5px;
   }
-  .na-title {
-    font-size: 20px;
-    font-weight: 600;
+  .fc-next-title {
+    font-size: 13px;
     color: var(--text);
-    margin-bottom: 4px;
-    letter-spacing: -0.3px;
-  }
-  .na-time {
-    font-size: 14px;
-    color: var(--text-secondary);
-    margin-bottom: 20px;
-  }
-  .na-btn {
-    padding: 12px 36px;
-    border-radius: 50px;
-    font-size: 15px;
     font-weight: 500;
-    background: var(--accent);
-    color: #fff;
+  }
+  .fc-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .fc-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s var(--ease);
-    border: none;
+    transition: all 0.15s var(--ease);
   }
-  .na-btn:hover {
-    filter: brightness(1.1);
-    transform: translateY(-2px);
+  .fc-btn-complete { background: var(--accent); color: #fff; border: none; }
+  .fc-btn-complete:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .fc-btn-focus { background: var(--bg); color: var(--text); border: 0.5px solid var(--border); }
+  .fc-btn-focus:hover { background: var(--surface-hover); color: var(--accent); border-color: var(--accent-subtle); }
+
+  /* ---- Status Bar ---- */
+  .status-bar {
+    margin: 0 22px 12px;
+    padding: 10px 16px;
+    background: var(--surface);
+    border-radius: var(--radius-md);
+    border: 0.5px solid var(--border);
+    flex-shrink: 0;
   }
-  .na-btn:active {
-    transform: scale(0.97);
-  }
-  .status {
+  .status-bar-content {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 0 22px 12px;
-    font-size: 14px;
+    font-size: 13px;
     color: var(--text-secondary);
-    flex-shrink: 0;
   }
-  .status-dot {
-    width: 10px;
-    height: 10px;
+  .sb-dot {
+    width: 8px; height: 8px;
     border-radius: 50%;
     background: var(--border);
     flex-shrink: 0;
   }
-  .status-dot.live {
-    background: var(--accent);
-    box-shadow: 0 0 0 5px var(--accent-subtle);
-    animation: pulse 2s infinite;
-  }
-  .status-dot.done {
-    background: var(--complete);
-  }
-  .form {
-    padding: 0 22px 12px;
-    flex-shrink: 0;
-    overflow: hidden;
-  }
-  .title-input {
-    font-size: 16px;
-    margin-bottom: 12px;
-  }
-  .time-row {
+  .sb-dot.sb-dot-next { background: var(--accent); }
+  .sb-dot.sb-done { background: var(--complete); }
+
+  /* ---- Quick Add ---- */
+  .quick-add-bar {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin-bottom: 12px;
+    justify-content: space-between;
+    margin: 0 22px 10px;
+    flex-shrink: 0;
   }
-  .time-field {
-    flex: 1;
-  }
-  .time-label {
-    display: block;
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 6px;
-  }
-  .time-arrow {
-    color: var(--text-muted);
-    font-size: 18px;
-    margin-top: 16px;
-  }
-  .time-optional {
-    font-size: 12px;
-    color: var(--text-muted);
-    margin: -4px 0 12px;
-    text-align: center;
-  }
-  input[type="time"]::-webkit-calendar-picker-indicator {
-    filter: invert(0.4);
-    opacity: 0.6;
-  }
-  .energy-row,
-  .repeat-row {
+  .qa-add-btn {
     display: flex;
     align-items: center;
     gap: 6px;
-    margin-bottom: 14px;
-    flex-wrap: wrap;
+    padding: 8px 16px;
+    border-radius: 10px;
+    background: var(--accent-subtle);
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 0.5px solid transparent;
+    transition: all 0.15s var(--ease);
   }
-  .energy-label {
-    font-size: 11px;
+  .qa-add-btn:hover { background: var(--accent); color: #fff; }
+  .qa-stats { display: flex; align-items: center; gap: 8px; }
+  .qa-stat {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  /* ---- Task Form ---- */
+  .task-form {
+    margin: 0 22px 12px;
+    padding: 16px 18px;
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    border: 0.5px solid var(--border);
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+  .tf-input {
+    width: 100%;
+    padding: 12px 14px;
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-md);
+    color: var(--text);
+    font-size: 15px;
+    margin-bottom: 12px;
+    transition: border-color 0.15s var(--ease);
+  }
+  .tf-input:focus { border-color: var(--accent); box-shadow: var(--accent-ring); }
+  .tf-input::placeholder { color: var(--text-muted); }
+  .tf-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .tf-field { flex: 1; }
+  .tf-label {
+    display: block;
+    font-size: 10px;
     font-weight: 600;
     color: var(--text-muted);
     text-transform: uppercase;
-    letter-spacing: 0.8px;
-    margin-right: 6px;
+    letter-spacing: 0.6px;
+    margin-bottom: 4px;
   }
-  .task-list {
+  .tf-time {
+    width: 100%;
+    padding: 8px 10px;
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 13px;
+    transition: border-color 0.15s var(--ease);
+  }
+  .tf-time:focus { border-color: var(--accent); box-shadow: var(--accent-ring); }
+  .tf-arrow { color: var(--text-muted); font-size: 16px; margin-top: 14px; }
+  .tf-hint { font-size: 11px; color: var(--text-muted); margin: -6px 0 10px; text-align: center; }
+  .tf-chip {
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    cursor: pointer;
+    transition: all 0.15s var(--ease);
+  }
+  .tf-chip:hover { border-color: var(--accent-subtle); color: var(--accent); }
+  .tf-chip.selected { background: var(--accent); color: #fff; border-color: transparent; }
+  .tf-actions { display: flex; gap: 8px; margin-top: 4px; }
+  .tf-btn {
     flex: 1;
-    overflow-y: auto;
-    padding: 0 22px 22px;
-    -webkit-overflow-scrolling: touch;
+    padding: 10px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s var(--ease);
   }
-  .yesterday-banner { display: flex; align-items: center; gap: 8px; padding: 10px 14px; margin-bottom: 10px; border-radius: var(--radius-md); background: var(--accent-subtle); border: 1px solid var(--accent); }
-  .yesterday-label { flex: 1; font-size: 13px; font-weight: 500; color: var(--accent); }
-  .yesterday-bring { padding: 4px 12px; border-radius: 14px; font-size: 11px; font-weight: 600; background: var(--accent); color: #fff; border: none; cursor: pointer; white-space: nowrap; }
-  .yesterday-dismiss { width: 24px; height: 24px; border-radius: 50%; border: none; background: transparent; color: var(--accent); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .tf-btn-cancel { background: var(--bg); border: 0.5px solid var(--border); color: var(--text-secondary); }
+  .tf-btn-cancel:hover { background: var(--surface-hover); color: var(--text); }
+  .tf-btn-save { background: var(--accent); color: #fff; border: none; }
+  .tf-btn-save:hover { filter: brightness(1.1); }
+  .tf-btn-save:disabled { opacity: 0.25; cursor: default; }
+
+  /* ---- Yesterday Banner ---- */
+  .yb-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    margin-bottom: 10px;
+    border-radius: var(--radius-md);
+    background: var(--accent-subtle);
+    border: 0.5px solid var(--accent);
+  }
+  .yb-label { flex: 1; font-size: 13px; font-weight: 500; color: var(--accent); }
+  .yb-btn {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .yb-dismiss {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: var(--accent);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+  }
+
+  /* ---- Empty State ---- */
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+  }
+  .empty-icon {
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    opacity: 0.5;
+  }
+  .empty-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+  }
+  .empty-sub {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  /* ---- Timeline ---- */
   .timeline {
     position: relative;
-    margin: 0 0 16px;
+    margin: 0 0 14px;
     border-radius: var(--radius-md);
     overflow: visible;
   }
-  .timeline-bg {
+  .tl-bg {
     position: absolute;
     inset: 0;
     pointer-events: none;
@@ -1207,65 +1219,67 @@
     position: absolute;
     left: 0;
     right: 0;
-    border-top: 1px solid var(--border-light);
+    border-top: 0.5px solid var(--border-light);
     height: 0;
   }
   .tl-label {
     position: absolute;
     left: 0;
     top: -8px;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 500;
     color: var(--text-muted);
-    width: 44px;
+    width: 40px;
     text-align: right;
     padding-right: 10px;
     font-variant-numeric: tabular-nums;
   }
-    .tl-task {
-      position: absolute;
-      left: 52px;
-      right: 2px;
-      background: var(--surface);
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      transition:
-        height 0.25s var(--ease),
-        opacity 0.25s var(--ease);
-      overflow: hidden;
-    }
-    .tl-task:hover {
-      background: var(--surface-hover);
-      border-color: var(--border);
-    }
-    .tl-task.completed {
-      opacity: 0.35;
-    }
-    .tl-task::before {
-      content: "";
-      position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      width: 3px;
-      background: var(--accent);
-      border-radius: 3px 0 0 3px;
-    }
-    .tl-task.completed::before {
-      background: var(--complete);
-    }
+  .tl-task {
+    position: absolute;
+    left: 48px;
+    right: 0;
+    background: var(--surface);
+    border-radius: 10px;
+    border: 0.5px solid var(--border);
+    overflow: hidden;
+    transition: height 0.25s var(--ease), opacity 0.25s var(--ease), box-shadow 0.2s var(--ease);
+  }
+  .tl-task:hover {
+    background: var(--surface-hover);
+    border-color: var(--accent-subtle);
+    box-shadow: var(--shadow-sm);
+  }
+  .tl-task.t-current {
+    background: rgba(var(--accent-rgb), 0.06);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 0.5px var(--accent), var(--shadow-md);
+  }
+  .tl-task.completed { opacity: 0.3; }
+  .tl-task.dragging { opacity: 0.6; z-index: 20; cursor: grabbing !important; }
+  .tl-accent-bar {
+    position: absolute;
+    left: 0;
+    top: 4px;
+    bottom: 4px;
+    width: 3px;
+    background: var(--accent);
+    border-radius: 2px;
+    opacity: 0.6;
+  }
+  .tl-accent-bar.accent-current { opacity: 1; box-shadow: 0 0 6px rgba(var(--accent-rgb), 0.4); }
+  .tl-accent-bar.accent-done { background: var(--complete); }
   .tl-main {
     display: flex;
     align-items: flex-start;
-    gap: 10px;
-    padding: 10px 12px;
+    gap: 8px;
+    padding: 8px 10px 8px 12px;
     cursor: pointer;
+    min-height: 36px;
   }
   .tl-check {
-    width: 22px;
-    height: 22px;
+    width: 20px; height: 20px;
     border-radius: 50%;
-    border: 2px solid var(--border);
+    border: 1.5px solid var(--border);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1276,209 +1290,189 @@
     background: transparent;
     padding: 0;
   }
-  .tl-check.checked {
-    background: var(--complete);
-    border-color: var(--complete);
-    color: #fff;
-  }
-  .tl-check:active {
-    transform: scale(0.85);
-  }
-  .tl-body {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
+  .tl-check.checked { background: var(--complete); border-color: var(--complete); color: #fff; }
+  .tl-body { flex: 1; min-width: 0; }
+  .tl-title-row { display: flex; align-items: center; gap: 4px; }
   .tl-title {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
     color: var(--text);
-    line-height: 1.35;
-    white-space: nowrap;
+    line-height: 1.3;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
   }
-  :global(.tl-task.completed) .tl-title,
-  :global(.us-task.completed) .us-title {
-    text-decoration: line-through;
-    color: var(--text-secondary);
-  }
-  .rollover-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 9px;
-    font-weight: 600;
+  .tl-mvp-badge { color: var(--accent); font-size: 10px; flex-shrink: 0; }
+  .tl-rollover {
+    display: inline-flex; align-items: center;
+    font-size: 9px; font-weight: 600;
     color: var(--warning);
-    background: rgba(200,170,100,0.15);
-    border-radius: 4px;
-    padding: 0 5px;
-    margin-left: 4px;
-    line-height: 16px;
-    vertical-align: middle;
+    background: var(--warning-bg);
+    border-radius: 3px;
+    padding: 0 4px;
+    line-height: 14px;
+    flex-shrink: 0;
+  }
+  .tl-meta {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 1px;
+    flex-wrap: wrap;
   }
   .tl-time {
-    font-size: 11px;
+    font-size: 10px;
     color: var(--text-muted);
     font-weight: 500;
   }
-  .tl-energy {
-    font-size: 10px;
+  .tl-dur {
+    font-size: 9px;
     font-weight: 600;
-    padding: 2px 8px;
-    border-radius: 4px;
-    flex-shrink: 0;
+    color: var(--accent);
+    background: var(--accent-subtle);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  .tl-energy {
+    font-size: 9px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 3px;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.4px;
   }
-  .tl-energy.en-low {
-    background: rgba(160, 150, 220, 0.12);
-    color: #9990c0;
-  }
-  .tl-energy.en-med {
-    background: rgba(200, 170, 100, 0.12);
-    color: #c0a870;
-  }
-  .tl-energy.en-high {
-    background: rgba(140, 190, 120, 0.12);
-    color: #90b080;
-  }
+  .tl-energy.en-low { background: rgba(160, 150, 220, 0.12); color: #9990c0; }
+  .tl-energy.en-med { background: rgba(200, 170, 100, 0.12); color: #c0a870; }
+  .tl-energy.en-high { background: rgba(140, 190, 120, 0.12); color: #90b080; }
   .tl-repeat {
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 700;
-    padding: 2px 7px;
-    border-radius: 4px;
+    padding: 1px 5px;
+    border-radius: 3px;
     background: var(--accent-subtle);
     color: var(--accent);
+  }
+  .tl-actions {
+    display: none;
+    align-items: center;
+    gap: 2px;
     flex-shrink: 0;
   }
-  .tl-del, .tl-tomorrow {
-    width: 26px;
-    height: 26px;
-    border-radius: var(--radius-sm);
+  .tl-task:hover .tl-actions { display: flex; }
+  .tl-action-btn {
+    width: 24px; height: 24px;
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     color: var(--text-muted);
-    flex-shrink: 0;
     background: transparent;
     padding: 0;
-    transition: all 0.15s var(--ease);
+    border: none;
+    transition: all 0.12s var(--ease);
+    flex-shrink: 0;
   }
-  .tl-del:hover {
-    background: var(--danger-bg);
-    color: var(--danger);
-  }
-  .tl-tomorrow:hover { background: var(--accent-subtle); color: var(--accent); }
-  .tl-focus {
-    width: 26px; height: 26px; border-radius: var(--radius-sm);
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; color: var(--text-muted); flex-shrink: 0;
-    background: transparent; padding: 0;
-    transition: all 0.15s var(--ease);
-  }
-  .tl-focus:hover {
-    background: var(--accent-subtle);
-    color: var(--accent);
-  }
-  .tl-save, .us-save {
-    width: 26px; height: 26px; border-radius: var(--radius-sm);
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; color: var(--text-muted); flex-shrink: 0;
-    background: transparent; padding: 0;
-    transition: all 0.15s var(--ease);
-  }
-  .tl-save:hover, .us-save:hover {
-    background: var(--complete-bg);
-    color: var(--complete);
-  }
+  .tl-action-btn:hover { background: var(--surface-hover); color: var(--text); }
+  .tl-del-btn:hover { background: var(--danger-bg); color: var(--danger); }
+  .tl-star-btn:hover { background: var(--warning-bg); color: var(--warning); }
+  .tl-star-btn.starred { color: var(--warning); }
+  .tl-mvp-action { font-size: 12px; }
+  .tl-mvp-action:hover { background: var(--surface-hover); color: var(--accent); }
+  .tl-mvp-action.mvp-on { color: var(--accent); }
+
+  /* ---- Now Line ---- */
   .now-line {
     position: absolute;
-    left: 52px;
+    left: 48px;
     right: 0;
     height: 2px;
     background: var(--accent);
     z-index: 10;
     pointer-events: none;
+    box-shadow: 0 0 6px rgba(var(--accent-rgb), 0.3);
   }
-  .now-line::before {
-    content: "";
+  .now-line-dot {
     position: absolute;
-    left: -6px;
+    left: -5px;
     top: -5px;
     width: 12px;
     height: 12px;
     border-radius: 50%;
     background: var(--accent);
-    box-shadow: 0 0 0 5px var(--accent-subtle);
+    box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.15), 0 0 12px rgba(var(--accent-rgb), 0.2);
   }
+
+  /* ---- Unscheduled ---- */
   .unscheduled {
-    border-top: 1px solid var(--border);
-    padding-top: 14px;
-    margin-top: 6px;
+    border-top: 0.5px solid var(--border);
+    padding-top: 12px;
+    margin-top: 4px;
   }
   .us-header {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 12px;
+    gap: 6px;
+    font-size: 11px;
     font-weight: 600;
     color: var(--text-muted);
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 0.8px;
     margin-bottom: 8px;
     padding: 0 4px;
   }
+  .us-count {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-muted);
+    background: var(--surface);
+    padding: 0 6px;
+    border-radius: 4px;
+    line-height: 16px;
+  }
   .us-task {
     background: var(--surface);
-    border-radius: 12px;
-    margin-bottom: 8px;
-    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 6px;
+    border: 0.5px solid var(--border);
     transition: all 0.15s var(--ease);
     overflow: hidden;
   }
-  .us-task:hover {
-    background: var(--surface-hover);
-  }
-  .us-task.completed {
-    opacity: 0.35;
-  }
+  .us-task:hover { background: var(--surface-hover); border-color: var(--accent-subtle); }
+  .us-task.completed { opacity: 0.3; }
+  .us-task.drag-over { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-subtle); }
+  .us-task.dragging { opacity: 0.6; }
   .us-main {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px 14px;
+    gap: 10px;
+    padding: 10px 12px;
     cursor: pointer;
   }
-  .us-body {
-    flex: 1;
-    min-width: 0;
-  }
+  .us-body { flex: 1; min-width: 0; }
+  .us-title-row { display: flex; align-items: center; gap: 4px; }
   .us-title {
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 500;
     color: var(--text);
   }
+  .us-meta { display: flex; align-items: center; gap: 4px; margin-top: 2px; flex-wrap: wrap; }
+
+  /* ---- Subtask ---- */
   .subtask-list {
-    border-top: 1px solid var(--border);
-    padding: 8px 12px 10px 18px;
+    border-top: 0.5px solid var(--border);
+    padding: 6px 10px 8px 14px;
     overflow: hidden;
   }
-  .subtask-item {
+  .st-item {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 6px 0;
+    gap: 8px;
+    padding: 5px 0;
   }
-  .subtask-item.st-done {
-    opacity: 0.45;
-  }
+  .st-item.st-done { opacity: 0.4; }
   .st-check {
-    width: 18px;
-    height: 18px;
+    width: 16px; height: 16px;
     border-radius: 50%;
     border: 1.5px solid var(--border);
     display: flex;
@@ -1490,24 +1484,16 @@
     padding: 0;
     transition: all 0.2s var(--ease);
   }
-  .st-check.checked {
-    background: var(--complete);
-    border-color: var(--complete);
-    color: #fff;
-  }
+  .st-check.checked { background: var(--complete); border-color: var(--complete); color: #fff; }
   .st-title {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--text-secondary);
     flex: 1;
     min-width: 0;
   }
-  :global(.subtask-item.st-done) .st-title {
-    text-decoration: line-through;
-    color: var(--text-muted);
-  }
+  .st-done .st-title { text-decoration: line-through; color: var(--text-muted); }
   .st-del {
-    width: 22px;
-    height: 22px;
+    width: 20px; height: 20px;
     border-radius: 4px;
     display: flex;
     align-items: center;
@@ -1516,74 +1502,54 @@
     color: var(--text-muted);
     background: transparent;
     padding: 0;
-    transition: all 0.15s var(--ease);
+    border: none;
+    transition: all 0.12s var(--ease);
   }
-  .st-del:hover {
-    background: var(--danger-bg);
-    color: var(--danger);
-  }
-  .st-add {
-    padding: 6px 0 2px;
-  }
+  .st-del:hover { background: var(--danger-bg); color: var(--danger); }
+  .st-add { padding: 4px 0 2px; }
   .st-input {
-    width: 100%;
-    padding: 9px 12px;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    color: var(--text);
-    font-size: 13px;
-    transition: border-color 0.15s var(--ease);
-  }
-  .st-input::placeholder {
-    color: var(--text-muted);
-  }
-  .st-input:focus {
-    border-color: var(--accent);
-    box-shadow: var(--accent-ring);
-  }
-  .edit-input {
     width: 100%;
     padding: 7px 10px;
     background: var(--bg);
-    border: 1.5px solid var(--accent);
-    border-radius: var(--radius-sm);
+    border: 0.5px solid var(--border);
+    border-radius: 8px;
     color: var(--text);
-    font-size: 14px;
-    margin-bottom: 6px;
+    font-size: 12px;
+    transition: border-color 0.15s var(--ease);
   }
-  .edit-time-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 6px;
-  }
-  .edit-time {
-    padding: 5px 8px;
+  .st-input::placeholder { color: var(--text-muted); }
+  .st-input:focus { border-color: var(--accent); box-shadow: var(--accent-ring); }
+
+  /* ---- Edit Inline ---- */
+  .edit-input {
+    width: 100%;
+    padding: 6px 10px;
     background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 4px;
+    border: 1.5px solid var(--accent);
+    border-radius: 8px;
     color: var(--text);
-    font-size: 12px;
-    flex: 1;
-  }
-  .edit-time:focus {
-    border-color: var(--accent);
-    box-shadow: var(--accent-ring);
-  }
-  .edit-energy-row {
-    display: flex;
-    gap: 6px;
+    font-size: 13px;
     margin-bottom: 6px;
   }
-  .edit-actions {
-    display: flex;
-    gap: 6px;
-  }
-  .edit-save {
-    padding: 5px 14px;
+  .edit-time-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .edit-time {
+    padding: 4px 8px;
+    background: var(--bg);
+    border: 0.5px solid var(--border);
     border-radius: 4px;
-    font-size: 12px;
+    color: var(--text);
+    font-size: 11px;
+    flex: 1;
+    transition: border-color 0.15s var(--ease);
+  }
+  .edit-time:focus { border-color: var(--accent); box-shadow: var(--accent-ring); }
+  .time-arrow { color: var(--text-muted); font-size: 14px; }
+  .edit-energy-row { display: flex; gap: 4px; margin-bottom: 6px; }
+  .edit-actions { display: flex; gap: 6px; }
+  .edit-save {
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 11px;
     font-weight: 500;
     background: var(--accent);
     color: #fff;
@@ -1591,160 +1557,43 @@
     border: none;
   }
   .edit-cancel {
-    padding: 5px 14px;
-    border-radius: 4px;
-    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 11px;
     font-weight: 500;
-    background: var(--surface);
+    background: var(--bg);
     color: var(--text-secondary);
     cursor: pointer;
-    border: 1px solid var(--border);
+    border: 0.5px solid var(--border);
   }
-  .dragging {
-    opacity: 0.6;
-    z-index: 20;
-    cursor: grabbing !important;
-  }
-  .tl-est,
-  .us-est {
-    font-size: 10px;
-    font-weight: 600;
-    color: var(--accent);
-    background: var(--accent-subtle);
-    padding: 1px 6px;
-    border-radius: 4px;
-    margin-left: 6px;
-  }
-  .us-task.drag-over {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 2px var(--accent-subtle);
-  }
-  .us-focus {
-    width: 26px; height: 26px; border-radius: var(--radius-sm);
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; color: var(--text-muted); flex-shrink: 0;
-    background: transparent; padding: 0;
-    transition: all 0.15s var(--ease);
-  }
-  .us-focus:hover {
-    background: var(--accent-subtle);
-    color: var(--accent);
-  }
-  .highlight-section {
-    padding: 0 22px 12px;
-    flex-shrink: 0;
-  }
-  .highlight-card {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 14px 16px;
-    background: linear-gradient(135deg, rgba(255, 200, 50, 0.12), rgba(255, 160, 50, 0.08));
-    border-radius: var(--radius-lg);
-    border: 1px solid rgba(255, 200, 50, 0.2);
-    box-shadow: var(--shadow-md);
-  }
-  .highlight-star {
-    color: #f0b429;
-    flex-shrink: 0;
-    display: flex;
-  }
-  .highlight-body {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-  .highlight-label {
-    font-size: 10px;
-    font-weight: 700;
-    color: #c8941e;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-  }
-  .highlight-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--text);
-    line-height: 1.3;
-  }
-  .highlight-unmark {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
+  .energy-btn { padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 500; color: var(--text-secondary); background: var(--bg); border: 0.5px solid var(--border); cursor: pointer; transition: all 0.15s var(--ease); }
+  .energy-btn:hover { border-color: var(--accent-subtle); color: var(--accent); }
+  .energy-btn.selected { background: var(--accent); color: #fff; border-color: transparent; }
+  .energy-btn.sm { padding: 4px 10px; font-size: 10px; }
+
+  /* ---- Today Tip ---- */
+  .today-tip {
+    margin: 8px 4px 4px;
+    font-size: 11px;
     color: var(--text-muted);
-    background: var(--surface);
-    border: none;
-    flex-shrink: 0;
-    transition: all 0.15s var(--ease);
+    font-style: italic;
+    text-align: center;
   }
-  .highlight-unmark:hover {
-    background: var(--danger-bg);
-    color: var(--danger);
-  }
-  .highlight-pick {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 16px;
-    width: 100%;
-    border-radius: var(--radius-md);
-    border: 1px dashed var(--border);
-    background: transparent;
-    color: var(--text-muted);
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s var(--ease);
-  }
-  .highlight-pick:hover {
-    border-color: var(--accent-subtle);
-    color: var(--accent);
-    background: var(--accent-subtle);
-  }
-  .workload-bar {
-    margin: 0 22px 12px;
-    padding: 12px 16px;
-    background: var(--surface);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border);
-    flex-shrink: 0;
-  }
-  .wl-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-  .wl-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; }
-  .wl-value { font-size: 12px; color: var(--text-secondary); }
-  .wl-value.wl-over { color: var(--danger); font-weight: 600; }
-  .wl-muted { color: var(--text-muted); }
-  .wl-track { height: 6px; background: var(--border-light); border-radius: 3px; overflow: hidden; }
-  .wl-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.3s var(--ease); }
-  .wl-fill.wl-warn { background: var(--warning); }
-  .wl-fill.wl-over { background: var(--danger); }
-  .wl-warning-text { font-size: 11px; color: var(--danger); margin-top: 6px; }
-  .wl-caution-text { font-size: 11px; color: var(--warning); margin-top: 6px; }
-  .today-tip { margin: 8px 22px 4px; font-size: 11px; color: var(--text-muted); font-style: italic; text-align: center; }
-  .tl-star, .us-star {
-    width: 26px; height: 26px; border-radius: var(--radius-sm);
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; color: var(--text-muted); flex-shrink: 0;
-    background: transparent; padding: 0;
-    transition: all 0.15s var(--ease);
-  }
-  .tl-mvp { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); background: transparent; border: none; padding: 0; font-size: 13px; transition: all 0.15s var(--ease); flex-shrink: 0; }
-  .tl-mvp:hover { background: var(--surface-hover); color: var(--accent); }
-  .tl-mvp.mvp-on { color: var(--accent); }
+
   .mvp-btn { font-size: 11px; font-weight: 600; letter-spacing: 0.3px; }
-  .mvp-dot { color: var(--accent); margin-left: 3px; font-size: 10px; }
-  .tl-star:hover, .us-star:hover {
-    background: var(--warning-bg);
-    color: var(--warning);
+
+  @keyframes fcPulse {
+    0%, 100% { box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.15); }
+    50% { box-shadow: 0 0 0 6px rgba(var(--accent-rgb), 0.08); }
   }
-  .tl-star.highlighted, .us-star.highlighted {
-    color: #f0b429;
+
+  input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.4);
+    opacity: 0.6;
   }
-  .add-trigger { margin: 8px 22px 4px; }
+  :global(.tl-task.completed) .tl-title,
+  :global(.us-task.completed) .us-title {
+    text-decoration: line-through;
+    color: var(--text-secondary);
+  }
 </style>

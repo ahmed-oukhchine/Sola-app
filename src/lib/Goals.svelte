@@ -59,8 +59,8 @@
     </button>
   {:else}
     <div class="goal-form" transition:slide={{ duration: 200 }}>
-      <input type="text" class="input" placeholder="Goal title..." bind:value={title} />
-      <input type="text" class="input" placeholder="Description (optional)" bind:value={desc} style="margin-top:6px" />
+      <input type="text" class="input" placeholder="Goal title..." bind:value={title} style="margin: 4px 4px 0;" />
+      <input type="text" class="input" placeholder="Description (optional)" bind:value={desc} style="margin: 4px 4px 0;" />
       <div class="goal-form-row">
         <input type="number" class="input goal-num" placeholder="Target completions" bind:value={target} min="0" />
         <select class="routine-select" bind:value={period}>
@@ -130,26 +130,32 @@
 </div>
 
 <style>
-  .goal-form { overflow: hidden; margin-bottom: 16px; }
+  .goal-form { overflow: hidden; margin: 4px 4px 16px; }
+  .goal-form .input, .goal-form .routine-select { border-width: 0.5px; }
+  .goal-form .btn { border-width: 0.5px; }
   .goal-form-row { display: flex; gap: 10px; margin-top: 8px; }
   .goal-num { max-width: 120px; }
   .goal-list { display: flex; flex-direction: column; gap: 12px; }
-  .goal-card { background: var(--surface); border-radius: var(--radius-md); border: 1px solid var(--border); padding: 18px 20px; transition: all 0.2s var(--ease); }
+  .goal-card { background: var(--surface); border-radius: var(--radius-md); border: 0.5px solid var(--border); padding: 18px 20px; transition: all 0.2s var(--ease); }
+  .goal-card .input, .goal-card .routine-select { border-width: 0.5px; }
+  .goal-card .edit-save, .goal-card .edit-cancel { border-width: 0.5px; }
+  .edit-save { padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; background: var(--accent); color: #fff; cursor: pointer; border: none; }
+  .edit-cancel { padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; background: var(--bg); color: var(--text-secondary); cursor: pointer; border: 0.5px solid var(--border); }
   .goal-card:hover { box-shadow: var(--shadow-sm); border-color: var(--accent-subtle); }
   .goal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
   .goal-title { font-size: 17px; font-weight: 600; color: var(--text); }
-  .goal-period { font-size: 12px; font-weight: 500; color: var(--text-muted); background: var(--bg); padding: 3px 10px; border-radius: 6px; }
+  .goal-period { display: none; }
   .goal-desc { font-size: 14px; color: var(--text-secondary); margin-bottom: 12px; }
   .goal-progress-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
   .goal-bar-bg { flex: 1; height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; }
   .goal-bar-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.4s var(--ease); }
   .goal-pct { font-size: 14px; font-weight: 600; color: var(--text-secondary); min-width: 36px; text-align: right; }
   .goal-footer { display: flex; gap: 10px; }
-  .goal-edit-btn { font-size: 13px; font-weight: 500; color: var(--text-secondary); cursor: pointer; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); }
+  .goal-edit-btn { font-size: 13px; font-weight: 500; color: var(--text-secondary); cursor: pointer; padding: 6px 14px; border-radius: 6px; border: 0.5px solid var(--border); background: var(--bg); }
   .goal-edit-btn:hover { border-color: var(--accent); color: var(--text); }
   .goal-del-btn { font-size: 13px; font-weight: 500; color: var(--text-muted); cursor: pointer; padding: 6px 14px; border-radius: 6px; background: transparent; }
   .goal-del-btn:hover { color: var(--danger); }
-  .weekly-objs { background: linear-gradient(135deg, var(--accent-subtle), transparent); border-radius: var(--radius-lg); border: 1px solid var(--border); padding: 16px 18px; margin-bottom: 16px; }
+  .weekly-objs { background: linear-gradient(135deg, var(--accent-subtle), transparent); border-radius: var(--radius-lg); border: 0.5px solid var(--border); padding: 16px 18px; margin-bottom: 16px; }
   .wo-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; color: var(--accent); }
   .wo-title { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
   .wo-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; }

@@ -177,6 +177,7 @@ import ShutdownRitual from './lib/ShutdownRitual.svelte'
     userName = user
     showAccount = false
     showLock = false
+    localStorage.setItem('focus-session-expiry', String(Date.now() + 30 * 60 * 1000))
     checkRituals()
     checkWeeklyReview()
     checkBackupReminder()

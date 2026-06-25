@@ -1,6 +1,6 @@
 <script>
   import { fly } from 'svelte/transition'
-  import { ChevronLeft, ChevronRight, CalendarDays, Check, GripVertical } from 'lucide-svelte'
+  import { ChevronLeft, ChevronRight, CalendarDays, Check, GripVertical, X } from 'lucide-svelte'
   import { store, toggleTask, addTask, updateTask } from './taskStore.svelte.js'
 
   let month = $state(new Date().getMonth())
@@ -21,6 +21,9 @@
 
   let dragTaskId = $state(null)
   let dragOverDay = $state(null)
+  let showDayDialog = $state(false)
+  let dialogDate = $state('')
+  let dialogTasks = $derived(store.tasks.filter(t => t.date === dialogDate))
 
   const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
   const MONTHS_S = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -109,7 +112,11 @@
     return { start, end, total: tasks.length, done: tasks.filter(t => t.completed).length }
   })
 
-  function selectDay(day) { selectedDate = ds(day) }
+  function selectDay(day) {
+    selectedDate = ds(day)
+    dialogDate = ds(day)
+    showDayDialog = true
+  }
   function goMonth(m) { if (m === month) return; animDir = m > month ? 1 : -1; month = m }
   function goToday() { const d = new Date(); month = d.getMonth(); year = d.getFullYear(); selectedDate = todayStr }
 
@@ -389,6 +396,37 @@
   {/if}
 </div>
 
+{#if showDayDialog}
+  <div class="cal-dialog-overlay" role="dialog" onclick={() => showDayDialog = false} onkeydown={(e) => { if (e.key === 'Escape') showDayDialog = false }} tabindex="0">
+    <div class="cal-dialog" onclick={(e) => e.stopPropagation()} role="document">
+      <div class="cal-dialog-header">
+        <h3 class="cal-dialog-heading">{dialogDate === todayStr ? 'Today' : new Date(dialogDate + 'T12:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</h3>
+        <button class="cal-dialog-close" onclick={() => showDayDialog = false} aria-label="Close"><X size={18} strokeWidth={1.5} /></button>
+      </div>
+      <div class="cal-dialog-body">
+        {#if dialogTasks.length === 0}
+          <p class="cal-dialog-empty">No tasks</p>
+        {:else}
+          {#each dialogTasks as t (t.id)}
+            <div class="cal-dialog-task" class:done={t.completed}>
+              <button class="cal-dialog-check" class:checked={t.completed} onclick={() => toggleTask(t.id)}>
+                {#if t.completed}<Check size={12} strokeWidth={2} />{/if}
+              </button>
+              <span class="cal-dialog-task-title">{t.title}</span>
+              {#if t.startTime}
+                <span class="cal-dialog-time">{t.startTime}{t.endTime ? `–${t.endTime}` : ''}</span>
+              {/if}
+              {#if t.energy}
+                <span class="cal-dialog-energy cal-en-{t.energy}">{t.energy}</span>
+              {/if}
+            </div>
+          {/each}
+        {/if}
+      </div>
+    </div>
+  </div>
+{/if}
+
 <style>
   .cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
   .cal-today-btn { display: flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 500; color: var(--accent); background: var(--accent-subtle); border: 1px solid rgba(var(--accent-rgb), 0.15); cursor: pointer; transition: all 0.2s var(--ease); }
@@ -490,4 +528,24 @@
   .cal-en-low { background: rgba(153, 144, 192, 0.15); color: #9990c0; }
   .cal-tk-sub { font-size: 11px; font-weight: 600; color: var(--text-secondary); background: var(--surface-raised); padding: 2px 8px; border-radius: 6px; }
   .cal-tk-time { font-size: 12px; font-weight: 500; color: var(--text-secondary); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+
+  .cal-dialog-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; padding: 24px; z-index: 100; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); animation: calFadeIn 0.2s ease-out; }
+  .cal-dialog { background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-xl); width: 100%; max-width: 400px; max-height: 70vh; display: flex; flex-direction: column; box-shadow: var(--shadow-xl); animation: calScaleIn 0.3s var(--ease-spring); }
+  .cal-dialog-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px 12px; border-bottom: 0.5px solid var(--border); }
+  .cal-dialog-heading { font-size: 17px; font-weight: 650; color: var(--text); margin: 0; }
+  .cal-dialog-close { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); background: transparent; border: none; transition: all 0.15s var(--ease); flex-shrink: 0; }
+  .cal-dialog-close:hover { background: var(--surface-hover); color: var(--text); }
+  .cal-dialog-body { padding: 12px 20px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+  .cal-dialog-empty { text-align: center; color: var(--text-muted); font-size: 14px; padding: 20px 0; margin: 0; }
+  .cal-dialog-task { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-md); }
+  .cal-dialog-task.done { opacity: 0.45; }
+  .cal-dialog-task.done .cal-dialog-task-title { text-decoration: line-through; color: var(--text-secondary); }
+  .cal-dialog-check { width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; background: transparent; padding: 0; transition: all 0.2s var(--ease); }
+  .cal-dialog-check.checked { background: var(--complete); border-color: var(--complete); color: #fff; }
+  .cal-dialog-check:hover { border-color: var(--complete); background: var(--complete-bg); }
+  .cal-dialog-task-title { flex: 1; font-size: 14px; font-weight: 500; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cal-dialog-time { font-size: 11px; color: var(--text-muted); flex-shrink: 0; }
+  .cal-dialog-energy { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 5px; text-transform: uppercase; letter-spacing: 0.3px; flex-shrink: 0; }
+  @keyframes calFadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes calScaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 </style>
